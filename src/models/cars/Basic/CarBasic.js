@@ -1,13 +1,12 @@
 import {Axis, Color3, Mesh, MeshBuilder, Space, StandardMaterial, Vector3, Vector4} from "@babylonjs/core";
 
-export default class Basic {
+export default class CarBasic {
 	#material = new StandardMaterial("body_mat");
 	#scene;
 
-	#scene;
 	car;
 
-	constuctor({ parameters }) {
+	constructor(parameters) {
 		const { scene } = parameters;
 		const bodyMaterial = new StandardMaterial("body_mat", scene);
 		bodyMaterial.diffuseColor = new Color3(1.0, 0.25, 0.25);
@@ -60,11 +59,11 @@ export default class Basic {
 
 		const wheelRI = wheelFI.createInstance("RI");
 		wheelRI.parent = body;
-		wheelRI.position = new Vector3(0, 0, -2.8);
+		wheelRI.position = new Vector3(-4.8, 0, -1.8);
 
 		const wheelRO = wheelFI.createInstance("RO");
 		wheelRO.parent = body;
-		wheelRO.position = new Vector3(0, 0, 2.8);
+		wheelRO.position = new Vector3(-4.8, 0, 1.8);
 
 		wheelFI.parent = body;
 		wheelFI.position = new Vector3(0, 0, -1.8);
