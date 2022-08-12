@@ -20,7 +20,8 @@
   "homepage": "https://github.com/TheVirtuoid/fwjs-race#readme",
   "dependencies": {
     "@babylonjs/core": "^5.17.1",
-    "@babylonjs/materials": "^5.17.1"
+    "@babylonjs/materials": "^5.17.1",
+    "cannon": "^0.6.2"
   },
   "devDependencies": {
     "postcss-nesting": "^10.1.10",
