@@ -11,6 +11,7 @@ export default class Track {
 		ground.physicsImpostor = new PhysicsImpostor(ground, PhysicsImpostor.BoxImpostor, { mass: 0, restitution: 0.8 }, scene);
 		this.#track = ground;*/
 
+		//set new values
 		const path0 = [];
 		for (let a = 0; a <= Math.PI; a += Math.PI / 4) {
 			path0.push(new Vector3(4, 4 * Math.cos(a), 4 * Math.sin(a)));
@@ -28,11 +29,9 @@ export default class Track {
 
 		const myPaths2 = [path0, path1, path2];
 
-		const ribbon = MeshBuilder.CreateRibbon("ribbon", {pathArray: myPaths2, sideOrientation: Mesh.DOUBLESIDE});
-		ribbon.rotation.x = Math.PI / 2.5
-		ribbon.position.y = -5;
+		const ribbon = MeshBuilder.CreateRibbon("ribbon", {pathArray: myPaths2, sideOrientation: Mesh.DOUBLESIDE}, scene);
+		ribbon.rotation.x = Math.PI / 2.5;
+		ribbon.position.y = -2;
 		ribbon.physicsImpostor = new PhysicsImpostor(ribbon, PhysicsImpostor.MeshImpostor, { mass: 0, restitution: 0.8 }, scene);
-		this.#track = ribbon;
-
 	}
 }
