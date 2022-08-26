@@ -1,96 +1,85 @@
 import styles from "../css/fwjs-race.pcss";
 import {
-	ArcRotateCamera, CannonJSPlugin,
-	Color3,
-	DirectionalLight,
-	Engine,
-	HemisphericLight, HingeJoint,
+	AmmoJSPlugin,
+	Engine, FreeCamera,
+	HemisphericLight, Mesh,
 	MeshBuilder, PhysicsImpostor,
-	Scene,
-	StandardMaterial,
+	Scene, SceneLoader,
 	Vector3
 } from "@babylonjs/core";
+import "@babylonjs/loaders"
 
-import Cannon from "cannon";
+import ammo from "./ammo.js";
+const Ammo = await ammo();
 
-window.CANNON = Cannon;
+const makePhysicsObject = (newMeshes, scene, scaling)=>{
+	// Create physics root and position it to be the center of mass for the imported mesh
+	const physicsRoot = new Mesh("physicsRoot", scene);
+	physicsRoot.position.y -= 0.9;
 
-const world = document.getElementById('world');
-const engine = new Engine(world, true);
+	// For all children labeled box (representing colliders), make them invisible and add them as a child of the root object
+	newMeshes.forEach((m, i)=>{
+		if(m.name.indexOf("box") != -1){
+			m.isVisible = false
+			physicsRoot.addChild(m)
+		}
+	})
+
+	// Add all root nodes within the loaded gltf to the physics root
+	newMeshes.forEach((m, i)=>{
+		if(m.parent == null){
+			physicsRoot.addChild(m)
+		}
+	})
+
+	// Make every collider into a physics impostor
+	physicsRoot.getChildMeshes().forEach((m)=>{
+		if(m.name.indexOf("box") != -1){
+			m.scaling.x = Math.abs(m.scaling.x)
+			m.scaling.y = Math.abs(m.scaling.y)
+			m.scaling.z = Math.abs(m.scaling.z)
+			m.physicsImpostor = new PhysicsImpostor(m, PhysicsImpostor.BoxImpostor, { mass: 0.1 }, scene);
+		}
+	})
+
+	// Scale the root object and turn it into a physics impsotor
+	physicsRoot.scaling.scaleInPlace(scaling)
+	physicsRoot.physicsImpostor = new PhysicsImpostor(physicsRoot, PhysicsImpostor.NoImpostor, { mass: 3 }, scene);
+
+	return physicsRoot
+}
+
+
+const canvas = document.getElementById('world');
+const engine = new Engine(canvas, true);
 
 const scene = new Scene(engine);
 
+const camera = new FreeCamera("camera1", new Vector3(0, 5, -10), scene);
+camera.setTarget(Vector3.Zero());
+camera.attachControl(canvas, true);
 
-const camera = new ArcRotateCamera("Camera",Math.PI / 8, Math.PI / 2.5, 50, Vector3.Zero(), scene);
+let light = new HemisphericLight("light1", new Vector3(0, 1, 0), scene);
+light.intensity = 0.7;
 
-camera.attachControl(world, true);
+// Enable physics
+scene.enablePhysics(new Vector3(0,-9.81,0), new AmmoJSPlugin(true, Ammo));
 
-const light = new HemisphericLight("hemi", new Vector3(0, 1, 0), scene);
+// Create ground collider
+const ground = MeshBuilder.CreateGround("ground1", {height: 8, width: 8}, scene);
+ground.rotation.z = Math.PI / 16;
+ground.physicsImpostor = new PhysicsImpostor(ground, PhysicsImpostor.BoxImpostor, { mass: 0, friction: 0, restitution: 1 }, scene);
 
-// grounds
-const ground1 = MeshBuilder.CreateGround("ground", {width: 50, height: 50}, scene);
-ground1.position.y = -3.1;
-ground1.position.x = 25;
-ground1.position.z = 25;
-ground1.rotation.z = 0.1;
-ground1.rotation.x = -0.1;
+// Import gltf
+const newMeshes = (await SceneLoader.ImportMeshAsync("", "https://raw.githubusercontent.com/TrevorDev/gltfModels/master/weirdShape.glb", "", scene)).meshes;
+//const newMeshes = (await SceneLoader.ImportMeshAsync("", "/models/weirdShape.glb", "", scene)).meshes;
 
-const ground2 = MeshBuilder.CreateGround("ground", {width: 50, height: 50}, scene);
-ground2.position.y = -3.1;
-ground2.position.x = -25;
-ground2.position.z = 25;
-ground2.rotation.z = -0.1;
-ground2.rotation.x = -0.1;
+// Convert to physics object and position
+const physicsRoot = makePhysicsObject(newMeshes, scene, 0.2)
+physicsRoot.position.y += 3
 
-const ground3 = MeshBuilder.CreateGround("ground", {width: 50, height: 50}, scene);
-ground3.position.y = -3.1;
-ground3.position.x = 25;
-ground3.position.z = -25;
-ground3.rotation.z = 0.1;
-ground3.rotation.x = 0.1;
-
-const ground4 = MeshBuilder.CreateGround("ground", {width: 50, height: 50}, scene);
-ground4.position.y = -3.1;
-ground4.position.x = -25;
-ground4.position.z = -25;
-ground4.rotation.z = -0.1;
-ground4.rotation.x = 0.1;
-
-function rand() {
-	let sign = Math.random() < 0.5;
-	return Math.random() * (sign ? 1 : -1);
-}
-
-function ballPosition(ball) {
-	ball.position.y = -2;
-	ball.position.x = rand() * 50;
-	ball.position.z = rand() * 50;
-}
-
-const ball = MeshBuilder.CreateSphere("ball", {diameter: 2, segments: 4}, scene);
-ballPosition(ball);
-let balls = [ball];
-
-for(let i = 0; i < 1; ++i) {
-	let b = ball.clone("ball" + i);
-	ballPosition(b)
-	balls.push(b);
-}
-
-
-
-scene.enablePhysics(undefined, new CannonJSPlugin(true, 100));
-
-
-
-[ground1, ground2, ground3, ground4].forEach(ground => {
-	ground.physicsImpostor = new PhysicsImpostor(ground, PhysicsImpostor.BoxImpostor, {mass: 0});
-});
-
-balls.forEach(ball => {
-	ball.physicsImpostor = new PhysicsImpostor(ball, PhysicsImpostor.SphereImpostor, {mass: 1});
-});
 
 engine.runRenderLoop(() => {
 	scene.render();
 });
+

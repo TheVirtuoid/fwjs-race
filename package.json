@@ -20,7 +20,9 @@
   "homepage": "https://github.com/TheVirtuoid/fwjs-race#readme",
   "dependencies": {
     "@babylonjs/core": "^5.17.1",
+    "@babylonjs/loaders": "^5.21.0",
     "@babylonjs/materials": "^5.17.1",
+    "ammo.js": "github:kripken/ammo.js",
     "cannon": "^0.6.2"
   },
   "devDependencies": {
