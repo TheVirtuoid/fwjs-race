@@ -16,10 +16,12 @@ const makePhysicsObject = (newMeshes, scene, scaling)=>{
 	// Create physics root and position it to be the center of mass for the imported mesh
 	const physicsRoot = new Mesh("physicsRoot", scene);
 	physicsRoot.position.y -= 0.9;
+	const nameCheck = 'Cube';
 
 	// For all children labeled box (representing colliders), make them invisible and add them as a child of the root object
+	console.log(newMeshes);
 	newMeshes.forEach((m, i)=>{
-		if(m.name.indexOf("box") != -1){
+		if(m.name.indexOf(nameCheck) != -1){
 			m.isVisible = false
 			physicsRoot.addChild(m)
 		}
@@ -34,11 +36,12 @@ const makePhysicsObject = (newMeshes, scene, scaling)=>{
 
 	// Make every collider into a physics impostor
 	physicsRoot.getChildMeshes().forEach((m)=>{
-		if(m.name.indexOf("box") != -1){
+		console.log(m.name, m.scaling);
+		if(m.name.indexOf(nameCheck) != -1){
 			m.scaling.x = Math.abs(m.scaling.x)
 			m.scaling.y = Math.abs(m.scaling.y)
 			m.scaling.z = Math.abs(m.scaling.z)
-			m.physicsImpostor = new PhysicsImpostor(m, PhysicsImpostor.BoxImpostor, { mass: 0.1 }, scene);
+			m.physicsImpostor = new PhysicsImpostor(m, PhysicsImpostor.BoxImpostor, { mass: 0 }, scene);
 		}
 	})
 
@@ -67,11 +70,12 @@ scene.enablePhysics(new Vector3(0,-9.81,0), new AmmoJSPlugin(true, Ammo));
 
 // Create ground collider
 const ground = MeshBuilder.CreateGround("ground1", {height: 8, width: 8}, scene);
-ground.rotation.z = Math.PI / 16;
+// ground.rotation.z = Math.PI / 16;
 ground.physicsImpostor = new PhysicsImpostor(ground, PhysicsImpostor.BoxImpostor, { mass: 0, friction: 0, restitution: 1 }, scene);
 
 // Import gltf
-const newMeshes = (await SceneLoader.ImportMeshAsync("", "https://raw.githubusercontent.com/TrevorDev/gltfModels/master/weirdShape.glb", "", scene)).meshes;
+// const newMeshes = (await SceneLoader.ImportMeshAsync("", "https://raw.githubusercontent.com/TrevorDev/gltfModels/master/weirdShape.glb", "", scene)).meshes;
+const newMeshes = (await SceneLoader.ImportMeshAsync("", "./models/curve-7slope-c.glb", "", scene)).meshes;
 //const newMeshes = (await SceneLoader.ImportMeshAsync("", "/models/weirdShape.glb", "", scene)).meshes;
 
 // Convert to physics object and position
