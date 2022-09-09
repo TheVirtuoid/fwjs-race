@@ -9,79 +9,61 @@ import {
 } from "@babylonjs/core";
 import "@babylonjs/loaders"
 
+// import ammo from "ammo.js";
 import ammo from "./ammo.js";
 const Ammo = await ammo();
-
-const makePhysicsObject = (newMeshes, scene, scaling)=>{
-	// Create physics root and position it to be the center of mass for the imported mesh
-	const physicsRoot = new Mesh("physicsRoot", scene);
-	physicsRoot.position.y -= 0.9;
-	const nameCheck = 'Cube';
-
-	// For all children labeled box (representing colliders), make them invisible and add them as a child of the root object
-	console.log(newMeshes);
-	newMeshes.forEach((m, i)=>{
-		if(m.name.indexOf(nameCheck) != -1){
-			m.isVisible = false
-			physicsRoot.addChild(m)
-		}
-	})
-
-	// Add all root nodes within the loaded gltf to the physics root
-	newMeshes.forEach((m, i)=>{
-		if(m.parent == null){
-			physicsRoot.addChild(m)
-		}
-	})
-
-	// Make every collider into a physics impostor
-	physicsRoot.getChildMeshes().forEach((m)=>{
-		console.log(m.name, m.scaling);
-		if(m.name.indexOf(nameCheck) != -1){
-			m.scaling.x = Math.abs(m.scaling.x)
-			m.scaling.y = Math.abs(m.scaling.y)
-			m.scaling.z = Math.abs(m.scaling.z)
-			m.physicsImpostor = new PhysicsImpostor(m, PhysicsImpostor.BoxImpostor, { mass: 0 }, scene);
-		}
-	})
-
-	// Scale the root object and turn it into a physics impsotor
-	physicsRoot.scaling.scaleInPlace(scaling)
-	physicsRoot.physicsImpostor = new PhysicsImpostor(physicsRoot, PhysicsImpostor.NoImpostor, { mass: 3 }, scene);
-
-	return physicsRoot
-}
-
 
 const canvas = document.getElementById('world');
 const engine = new Engine(canvas, true);
 
 const scene = new Scene(engine);
 
-const camera = new FreeCamera("camera1", new Vector3(0, 5, -10), scene);
+const camera = new FreeCamera("camera1", new Vector3(0, 5, -7), scene);
 camera.setTarget(Vector3.Zero());
 camera.attachControl(canvas, true);
 
-let light = new HemisphericLight("light1", new Vector3(0, 1, 0), scene);
+const light = new HemisphericLight("light1", new Vector3(0, 1, 0), scene);
 light.intensity = 0.7;
 
-// Enable physics
-scene.enablePhysics(new Vector3(0,-9.81,0), new AmmoJSPlugin(true, Ammo));
+scene.enablePhysics(new Vector3(0,-10,0), new AmmoJSPlugin(true, Ammo));
 
-// Create ground collider
-const ground = MeshBuilder.CreateGround("ground1", {height: 8, width: 8}, scene);
-// ground.rotation.z = Math.PI / 16;
-ground.physicsImpostor = new PhysicsImpostor(ground, PhysicsImpostor.BoxImpostor, { mass: 0, friction: 0, restitution: 1 }, scene);
+const ground = MeshBuilder.CreateGround("ground1", { width: 6, height: 6 }, scene);
+ground.rotation.z = Math.PI / 32;
+ground.physicsImpostor = new PhysicsImpostor(ground, PhysicsImpostor.BoxImpostor, { mass: 0, friction: 0.5, restitution: 0.7 }, scene);
 
-// Import gltf
-// const newMeshes = (await SceneLoader.ImportMeshAsync("", "https://raw.githubusercontent.com/TrevorDev/gltfModels/master/weirdShape.glb", "", scene)).meshes;
-const newMeshes = (await SceneLoader.ImportMeshAsync("", "./models/curve-7slope-c.glb", "", scene)).meshes;
-//const newMeshes = (await SceneLoader.ImportMeshAsync("", "/models/weirdShape.glb", "", scene)).meshes;
+SceneLoader.ImportMesh("", "models/", "skull.babylon", scene, function (newMeshes) {
+	// Scale loaded mesh
+	newMeshes[0].scaling.scaleInPlace(0.01);
+	newMeshes[0].position.set(0,0,0)
 
-// Convert to physics object and position
-const physicsRoot = makePhysicsObject(newMeshes, scene, 0.2)
-physicsRoot.position.y += 3
+	// Add colliders
+	const collidersVisible = false;
+	const sphereCollider = MeshBuilder.CreateSphere("sphere1", {segments: 16, diameter: 0.5 }, scene);
+	sphereCollider.position.y = 0.08;
+	sphereCollider.isVisible = collidersVisible;
 
+	const boxCollider = MeshBuilder.CreateBox("box1", { size: 0.3 }, scene);
+	boxCollider.position.y = -0.13;
+	boxCollider.position.z = -0.13;
+	boxCollider.isVisible = collidersVisible;
+
+	// Create a physics root and add all children
+	const physicsRoot = new Mesh("", scene);
+	physicsRoot.addChild(newMeshes[0]);
+	physicsRoot.addChild(boxCollider);
+	physicsRoot.addChild(sphereCollider);
+	physicsRoot.position.y+=3;
+
+	// Enable physics on colliders first then physics root of the mesh
+	boxCollider.physicsImpostor = new PhysicsImpostor(boxCollider, PhysicsImpostor.BoxImpostor, { mass: 0 }, scene);
+	sphereCollider.physicsImpostor = new PhysicsImpostor(sphereCollider, PhysicsImpostor.SphereImpostor, { mass: 0 }, scene);
+	physicsRoot.physicsImpostor = new PhysicsImpostor(physicsRoot, PhysicsImpostor.NoImpostor, { mass: 3 }, scene);
+
+	// Orient the physics root
+	physicsRoot.rotation.x = Math.PI/5;
+	physicsRoot.rotation.z = Math.PI/6;
+
+});
 
 engine.runRenderLoop(() => {
 	scene.render();
