@@ -28,7 +28,7 @@ light.intensity = 0.7;
 scene.enablePhysics(new Vector3(0,-10,0), new AmmoJSPlugin(true, Ammo));
 
 const ground = MeshBuilder.CreateGround("ground1", { width: 6, height: 6 }, scene);
-ground.rotation.z = Math.PI / 32;
+// ground.rotation.z = Math.PI / 32;
 ground.physicsImpostor = new PhysicsImpostor(ground, PhysicsImpostor.BoxImpostor, { mass: 0, friction: 0.5, restitution: 0.7 }, scene);
 
 SceneLoader.ImportMesh("", "models/", "skull.babylon", scene, function (newMeshes) {
