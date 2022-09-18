@@ -1,5 +1,3 @@
-import Vector from "./Vector";
-
 export default class Validate {
 	constructor() {
 		throw new Error('Validate is a static class. You cannot instantiate it.');
@@ -19,15 +17,11 @@ export default class Validate {
 	}
 
 	static checkForVector(name, value) {
-		if (!(value instanceof Vector)) {
-			throw new TypeError(`${name} must be a vector`);
+		if (!value.x && !value.y && !value.z) {
+			throw new TypeError(`${name} must be an object with x, y, and z properties.`);
 		}
-		if (typeof value === 'object') {
-			Validate.checkForNumber(name + '.x', value.x);
-			Validate.checkForNumber(name + '.y', value.y);
-			Validate.checkForNumber(name + '.z', value.z);
-		} else {
-			throw new TypeError(`${name} must be a vector`);
-		}
+		Validate.checkForNumber(name + '.x', value.x);
+		Validate.checkForNumber(name + '.y', value.y);
+		Validate.checkForNumber(name + '.z', value.z);
 	}
 }

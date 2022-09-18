@@ -21,7 +21,7 @@ export default class ControlPoint {
 	constructor(params = {}) {
 		const {
 			center,
-			forward = new Vector({ x: 1, y: 0, z: 0 }),
+			forward = { x: 1, y: 0, z: 0 },
 			forwardWeight = 1,
 			backwardWeight = 1,
 			trackWidth = null,
