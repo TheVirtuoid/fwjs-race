@@ -71,6 +71,7 @@
 		const posZ = new BABYLON.Vector3.Forward;
 		const negZ = new BABYLON.Vector3.Backward;
 		const up = new BABYLON.Vector3.Up;
+		const zero = { x:0, y:0, z:0 };
 
 		const trackWidth = 0.5;
 		const cpDistance = 0.5;		// This is now the forward/backward weight
@@ -122,13 +123,13 @@
 			forwardWeight: 1.1,
 		};
 		const t1ep3 = {	// End of slope, start of runout
-			center: { x:0, y:0, z:0 },
-			forward: { x:-1, y:0, z:0 },
+			center: zero,
+			forward: negX,
 			backwardWeight: 4,
 		};
 		const t1ep4 = {	// End of runout flat
-			center: { x: -2, y:0, z:0 },
-			forward: { x:-1, y:0, z:0 }
+			center: { x:-2, y:0, z:0 },
+			forward: negX,
 		};
 		
 		const t1s1 = {
@@ -139,10 +140,71 @@
 		};
 		
 		//----------------------------------------------------------------------
-		// Track 2, slope into a jump with a turn right looping underneath the jump
+		// Track 2, slope into a jump with a turn left looping underneath the jump
+		
+		// NOTE: This may need some adjustments on the curve to avoid bumps where
+		// we specify the tangent to have no y component.
+		
+		const t2v1 = { x:10 , y:5, z:0 };
+		const t2v2 = { x:9, y:4.9, z:0 };
+		const t2t1_2 = TrackPOC.vector.direction(t1v1, t1v2);
+		const t2ep1 = {	// Start of starting ramp
+			center: t2v1,
+			forward: t2t1_2,
+		};
+		const t2ep2 = {	// End of starting ramp, start of runout
+			center: t2v2,
+			forward: t2t1_2,
+			forwardWeight: 1.1,
+		};
+		const t2ep3 = {	// End of slope, start of runout
+			center: { x:.5, y:1, z:0 },
+			forward: negX,
+			backwardWeight: 4,
+		};
+		const t2ep4 = {	// Start of catch
+			center: { x:-.5, y:.9, z:0 },
+			forward: negX,
+		};
+		const t2ep5 = {	// Start of curve
+			center: { x:-1.5, y:.8, z:0 },
+			forward: negX,
+		};
+		const t2ep6 = {	// Top of curve
+			center: { x:-3, y:.7, z:-1.5 },
+			forward: negZ,
+		};
+		const t2ep7 = {	// Right extent of curve
+			center: { x:-1.5, y:.6, z:-3 },
+			forward: posX,
+		};
+		const t2ep8 = {	// End of curve
+			center: { x:0, y:.5, z:-1.5 },
+			forward: posZ,
+		};
+		const t2ep9 = {	// Runout
+			center: { x:0, y:0, z:2 },
+			forward: posZ,
+		};
+		
+		const t2s1 = {
+			points: [ t2ep1, t2ep2, t2ep3 ]
+		};
+		const t2s2 = {
+			points: [ t2ep4, t2ep5, t2ep6, t2ep7, t2ep8, t2ep9 ]
+		};
+		const track2 = {
+			segments: [ t2s1, t2s2 ]
+		};
 		
 		//----------------------------------------------------------------------
-		// Track 3, slope into a jump with a turn left looping underneath the jump
+		// Track 2a, track 2 with bank
+		
+		//----------------------------------------------------------------------
+		// Track 3, slope into a jump with a turn right looping underneath the jump
+		
+		//----------------------------------------------------------------------
+		// Track 3a, track 3 with bank
 		
 		//----------------------------------------------------------------------
 		// Track 4, slope into a loop
@@ -190,7 +252,6 @@
 			const light = new BABYLON.HemisphericLight("hemi", new BABYLON.Vector3(0, 50, 0));
 			
 			const ribbons = TrackPOC.build(track, (u) => { return new BABYLON.Vector3(u.x, u.y, u.z); }, settings);
-			console.log('point count = %d', ribbons[0][0].length);
 			for (let i = 0; i < ribbons.length; i++) {
 				BABYLON.MeshBuilder.CreateRibbon(`Segment${i}`, {
 					pathArray: ribbons[i],
@@ -198,6 +259,7 @@
 				});
 			}
 			
+			/*
 			drawBigAxes();
 			
 			for (let s of track.segments) {
@@ -207,6 +269,7 @@
 			}
 			
 			drawLine(ribbons[0][1], green);
+			*/
 
 			return scene;
 		}
@@ -267,7 +330,9 @@
 			if (!engine) throw 'engine should not be null.';
 
 			startRenderLoop(engine, canvas);
-			window.scene = createScene(track1, t0ds);
+			
+			// CHANGE TRACK HERE
+			window.scene = createScene(track2);
 		};
 		
 		initFunction().then(() => {

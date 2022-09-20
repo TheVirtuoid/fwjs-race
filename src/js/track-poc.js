@@ -190,7 +190,6 @@ function addRibbonSlice(ribbon, bp, vectorFactory, settings) {
 	ribbon[1].push(vectorFactory(leftEdge));
 	ribbon[2].push(vectorFactory(rightEdge));
 	ribbon[3].push(vectorFactory(vector.add(rightEdge, 1, wall)));
-	console.log('addRibbonSlice point count %d', ribbon[0].length);
 }
 
 function createRibbon() {
@@ -247,7 +246,6 @@ function interpolateCurve(ribbon, points, t0, t1, p0, p1, bmp1, vectorFactory, s
 	// TODO: This precision test is insufficient. It is possible for the curve to pass
 	// through the linear midpoint but the tangent at the midpoint be different (e.g.,
 	// an 'S' curve passing through the midpoint).
-	console.log('interpolateCurve at %f is %f, precision %f', midtime, vector.distance(lmp, bmp.v), settings.precision);
 	if (vector.distance(lmp, bmp.v) <= settings.precision) {
 		// Add just bp1 as either buildCurve or prior interpolateCurves added p0
 		addRibbonSlice(ribbon, bmp1, vectorFactory, settings);  
