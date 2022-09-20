@@ -40,8 +40,27 @@
 		</style>
 	</head>
 <body>
-	<canvas id="renderCanvas"></canvas>
+	<div>
+		<label for="tracks">Choose a track:</label>
+		<select name="tracks" id="tracks">
+			<option value="track0">Track 0 (closed oval)</option>
+			<option value="track1">Track 1 (single ramp)</option>
+			<option value="track2">Track 2 (ramp with jump and left curve)</option>
+			<option value="track3">Track 3 (ramp with jump and right curve)</option>
+		</select>
+	</div>
+	<div>
+		<canvas id="renderCanvas"></canvas>
+	</div>
 	<script>
+	
+		//======================================================================
+		// TRACK SELECTION
+		const trackSelector = document.getElementById("tracks");
+		trackSelector.addEventListener("change", () => {
+			console.log(trackSelector.value);
+			createMesh();
+		});
 
 		//======================================================================
 		// TRACK DEFINITIONS
@@ -63,6 +82,9 @@
 		//	ep	tmepn	a Bezier curve end point
 		//	s	tmsn_o	a segment (Bezier cubic curve)
 		//	t	tmtn_o	a tangent
+		
+		const tracks = {};
+		const options = {};
 		
 		//----------------------------------------------------------------------
 		// Track 0, the original demo track
@@ -104,9 +126,10 @@
 			points: [ centerLine[centerLine.length - 1], centerLine[0] ]
 		}
 		
-		const track0 = {
+		tracks.track0 = {
 			segments: [ t0s1, t0s2 ]
 		}
+		options.track0 = t0ds;
 		
 		//----------------------------------------------------------------------
 		// Track 1, a simple slope
@@ -135,7 +158,8 @@
 		const t1s1 = {
 			points: [ t1ep1, t1ep2, t1ep3, t1ep4 ]
 		};
-		const track1 = {
+		
+		tracks.track1 = {
 			segments: [ t1s1 ]
 		};
 		
@@ -174,7 +198,7 @@
 			center: { x:-3, y:.7, z:-1.5 },
 			forward: negZ,
 		};
-		const t2ep7 = {	// Right extent of curve
+		const t2ep7 = {	// Left extent of curve
 			center: { x:-1.5, y:.6, z:-3 },
 			forward: posX,
 		};
@@ -193,7 +217,8 @@
 		const t2s2 = {
 			points: [ t2ep4, t2ep5, t2ep6, t2ep7, t2ep8, t2ep9 ]
 		};
-		const track2 = {
+		
+		tracks.track2 = {
 			segments: [ t2s1, t2s2 ]
 		};
 		
@@ -202,6 +227,59 @@
 		
 		//----------------------------------------------------------------------
 		// Track 3, slope into a jump with a turn right looping underneath the jump
+
+		const t3v1 = { x:10 , y:5, z:0 };
+		const t3v2 = { x:9, y:4.9, z:0 };
+		const t3t1_2 = TrackPOC.vector.direction(t1v1, t1v2);
+		const t3ep1 = {	// Start of starting ramp
+			center: t3v1,
+			forward: t3t1_2,
+		};
+		const t3ep2 = {	// End of starting ramp, start of runout
+			center: t3v2,
+			forward: t3t1_2,
+			forwardWeight: 1.1,
+		};
+		const t3ep3 = {	// End of slope, start of runout
+			center: { x:.5, y:1, z:0 },
+			forward: negX,
+			backwardWeight: 4,
+		};
+		const t3ep4 = {	// Start of catch
+			center: { x:-.5, y:.9, z:0 },
+			forward: negX,
+		};
+		const t3ep5 = {	// Start of curve
+			center: { x:-1.5, y:.8, z:0 },
+			forward: negX,
+		};
+		const t3ep6 = {	// Top of curve
+			center: { x:-3, y:.7, z:1.5 },
+			forward: posZ,
+		};
+		const t3ep7 = {	// Right extent of curve
+			center: { x:-1.5, y:.6, z:3 },
+			forward: posX,
+		};
+		const t3ep8 = {	// End of curve
+			center: { x:0, y:.5, z:1.5 },
+			forward: negZ,
+		};
+		const t3ep9 = {	// Runout
+			center: { x:0, y:0, z:-2 },
+			forward: negZ,
+		};
+		
+		const t3s1 = {
+			points: [ t3ep1, t3ep2, t3ep3 ]
+		};
+		const t3s2 = {
+			points: [ t3ep4, t3ep5, t3ep6, t3ep7, t3ep8, t3ep9 ]
+		};
+		
+		tracks.track3 = {
+			segments: [ t3s1, t3s2 ]
+		};
 		
 		//----------------------------------------------------------------------
 		// Track 3a, track 3 with bank
@@ -230,6 +308,7 @@
 		var engine = null;
 		var scene = null;
 		let sceneToRender = null;
+		const trackMesh = [];
 		
 		const createDefaultEngine = function() {
 			return new BABYLON.Engine(canvas, true, {
@@ -250,13 +329,30 @@
 				BABYLON.Vector3.Zero());
 			camera.attachControl(canvas, true);
 			const light = new BABYLON.HemisphericLight("hemi", new BABYLON.Vector3(0, 50, 0));
+
+			return scene;
+		}
+		
+		const createMesh = function() {
+		
+			for (let mesh of trackMesh) {
+				scene.removeMesh(mesh);
+			}
+			trackMesh.length = 0;
+			
+			const track = tracks[trackSelector.value];
+			let settings = options[trackSelector.value];
+			if (settings === null || settings === undefined) settings = {};
 			
 			const ribbons = TrackPOC.build(track, (u) => { return new BABYLON.Vector3(u.x, u.y, u.z); }, settings);
 			for (let i = 0; i < ribbons.length; i++) {
-				BABYLON.MeshBuilder.CreateRibbon(`Segment${i}`, {
-					pathArray: ribbons[i],
-					sideOrientation: BABYLON.Mesh.DOUBLESIDE
-				});
+				trackMesh.push(BABYLON.MeshBuilder.CreateRibbon(
+					`Segment${i}`,
+					{
+						pathArray: ribbons[i],
+						sideOrientation: BABYLON.Mesh.DOUBLESIDE
+					},
+					scene));
 			}
 			
 			/*
@@ -270,8 +366,6 @@
 			
 			drawLine(ribbons[0][1], green);
 			*/
-
-			return scene;
 		}
 		
 		const red = new BABYLON.Color4(1, 0, 0);
@@ -332,7 +426,8 @@
 			startRenderLoop(engine, canvas);
 			
 			// CHANGE TRACK HERE
-			window.scene = createScene(track2);
+			window.scene = createScene(tracks[trackSelector.value]);
+			createMesh();
 		};
 		
 		initFunction().then(() => {
