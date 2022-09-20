@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+		<title>Babylon.js sample code</title>
+
+		<!-- Babylon.js -->
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.6.2/dat.gui.min.js"></script>
+		<script src="https://assets.babylonjs.com/generated/Assets.js"></script>
+		<script src="https://preview.babylonjs.com/ammo.js"></script>
+		<script src="https://preview.babylonjs.com/cannon.js"></script>
+		<script src="https://preview.babylonjs.com/Oimo.js"></script>
+		<script src="https://preview.babylonjs.com/earcut.min.js"></script>
+		<script src="https://preview.babylonjs.com/babylon.js"></script>
+		<script src="https://preview.babylonjs.com/materialsLibrary/babylonjs.materials.min.js"></script>
+		<script src="https://preview.babylonjs.com/proceduralTexturesLibrary/babylonjs.proceduralTextures.min.js"></script>
+		<script src="https://preview.babylonjs.com/postProcessesLibrary/babylonjs.postProcess.min.js"></script>
+		<script src="https://preview.babylonjs.com/loaders/babylonjs.loaders.js"></script>
+		<script src="https://preview.babylonjs.com/serializers/babylonjs.serializers.min.js"></script>
+		<script src="https://preview.babylonjs.com/gui/babylon.gui.min.js"></script>
+		<script src="https://preview.babylonjs.com/inspector/babylon.inspector.bundle.js"></script>
+
+		<style>
+			html, body {
+				overflow: hidden;
+				width: 100%;
+				height: 100%;
+				margin: 0;
+				padding: 0;
+			}
+
+			#renderCanvas {
+				width: 100%;
+				height: 100%;
+				touch-action: none;
+			}
+		</style>
+	</head>
+<body>
+	<canvas id="renderCanvas"></canvas>
+	<script>
+		const canvas = document.getElementById("renderCanvas");
+
+		const startRenderLoop = function (engine, canvas) {
+			engine.runRenderLoop(function () {
+				if (sceneToRender && sceneToRender.activeCamera) {
+					sceneToRender.render();
+				}
+			});
+		}
+
+		/*
+			It is not clear why 'engine' and 'scene' must be declared as 'var'
+			instead of 'let'. The page throws a 'engine is null' exception if
+			'engine' is declared 'let' and does not display anything if 'scene'
+			is declared 'let', presumably becasue 'scene' is null when
+			sceneToRender is set.
+		*/
+		var engine = null;
+		var scene = null;
+		let sceneToRender = null;
+		
+		const createDefaultEngine = function() {
+			return new BABYLON.Engine(canvas, true, {
+				preserveDrawingBuffer: true,
+				stencil: true,
+				disableWebGL2Support: false
+			});
+		};
+		
+		const createScene = function () {
+			const scene = new BABYLON.Scene(engine);
+
+			const camera = new BABYLON.ArcRotateCamera(
+				"Camera",
+				3 * Math.PI / 2,
+				3 * Math.PI / 8,
+				30,
+				BABYLON.Vector3.Zero());
+			camera.attachControl(canvas, true);
+			const light = new BABYLON.HemisphericLight("hemi", new BABYLON.Vector3(0, 50, 0));
+
+			const posX = new BABYLON.Vector3.Right;
+			const negX = new BABYLON.Vector3.Left;
+			const posZ = new BABYLON.Vector3.Forward;
+			const negZ = new BABYLON.Vector3.Backward;
+			const up = new BABYLON.Vector3.Up;
+
+			const trackWidth = 0.5;
+			const cpDistance = 0.5;
+			const segmentation = 6;
+
+			const centerLine = [
+				{ loc: new BABYLON.Vector3(2, 0, 0), fwd: posZ },	// Start position
+				{ loc: new BABYLON.Vector3(2, 0, 4), fwd: posZ },
+				{ loc: new BABYLON.Vector3(0, 0, 6), fwd: negX },
+				{ loc: new BABYLON.Vector3(-2, 0, 4), fwd: negZ },
+				{ loc: new BABYLON.Vector3(-2, 0, -4), fwd: negZ },
+				{ loc: new BABYLON.Vector3(0, 0, -6), fwd: posX },
+				{ loc: new BABYLON.Vector3(2, 0, -4), fwd: posZ },
+			];
+
+			const centerPath = [];
+
+			function ComputeCenterPath(start, finish) {
+
+				// Get the endpoints
+				const ep0 = start.loc;
+				const ep1 = finish.loc;
+
+				// Compute the control points
+				const cp0 = ep0.add(start.fwd.scale(cpDistance));
+				const cp1 = ep1.subtract(finish.fwd.scale(cpDistance));
+
+				// Ideally the curve is split into ep0, ip1, ip2, ..., ep1 where ipN is an interpolated point.
+				// However, to avoid duplication, we never add ep1 because the next ComputecenterPath adds
+				// that one as its ep0.
+				for (let i = 0; i < segmentation; i++) {
+					const t = i / segmentation;		// Parametric value
+					const olt = 1 - t;
+					centerPath.push(
+						ep0.scale(olt * olt * olt).add(
+						cp0.scale(3 * olt * olt * t).add(
+						cp1.scale(3 * olt * t * t).add(
+						ep1.scale(t * t * t)
+					))));
+				}
+			}
+
+			for (let i = 1; i < centerLine.length; i++) {
+				ComputeCenterPath(centerLine[i-1], centerLine[i]);
+			}
+			ComputeCenterPath(centerLine[centerLine.length-1], centerLine[0]);
+
+			const testCenterPointCurve = BABYLON.Mesh.CreateLines("center", centerPath, scene);
+			testCenterPointCurve.color = new BABYLON.Color3(0, 1, 0);
+
+			// HACK! We use the direction from one center point to the next do determine the direction
+			// of the track and hence the direction of the track width. We should instead use the direction
+			// of the Bezier curve at this point.
+			const outerPath = [];
+			const innerPath = [];
+
+			function ComputeEdges(p0, p1) {
+				const forward = p1.subtract(p0);
+				forward.normalize();
+				const left = forward.cross(up);
+				left.scaleInPlace(trackWidth / 2);
+				innerPath.push(p0.add(left));
+				outerPath.push(p0.subtract(left));
+			}
+
+			for (let i = 1; i < centerPath.length; i++) {
+				ComputeEdges(centerPath[i-1], centerPath[i]);
+			}
+			ComputeEdges(centerPath[centerPath.length-1], centerPath[0]);
+
+			const testOuterPointCurve = BABYLON.Mesh.CreateLines("outer", outerPath, scene);
+			testOuterPointCurve.color = new BABYLON.Color3(0, 0, 1);
+
+			const testInnerPointCurve = BABYLON.Mesh.CreateLines("inner", innerPath, scene);
+			testInnerPointCurve.color = new BABYLON.Color3(1, 0, 0);
+
+			const ribbon = BABYLON.MeshBuilder.CreateRibbon(
+				"ribbon",
+				{
+					pathArray: [ outerPath, innerPath ],
+					closePath: true,
+					sideOrientation: BABYLON.Mesh.DOUBLESIDE
+				});
+
+			return scene;
+		}
+
+		window.initFunction = async function() {
+
+			const asyncEngineCreation = async function() {
+				try {
+					return createDefaultEngine();
+				} catch(e) {
+					console.log("the available createEngine function failed. Creating the default engine instead");
+					return createDefaultEngine();
+				}
+			}
+
+			window.engine = await asyncEngineCreation();
+			if (!engine) throw 'engine should not be null.';
+
+			startRenderLoop(engine, canvas);
+			window.scene = createScene();
+		};
+		
+		initFunction().then(() => {
+			sceneToRender = scene
+		});
+
+		// Resize
+		window.addEventListener("resize", function () {
+			engine.resize();
+		});
+	</script>
+</body>
+<script src="/js/track-poc.js" type="module"></script>
+</html>
