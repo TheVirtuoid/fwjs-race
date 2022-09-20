@@ -20,6 +20,8 @@
 		<script src="https://preview.babylonjs.com/serializers/babylonjs.serializers.min.js"></script>
 		<script src="https://preview.babylonjs.com/gui/babylon.gui.min.js"></script>
 		<script src="https://preview.babylonjs.com/inspector/babylon.inspector.bundle.js"></script>
+		<!-- Virtuoid -->
+		<script src="/js/track-poc.js"></script>
 
 		<style>
 			html, body {
@@ -40,6 +42,110 @@
 <body>
 	<canvas id="renderCanvas"></canvas>
 	<script>
+
+		//======================================================================
+		// TRACK DEFINITIONS
+		
+		// Nomenclature
+		//
+		// All track variables start with 'tm' denoting 'track #m'.
+		//
+		// A one or two letter abbreviate follows describing the type of
+		// The table below defines these. These are defined in relationship to
+		// one or a series of end points.
+		//
+		// A reference to a single end point uses the letter 'n'.
+		//
+		// A reference to a range of end points uses the form 'n_o' which
+		// refers to the end points n, n+1, ... o.
+		//
+		//	c	tmcn	a Bezier curve end point's center vector
+		//	ep	tmepn	a Bezier curve end point
+		//	s	tmsn_o	a segment (Bezier cubic curve)
+		//	t	tmtn_o	a tangent
+		
+		//----------------------------------------------------------------------
+		// Track 0, the original demo track
+		const posX = new BABYLON.Vector3.Right;
+		const negX = new BABYLON.Vector3.Left;
+		const posZ = new BABYLON.Vector3.Forward;
+		const negZ = new BABYLON.Vector3.Backward;
+		const up = new BABYLON.Vector3.Up;
+
+		const trackWidth = 0.5;
+		const cpDistance = 0.5;		// This is now the forward/backward weight
+		const segmentation = 6;		// Obsolete. The new system uses 'precision'.
+		
+		const t0ds = {
+			backwardWeight: cpDistance,
+			forwardWeight: cpDistance,
+			trackWidth: trackWidth,
+		};
+
+		const centerLine = [
+			{ center: new BABYLON.Vector3(2, 0, 0), forward: posZ },	// Start position
+			{ center: new BABYLON.Vector3(2, 0, 4), forward: posZ },
+			{ center: new BABYLON.Vector3(0, 0, 6), forward: negX },
+			{ center: new BABYLON.Vector3(-2, 0, 4), forward: negZ },
+			{ center: new BABYLON.Vector3(-2, 0, -4), forward: negZ },
+			{ center: new BABYLON.Vector3(0, 0, -6), forward: posX },
+			{ center: new BABYLON.Vector3(2, 0, -4), forward: posZ },
+		];
+		
+		// Note that the original implementation used 'closePath: true' when
+		// creating the ribbon. The system does not do this so we manually
+		// close the track by adding an extra segment.
+		const t0s1 = {
+			points: centerLine
+		}
+		
+		const t0s2 = {
+			points: [ centerLine[centerLine.length - 1], centerLine[0] ]
+		}
+		
+		const track0 = {
+			segments: [ t0s1, t0s2 ]
+		}
+		
+		//----------------------------------------------------------------------
+		// Track 1, a simple slope
+		const t1v1 = { x:10 , y:0, z:5 };
+		const t1v2 = { x:8, y:0, z:4 };
+		const t1t1_2 = TrackPOC.vector.direction(t1v1, t1v2);
+		const t1ep1 = {	// Start of starting ramp
+			center: t1v1,
+			forward: t1t1_2,
+		};
+		const t1ep2 = {	// End of starting ramp, start of runout
+			center: t1v2,
+			forward: t1t1_2,
+		};
+		const t1ep3 = {	// End of slope, start of runout
+			center: { x:0, y:0, z:0 }
+		};
+		const t1ep4 = {	// End of runout flat
+			center: { x: -2, y:0, z:0 }
+		};
+		
+		const t1s1 = {
+			points: [ t1ep1, t1ep2, t1ep3, t1ep4 ]
+		};
+		const track1 = {
+			segments: [ t1s1 ]
+		};
+		
+		//----------------------------------------------------------------------
+		// Track 2, slope into a jump with a turn right looping underneath the jump
+		
+		//----------------------------------------------------------------------
+		// Track 3, slope into a jump with a turn left looping underneath the jump
+		
+		//----------------------------------------------------------------------
+		// Track 4, slope into a loop
+		
+		//======================================================================
+		// BABYLON IMPLEMENTATION
+
 		const canvas = document.getElementById("renderCanvas");
 
 		const startRenderLoop = function (engine, canvas) {
@@ -50,13 +156,11 @@
 			});
 		}
 
-		/*
-			It is not clear why 'engine' and 'scene' must be declared as 'var'
-			instead of 'let'. The page throws a 'engine is null' exception if
-			'engine' is declared 'let' and does not display anything if 'scene'
-			is declared 'let', presumably becasue 'scene' is null when
-			sceneToRender is set.
-		*/
+		//	It is not clear why 'engine' and 'scene' must be declared as 'var'
+		//	instead of 'let'. The page throws a 'engine is null' exception if
+		//	'engine' is declared 'let' and does not display anything if 'scene'
+		//	is declared 'let', presumably becasue 'scene' is null when
+		//	sceneToRender is set.
 		var engine = null;
 		var scene = null;
 		let sceneToRender = null;
@@ -201,5 +305,4 @@
 		});
 	</script>
 </body>
-<script src="/js/track-poc.js" type="module"></script>
 </html>

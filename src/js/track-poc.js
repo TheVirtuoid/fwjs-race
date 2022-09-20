@@ -1,4 +1,4 @@
-const TrackBuilder = {}
+const TrackPOC = {}
 
 //==============================================================================
 // HELPER ROUTINES
@@ -95,6 +95,28 @@ function validateValue(vs, value, namePrefix) {
 	}
 	return v;
 }
+
+//==============================================================================
+// VECTOR ROUTINES
+
+const vector = {
+	difference: function(from, to) {
+		return {
+			x: to.x - from.x,
+			y: to.y - from.y,
+			z: to.z - from.z,
+		};
+	},
+	
+	normalize: function(v) {
+		const length = Math.sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
+		return {
+			x: v.x / length,
+			y: v.y / length,
+			z: v.z / length,
+		};
+	},
+};
 
 //==============================================================================
 // RIBBON MANAGEMENT
@@ -302,7 +324,7 @@ const TrackFactory = {
 // vectorFactory	function to build an application friendly 3D vector,
 //					v = vectorFactory(x, y, z)
 // appSettings		application settings for the build
-TrackBuilder.build = function(specs, vectorFactory, appSettings = {}) {
+TrackPOC.build = function(specs, vectorFactory, appSettings = {}) {
 	
 	// Validate the arguments
 	const objSpecs = jsonOrObject(specs, 'specs');
@@ -320,7 +342,14 @@ TrackBuilder.build = function(specs, vectorFactory, appSettings = {}) {
 	return TrackFactory.build(objSpecs, vectorFactory, settings);
 }
 
-export default TrackBuilder;
+TrackPOC.vector = {
+	direction: function(from, to) {
+		return vector.normalize(vector.difference(from, to));
+		
+	}
+}
+
+//export default TrackPOC;
 
 /*
 function checkForNumber(name, value) {
