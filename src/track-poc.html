@@ -109,8 +109,8 @@
 		
 		//----------------------------------------------------------------------
 		// Track 1, a simple slope
-		const t1v1 = { x:10 , y:0, z:5 };
-		const t1v2 = { x:8, y:0, z:4 };
+		const t1v1 = { x:10 , y:5, z:0 };
+		const t1v2 = { x:9, y:4.9, z:0 };
 		const t1t1_2 = TrackPOC.vector.direction(t1v1, t1v2);
 		const t1ep1 = {	// Start of starting ramp
 			center: t1v1,
@@ -119,12 +119,16 @@
 		const t1ep2 = {	// End of starting ramp, start of runout
 			center: t1v2,
 			forward: t1t1_2,
+			forwardWeight: 1.1,
 		};
 		const t1ep3 = {	// End of slope, start of runout
-			center: { x:0, y:0, z:0 }
+			center: { x:0, y:0, z:0 },
+			forward: { x:-1, y:0, z:0 },
+			backwardWeight: 4,
 		};
 		const t1ep4 = {	// End of runout flat
-			center: { x: -2, y:0, z:0 }
+			center: { x: -2, y:0, z:0 },
+			forward: { x:-1, y:0, z:0 }
 		};
 		
 		const t1s1 = {
@@ -173,7 +177,7 @@
 			});
 		};
 		
-		const createScene = function () {
+		const createScene = function (track, settings = {}) {
 			const scene = new BABYLON.Scene(engine);
 
 			const camera = new BABYLON.ArcRotateCamera(
@@ -184,97 +188,68 @@
 				BABYLON.Vector3.Zero());
 			camera.attachControl(canvas, true);
 			const light = new BABYLON.HemisphericLight("hemi", new BABYLON.Vector3(0, 50, 0));
-
-			const posX = new BABYLON.Vector3.Right;
-			const negX = new BABYLON.Vector3.Left;
-			const posZ = new BABYLON.Vector3.Forward;
-			const negZ = new BABYLON.Vector3.Backward;
-			const up = new BABYLON.Vector3.Up;
-
-			const trackWidth = 0.5;
-			const cpDistance = 0.5;
-			const segmentation = 6;
-
-			const centerLine = [
-				{ loc: new BABYLON.Vector3(2, 0, 0), fwd: posZ },	// Start position
-				{ loc: new BABYLON.Vector3(2, 0, 4), fwd: posZ },
-				{ loc: new BABYLON.Vector3(0, 0, 6), fwd: negX },
-				{ loc: new BABYLON.Vector3(-2, 0, 4), fwd: negZ },
-				{ loc: new BABYLON.Vector3(-2, 0, -4), fwd: negZ },
-				{ loc: new BABYLON.Vector3(0, 0, -6), fwd: posX },
-				{ loc: new BABYLON.Vector3(2, 0, -4), fwd: posZ },
-			];
-
-			const centerPath = [];
-
-			function ComputeCenterPath(start, finish) {
-
-				// Get the endpoints
-				const ep0 = start.loc;
-				const ep1 = finish.loc;
-
-				// Compute the control points
-				const cp0 = ep0.add(start.fwd.scale(cpDistance));
-				const cp1 = ep1.subtract(finish.fwd.scale(cpDistance));
-
-				// Ideally the curve is split into ep0, ip1, ip2, ..., ep1 where ipN is an interpolated point.
-				// However, to avoid duplication, we never add ep1 because the next ComputecenterPath adds
-				// that one as its ep0.
-				for (let i = 0; i < segmentation; i++) {
-					const t = i / segmentation;		// Parametric value
-					const olt = 1 - t;
-					centerPath.push(
-						ep0.scale(olt * olt * olt).add(
-						cp0.scale(3 * olt * olt * t).add(
-						cp1.scale(3 * olt * t * t).add(
-						ep1.scale(t * t * t)
-					))));
-				}
-			}
-
-			for (let i = 1; i < centerLine.length; i++) {
-				ComputeCenterPath(centerLine[i-1], centerLine[i]);
-			}
-			ComputeCenterPath(centerLine[centerLine.length-1], centerLine[0]);
-
-			const testCenterPointCurve = BABYLON.Mesh.CreateLines("center", centerPath, scene);
-			testCenterPointCurve.color = new BABYLON.Color3(0, 1, 0);
-
-			// HACK! We use the direction from one center point to the next do determine the direction
-			// of the track and hence the direction of the track width. We should instead use the direction
-			// of the Bezier curve at this point.
-			const outerPath = [];
-			const innerPath = [];
-
-			function ComputeEdges(p0, p1) {
-				const forward = p1.subtract(p0);
-				forward.normalize();
-				const left = forward.cross(up);
-				left.scaleInPlace(trackWidth / 2);
-				innerPath.push(p0.add(left));
-				outerPath.push(p0.subtract(left));
-			}
-
-			for (let i = 1; i < centerPath.length; i++) {
-				ComputeEdges(centerPath[i-1], centerPath[i]);
-			}
-			ComputeEdges(centerPath[centerPath.length-1], centerPath[0]);
-
-			const testOuterPointCurve = BABYLON.Mesh.CreateLines("outer", outerPath, scene);
-			testOuterPointCurve.color = new BABYLON.Color3(0, 0, 1);
-
-			const testInnerPointCurve = BABYLON.Mesh.CreateLines("inner", innerPath, scene);
-			testInnerPointCurve.color = new BABYLON.Color3(1, 0, 0);
-
-			const ribbon = BABYLON.MeshBuilder.CreateRibbon(
-				"ribbon",
-				{
-					pathArray: [ outerPath, innerPath ],
-					closePath: true,
+			
+			const ribbons = TrackPOC.build(track, (u) => { return new BABYLON.Vector3(u.x, u.y, u.z); }, settings);
+			console.log('point count = %d', ribbons[0][0].length);
+			for (let i = 0; i < ribbons.length; i++) {
+				BABYLON.MeshBuilder.CreateRibbon(`Segment${i}`, {
+					pathArray: ribbons[i],
 					sideOrientation: BABYLON.Mesh.DOUBLESIDE
 				});
+			}
+			
+			drawBigAxes();
+			
+			for (let s of track.segments) {
+				for (let p of s.points) {
+					drawAxes(p.center);
+				}
+			}
+			
+			drawLine(ribbons[0][1], green);
 
 			return scene;
+		}
+		
+		const red = new BABYLON.Color4(1, 0, 0);
+		const green = new BABYLON.Color4(0, 1, 0);
+		const blue = new BABYLON.Color4(0, 0, 1);
+		
+		const drawAxes = function(u) {
+			const options = {
+				points: [ new BABYLON.Vector3(u.x, u.y, u.z), new BABYLON.Vector3(u.x, u.y, u.z) ],
+				colors: [ red, red ]
+			}
+			options.points[1].x += 1;
+			BABYLON.MeshBuilder.CreateLines("lines", options);
+			options.colors = [ green, green ];
+			options.points[1].x -= 1;
+			options.points[1].y += 1;
+			BABYLON.MeshBuilder.CreateLines("lines", options);
+			options.colors = [ blue, blue ];
+			options.points[1].y -= 1;
+			options.points[1].z += 1;
+			BABYLON.MeshBuilder.CreateLines("lines", options);
+		}
+		
+		const drawBigAxes = function(u) {
+			const options = {
+				points: [ new BABYLON.Vector3(-50, 0, 0), new BABYLON.Vector3(50, 0, 0) ],
+			}
+			BABYLON.MeshBuilder.CreateDashedLines("lines", options).color = red;
+			options.points = [ new BABYLON.Vector3(0, -50, 0), new BABYLON.Vector3(0, 50, 0) ];
+			BABYLON.MeshBuilder.CreateDashedLines("lines", options).color = green;
+			options.points = [ new BABYLON.Vector3(0, 0, -50), new BABYLON.Vector3(0, 0, 50) ];
+			BABYLON.MeshBuilder.CreateDashedLines("lines", options).color = blue;
+		}
+		
+		const drawLine = function(points, color) {
+			const options = {
+				colors: [],
+				points: points,
+			}
+			for (let i = 0; i < points.length; i++) { options.colors.push(green); }
+			BABYLON.MeshBuilder.CreateLines("lines", options);
 		}
 
 		window.initFunction = async function() {
@@ -292,7 +267,7 @@
 			if (!engine) throw 'engine should not be null.';
 
 			startRenderLoop(engine, canvas);
-			window.scene = createScene();
+			window.scene = createScene(track1, t0ds);
 		};
 		
 		initFunction().then(() => {

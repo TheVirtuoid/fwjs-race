@@ -3,8 +3,10 @@ const TrackPOC = {}
 //==============================================================================
 // HELPER ROUTINES
 
+const coords3 = ['x', 'y', 'z'];
+
 const defaultSettings = {
-	precision: .5,
+	precision: .01,
 	trackBank: 0,
 	trackWidth: 1,
 	wallHeight: .5,
@@ -40,7 +42,7 @@ function checkForVector(name, value, coords) {
 	}
 	
 	let result = {};
-	for (let coord in coords) {
+	for (let coord of coords) {
 		if (typeof(value[coord]) !== 'number') {
 			throw new TypeError(`${name}.${coord} must be a number`);
 		}
@@ -50,7 +52,7 @@ function checkForVector(name, value, coords) {
 }
 	
 function checkForWeight(name, value) {
-	if (value == null) return 1;
+	if (value === null || value === undefined) return 1;
 	if (typeof(value) !== 'number') {
 		throw new TypeError(`${name} must be a number`);
 	}
@@ -74,18 +76,19 @@ function jsonOrObject(o, name) {
 function mergeSettings(masterSettings, overrideSettings, namePrefix) {
 	const mergedSettings = {...masterSettings};
 	for (let vs of validSettings) {
-		if (overrideSettings[vs.key] !== null) {
+		if (!(overrideSettings[vs.key] === undefined || overrideSettings[vs.key] === null)) {
 			mergedSettings[vs.key] = validateValue(vs, overrideSettings[vs.key], namePrefix);
 		}
 	}
+	return mergedSettings;
 }
 
 function validateValue(vs, value, namePrefix) {
 	if (typeof(value) !== 'number') {
-		throw new TypeError(`${combineNames(prefix, vs.key)} must be a number`);
+		throw new TypeError(`${combineNames(namePrefix, vs.key)} must be a number`);
 	}
 	if (vs.isPositive && value <= 0) {
-		throw new RangeError(`${combineNames(prefix, vs.key)} number be positive`);
+		throw new RangeError(`${combineNames(namePrefix, vs.key)} number be positive`);
 	}
 	let v = value;
 	if (vs.normalizeDegrees) {
@@ -100,6 +103,23 @@ function validateValue(vs, value, namePrefix) {
 // VECTOR ROUTINES
 
 const vector = {
+	
+	add: function(u, k, v) {
+		return {
+			x: u.x + k * v.x,
+			y: u.y + k * v.y,
+			z: u.z + k * v.z,
+		}
+	},
+	
+	cross: function(u, v) {
+		return {
+			x: u.y * v.z - u.z * v.y,
+			y: u.z * v.x - u.x * v.z,
+			z: u.x * v.y - u.y * v.x,
+		}
+	},
+	
 	difference: function(from, to) {
 		return {
 			x: to.x - from.x,
@@ -108,29 +128,72 @@ const vector = {
 		};
 	},
 	
-	normalize: function(v) {
-		const length = Math.sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
+	distance: function(u, v) {
+		return vector.length(this.difference(u, v));
+	},
+	
+	down: { x:0, y:-1, z:0 },
+	
+	length: function(u) {
+		return Math.sqrt(u.x * u.x + u.y * u.y + u.z * u.z);
+	},
+	
+	midpoint: function(u, v) {
 		return {
-			x: v.x / length,
-			y: v.y / length,
-			z: v.z / length,
+			x: (u.x + v.x) / 2,
+			y: (u.y + v.y) / 2,
+			z: (u.z + v.z) / 2,
+		}
+	},
+	
+	multiply: function(k, u) {
+		return {
+			x: k * u.x,
+			y: k * u.y,
+			z: k * u.z,
+		}
+	},
+	
+	normalize: function(u) {
+		const length = vector.length(u);
+		return {
+			x: u.x / length,
+			y: u.y / length,
+			z: u.z / length,
 		};
 	},
+	
+	sum: function(coeffs, us) {
+		let sum = vector.zero;
+		for (let i = 0; i < coeffs.length; i++) {
+			sum = vector.add(sum, coeffs[i], us[i]);
+		}
+		return sum;
+	},
+	
+	zero: { x:0, y:0, z:0 },
 };
 
 //==============================================================================
 // RIBBON MANAGEMENT
 
-function addRibbonSlice(ribbon, point, direction, vectorFactory, settings) {
-	// Assume we can use (0, 0, 1) to compute the right vector. If the track
-	// ever can turn upside down or become vertical, we need to add a right or
-	// down vector to allow proper computation of the edges.
-	
-	// Alternatively we may need to use a quaterion to handle rotation.
+// A ribbon is an array of four arrays of vectors representing the [0] left wall
+// top, [1] left road edge, [2] right road edge, and [3] right wall top.
+
+function addRibbonSlice(ribbon, bp, vectorFactory, settings) {
+	const left = vector.normalize(vector.cross(bp.forward, bp.roadBed));
+	const wall = vector.multiply(-settings.wallHeight, bp.roadBed);
+	const edgeDistance = settings.trackWidth / 2;
+	const leftEdge = vector.add(bp.v, edgeDistance, left);
+	const rightEdge = vector.add(bp.v, -edgeDistance, left);
+	ribbon[0].push(vectorFactory(vector.add(leftEdge, 1, wall)));
+	ribbon[1].push(vectorFactory(leftEdge));
+	ribbon[2].push(vectorFactory(rightEdge));
+	ribbon[3].push(vectorFactory(vector.add(rightEdge, 1, wall)));
+	console.log('addRibbonSlice point count %d', ribbon[0].length);
 }
 
 function createRibbon() {
-	// Left wall top, left road edge, right road edge, right wall top
 	return [ [], [], [], [] ];
 }
 
@@ -138,89 +201,70 @@ function createRibbon() {
 // BEZIER CURVE BUILDER
 
 function buildCurve(ribbon, sp0, sp1, vectorFactory, settings, includeFirst) {
-		
 	// Compute the Bezier cubic curve points
 	const points = [
 		sp0.center,
-		addVector(sp0.center, sp0.forwardWeight, sp0.forward),
-		addVector(sp1.center, -sp1.backwardWeight, sp1.forward),
+		vector.add(sp0.center, sp0.forwardWeight, sp0.forward),
+		vector.add(sp1.center, -sp1.backwardWeight, sp1.forward),
 		sp1.center,
 	];
 	
 	// Add the first point if required
 	if (includeFirst) {
-		addRibbonSlice(ribbon, points[0], points[1], vectorFactory, settings);
+		addRibbonSlice(ribbon, getBezierPoint(points, 0), vectorFactory, settings);
 	}
 	
 	// Fill out the curve
-	interpolateCurve(ribbon, points, 0, 1, points[0], points[3], vectorFactory, settings);
+	interpolateCurve(ribbon, points, 0, 1, points[0], points[3], getBezierPoint(points, 1), vectorFactory, settings);
 }
 
-function addVector(v, k, w) {
-	return {
-		x: v.x + k * w.x,
-		y: v.y + k * w.y,
-		z: v.z + k * w.z,
-	}
+function getBezierPoint(points, t) {
+	const olt = 1 - t;	// one less t
+
+	// Compute the point
+	let coeffs = [olt * olt * olt, 3 * olt * olt * t, 3 * olt * t * t, t * t * t];
+	const v = vector.sum(coeffs, points);
+	
+	// Compute the slope
+	coeffs = [3 * olt *olt, 6 * olt * t, 3 * t * t];
+	const deltaPoints = [
+		vector.add(points[1], -1, points[0]),
+		vector.add(points[2], -1, points[1]),
+		vector.add(points[3], -1, points[2]),
+	];
+	const forward = vector.sum(coeffs, deltaPoints);
+	
+	// TODO: Need to compute roadbed
+	return { v: v, forward: forward, roadBed: vector.down };
 }
 
-/*
-const CurveFactory = {
-	
-	combineVectors: function(coeffs, vectors) {
-		const result = {x:0, y:0, z:0};
-		for (let i = 0; i < coeffs.length; i++) {
-			const k = coeffs[i];
-			const v = vectors[i];
-			for (let coord in result) result[dimension] += k * v[dimension];
-		}
-	}
+function interpolateCurve(ribbon, points, t0, t1, p0, p1, bmp1, vectorFactory, settings)
+{
+	const midtime = (t0 + t1) / 2;
+	const lmp = vector.midpoint(p0, p1);			// Linear midpoint
+	const bmp = getBezierPoint(points, midtime);	// Bezier midpoint
 
-	
-	addVectorDiff: function(v, k, w1, w2) {
-		return {
-			x: v.x + k * (w1.x - w2.x),
-			y: v.y + k * (w1.y - w2.y),
-			z: v.z + k * (w1.z - w2.z),
-		}
-	}
-	
-	
-	getBezierPoint: function(points, t) {
-		const olt = 1 - t;	// one less t
-
-		// Compute the point
-		let coeffs = [olt * olt * olt, 3 * olt * olt * t, 3 * olt * t * t, t * t * t];
-		const v = addVectors(coeffs, points);
-		
-		// Compute the slope
-		coeffs = [3 * olt *olt, 6 * olt * t, 3 * t * t];
-		const deltaPoints = [;
-			addVector(points[1], -1, points[0]),
-			addVector(points[2], -1, points[1]),
-			addVector(points[3], -1, points[2]),
-		];
-		const direction = addVectors(coeffs, deltaPoints);
-		
-		return {v: v, direction: direction};
-	}
-
-	interpolation: function(points, t0, t1, p0, p1,
-		vectorFactory, precision, includeFirst) {
-			
-		// Get Bezier midpoint
-		tm = (to + t1) / 2;
+	// TODO: This precision test is insufficient. It is possible for the curve to pass
+	// through the linear midpoint but the tangent at the midpoint be different (e.g.,
+	// an 'S' curve passing through the midpoint).
+	console.log('interpolateCurve at %f is %f, precision %f', midtime, vector.distance(lmp, bmp.v), settings.precision);
+	if (vector.distance(lmp, bmp.v) <= settings.precision) {
+		// Add just bp1 as either buildCurve or prior interpolateCurves added p0
+		addRibbonSlice(ribbon, bmp1, vectorFactory, settings);  
+	} else {
+		// Split the curve
+		interpolateCurve(ribbon, points, t0, midtime, p0, bmp.v, bmp, vectorFactory, settings);
+		interpolateCurve(ribbon, points, midtime, t1, bmp.v, p1, bmp1, vectorFactory, settings);
 	}
 }
-*/
 
 //==============================================================================
 // SEGMENT BUILDER
 
-function buildSegment(segment, vectorFactory, masterSettings, name) {
+function buildSegment(name, segment, vectorFactory, masterSettings) {
 	
 	// Segment must be an object
-	checkForObject(segment, name);
+	checkForObject(name, segment);
 	
 	// Create settings
 	const settings = mergeSettings(masterSettings, segment, name);
@@ -233,7 +277,7 @@ function buildSegment(segment, vectorFactory, masterSettings, name) {
 	for (let i = 0; i < segment.points.length; i++) {
 		segmentPoints[i] = constructSegmentPoint(
 			segment.points[i],
-			masterSettings,
+			settings,
 			`${name}.points[${i}]`);
 	}
 	
@@ -292,28 +336,25 @@ function constructSegmentPoint(rawPoint, masterSettings, name) {
 //==============================================================================
 // TRACK BUILDER
 
-const TrackFactory = {
+function buildTrack(track, vectorFactory, masterSettings) {
 	
-	build: function(track, vectorFactory, masterSettings) {
-		
-		// Create settings
-		const settings = mergeSettings(masterSettings, track, 'track');
-		
-		// Make sure that 'segments' is an array with at least one element
-		checkForArray('track.segments', track.segment, 1); 
-		
-		// Loop through the segments
-		const ribbons = [];
-		for (let i = 0; i < track.segments.length; i++) {
-			const ribbon = buildSegment(
-				track.segments[i],
-				vectorFactory,
-				settings,
-				'track.segments[' + i.toString() + ']');
-			ribbons[i] = ribbon;
-		}
-		return ribbons;
+	// Create settings
+	const settings = mergeSettings(masterSettings, track, 'track');
+	
+	// Make sure that 'segments' is an array with at least one element
+	checkForArray('track.segments', track.segments, 1); 
+	
+	// Loop through the segments
+	const ribbons = [];
+	for (let i = 0; i < track.segments.length; i++) {
+		const ribbon = buildSegment(
+			'track.segments[' + i.toString() + ']',
+			track.segments[i],
+			vectorFactory,
+			settings);
+		ribbons[i] = ribbon;
 	}
+	return ribbons;
 }
 
 //==========================================================================
@@ -322,181 +363,30 @@ const TrackFactory = {
 // specs			a specification object or a json serialization of a
 //					specification object
 // vectorFactory	function to build an application friendly 3D vector,
-//					v = vectorFactory(x, y, z)
-// appSettings		application settings for the build
+//					v = vectorFactory(u) where u has keys x, y, z.
+// settings			application settings for the build
 TrackPOC.build = function(specs, vectorFactory, appSettings = {}) {
 	
 	// Validate the arguments
 	const objSpecs = jsonOrObject(specs, 'specs');
-	if (typeof(vectorConstructor) !== 'function') {
-		throw new TypeError('vectorConstructor must be a function');
+	if (typeof(vectorFactory) !== 'function') {
+		throw new TypeError('vectorFactory must be a function');
 	}
-	if (typeof(settings) !== 'object') {
-		throw new TypeError('defParams must be an object');
+	if (typeof(appSettings) !== 'object') {
+		throw new TypeError('appSettings must be an object');
 	}
 
 	// Create a settings block. This also validates the settings.
 	const settings = mergeSettings(defaultSettings, appSettings, 'appSettings');
 	
 	// Build the ribbons
-	return TrackFactory.build(objSpecs, vectorFactory, settings);
+	return buildTrack(objSpecs, vectorFactory, settings);
 }
 
 TrackPOC.vector = {
 	direction: function(from, to) {
 		return vector.normalize(vector.difference(from, to));
-		
 	}
 }
 
 //export default TrackPOC;
-
-/*
-function checkForNumber(name, value) {
-	const ok = typeof value === 'number';
-	if (!ok) {
-		throw new TypeError(`${name} must be a number`);
-	}
-}
-
-function checkForObject(name, className, value) {
-	const ok = typeof value === 'object' && value.constructor.toString().indexOf(className) > -1;
-	if (!ok) {
-		throw new TypeError(`${name} must be a(n) ${className}`);
-	}
-}
-
-function checkForPositiveNumber(name, value) {
-	checkForNumber(name, value);
-	const ok = value > 0;
-	if (!ok) {
-		throw new RangeError(`${name} must be a positive number`);
-	}
-}
-
-// Return a value in the range (-180, 180]
-function normalizeDegrees(value) {
-	let angle = value % 360;
-	if (angle > 180) return angle - 360;
-	if (angle <= -180) return angle + 360;
-	return angle;
-}
-
-function addVectors(v, k, w) {
-	return {
-		x: v.x + k * w.x,
-		y: v.y + k * w.y,
-		z: v.z + k * w.z
-	}
-}
-
-function scaleVector(k, v) {
-	return {
-		x: k * v.x,
-		y: k * v.y,
-		z: k * v.z
-	}
-}
-
-function interpolateSegment(path, ep0, cp0, cp1, ep1, t0, t1, p0, p1, params) {
-	
-	// Compute the midpoint
-	const t = (t0 + t1) / 2;
-	const olt = 1 - t;	// one less than t
-	let midpoint = scaleVector(olt * olt * olt, ep0);
-	midpoint = addVectors(midpoint, 3 * olt * olt * t, cp0);
-	midpoint = addVectors(midpoint, 3 * olt * t * t, cp1);
-	midpoint = addVectors(midpoint, t * t * t, ep1);
-
-	// Check if the midpoint is too far off the precision
-	const normal = normalVector(p0, p1);
-	const offline = false; // TODO
-	
-	// If offline, recurse
-	if (offline) {
-		interpolateSegment(path, ep0, cp0, cp1, ep1, t0, t, p0, midpoint, params);
-		interpolateSegment(path, ep0, cp0, cp1, ep1, t, t1, midpoint, p1, params);
-	}
-	
-	// If within precision, push the p1 point
-	else path.push(p1);
-}
-
-function addSegment(path, points, index, params) {
-	const p0 = points[index - 1];
-	const p1 = points[index];
-	const ep0 = p0.center;
-	const ep1 = p1.center;
-	const cp0 = addVectors(ep0, p0.forwardWeight, p0.forward);
-	const cp1 = addVectors(ep1, -p1.backwardWeight, p1.forward);
-	interpolateSegment(path, ep0, cp0, cp1, ep1, 0, 1, ep0, ep1, params);
-}
-
-function buildTrack(track, params) {
-
-	const centerPath = [];
-	const points = track.points;
-	centerPath.push(points[0].center);
-	for (let i = 1; i < points.length; i++) {
-		addSegement(centerPath, points, i, params);
-	}
-	
-	// HACK! We use the direction from one center point to the next do determine the direction
-	// of the track and hence the direction of the track width. We should instead use the direction
-	// of the Bezier curve at this point.
-	const leftRoad = [];
-	const rightRoad = [];
-
-	function ComputeEdges(p0, p1) {
-		const forward = p1.subtract(p0);
-		forward.normalize();
-		const left = forward.cross(up);
-		left.scaleInPlace(trackWidth / 2);
-		innerPath.push(p0.add(left));
-		outerPath.push(p0.subtract(left));
-	}
-	
-	for (let i = 1; i < centerPath.length; i++) {
-		ComputeEdges(centerPath[i-1], centerPath[i]);
-	}
-	ComputeEdges(centerPath[centerPath.length-1], centerPath[0]);
-}
-
-function getValue(value, defValue, validator) {
-	if (value == null) return defValue;
-	return validator(value);
-}
-
-export default class BabylonBuilder {
-	
-	constructor() {
-		throw new Error('Not implemented');
-	}
-	
-	static build(layout, params = {}) {
-		
-		params.trackWidth = getValue(params.trackWidth, 2, (v) => {
-			checkForPositiveNumber('trackWidth', v);
-			return v;
-		});
-		params.trackBank = getValue(params.trackBank, 0, (v) => {
-			checkForNumber('trackBank', v);
-			return normalizeDegrees(v);
-		});
-		params.wallHeight = getValue(params.wallHeight, .5, (v) => {
-			checkForPositiveNumber('wallHeight', v);
-			return v;
-		});
-		params.precision = getValue(params.precision, .5, (v) => {
-			checkForPositiveNumber('precision', v);
-			return v;
-		});
-		
-		const ribbons = [];
-		for (let track of layout.tracks) {
-			ribbons.push(buildTrack(track, params));
-		}
-		return ribbons;
-	}
-}
-*/
