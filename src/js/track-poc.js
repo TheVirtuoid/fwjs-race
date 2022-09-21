@@ -77,13 +77,13 @@ function mergeSettings(namePrefix, masterSettings, overrideSettings) {
 	const mergedSettings = {...masterSettings};
 	for (let vs of validSettings) {
 		if (!(overrideSettings[vs.key] === undefined || overrideSettings[vs.key] === null)) {
-			mergedSettings[vs.key] = validateValue(vs, overrideSettings[vs.key], namePrefix);
+			mergedSettings[vs.key] = validateValue(namePrefix, vs, overrideSettings[vs.key]);
 		}
 	}
 	return mergedSettings;
 }
 
-function validateValue(vs, value, namePrefix) {
+function validateValue(namePrefix, vs, value) {
 	if (typeof(value) !== 'number') {
 		throw new TypeError(`${combineNames(namePrefix, vs.key)} must be a number`);
 	}
@@ -94,7 +94,7 @@ function validateValue(vs, value, namePrefix) {
 	if (vs.normalizeDegrees) {
 		v %= 360;
 		if (v > 180) v -= 360;
-		if (b <= -180) v += 360;
+		if (v <= -180) v += 360;
 	}
 	return v;
 }
@@ -180,10 +180,10 @@ const vector = {
 // A ribbon is an array of four arrays of vectors representing the [0] left wall
 // top, [1] left road edge, [2] right road edge, and [3] right wall top.
 
-function addRibbonSlice(ribbon, bp, vectorFactory, settings) {
+function addRibbonSlice(ribbon, bp, vectorFactory) {
 	const left = vector.normalize(vector.cross(bp.forward, bp.roadBed));
-	const wall = vector.multiply(-settings.wallHeight, bp.roadBed);
-	const edgeDistance = settings.trackWidth / 2;
+	const wall = vector.multiply(-bp.wallHeight, bp.roadBed);
+	const edgeDistance = bp.trackWidth / 2;
 	const leftEdge = vector.add(bp.v, edgeDistance, left);
 	const rightEdge = vector.add(bp.v, -edgeDistance, left);
 	ribbon[0].push(vectorFactory(vector.add(leftEdge, 1, wall)));
@@ -202,44 +202,54 @@ function createRibbon() {
 function buildCurve(ribbon, sp0, sp1, vectorFactory, settings) {
 
 	// Compute the Bezier cubic curve points
-	const points = [
-		sp0.center,
-		vector.add(sp0.center, sp0.forwardWeight, sp0.forward),
-		vector.add(sp1.center, -sp1.backwardWeight, sp1.forward),
-		sp1.center,
-	];
+	const curve = {
+		points: [
+			sp0.center,
+			vector.add(sp0.center, sp0.forwardWeight, sp0.forward),
+			vector.add(sp1.center, -sp1.backwardWeight, sp1.forward),
+			sp1.center,
+		],
+		trackWidths: [ sp0.trackWidth, sp1.trackWidth ],
+		wallHeights: [ sp0.wallHeight, sp1.wallHeight ],
+	}
 	
 	// Fill out the curve
-	const bpt0 = getBezierPoint(points, 0);
-	const bpt1 = getBezierPoint(points, 1);
-	interpolateCurve(ribbon, points, 0, 1, bpt0, bpt1, vectorFactory, settings);
+	const bpt0 = getBezierPoint(curve, 0);
+	const bpt1 = getBezierPoint(curve, 1);
+	interpolateCurve(ribbon, curve, 0, 1, bpt0, bpt1, vectorFactory, settings.precision);
 	
 	// Return the points array
 	return bpt1;
 }
 
-function getBezierPoint(points, t) {
+function getBezierPoint(curve, t) {
 	const olt = 1 - t;	// one less t
 
 	// Compute the point
 	let coeffs = [olt * olt * olt, 3 * olt * olt * t, 3 * olt * t * t, t * t * t];
-	const v = vector.sum(coeffs, points);
+	const v = vector.sum(coeffs, curve.points);
 	
 	// Compute the slope
 	coeffs = [3 * olt *olt, 6 * olt * t, 3 * t * t];
 	const deltaPoints = [
-		vector.add(points[1], -1, points[0]),
-		vector.add(points[2], -1, points[1]),
-		vector.add(points[3], -1, points[2]),
+		vector.add(curve.points[1], -1, curve.points[0]),
+		vector.add(curve.points[2], -1, curve.points[1]),
+		vector.add(curve.points[3], -1, curve.points[2]),
 	];
 	const forward = vector.sum(coeffs, deltaPoints);
 	
 	// TODO: Need to compute roadbed
-	return { v: v, forward: forward, roadBed: vector.down };
+	return {
+		v: v,
+		forward: forward,
+		roadBed: vector.down,
+		trackWidth: olt * curve.trackWidths[0] + t * curve.trackWidths[1],
+		wallHeight: olt * curve.wallHeights[0] + t * curve.wallHeights[1],
+	};
 }
 
 // Generate the Bezier cubic curve between t0 and t1
-function interpolateCurve(ribbon, points, t0, t1, bpt0, bpt1, vectorFactory, settings)
+function interpolateCurve(ribbon, curve, t0, t1, bpt0, bpt1, vectorFactory, precision)
 {
 	// NOTE: A cubic Bezier curve generates points, or slices in our case,
 	// p0, ..., pn where p0 is the point at t0 and pn is the point at t1.
@@ -251,7 +261,7 @@ function interpolateCurve(ribbon, points, t0, t1, bpt0, bpt1, vectorFactory, set
 	// Calculate the linear and curve midpoints of the current subsection
 	const midtime = (t0 + t1) / 2;
 	const lmp = vector.midpoint(bpt0.v, bpt1.v);	// Linear midpoint
-	const bmp = getBezierPoint(points, midtime);	// Bezier midpoint
+	const bmp = getBezierPoint(curve, midtime);	// Bezier midpoint
 
 	// TODO: This precision test is insufficient. It is possible for the curve to pass
 	// through the linear midpoint but the tangent at the midpoint be different (e.g.,
@@ -261,11 +271,11 @@ function interpolateCurve(ribbon, points, t0, t1, bpt0, bpt1, vectorFactory, set
 	// to the  ribbon. Otherwise recursively add the sections of the curve
 	// (t0, midtime) and (midtime, t1). Note that the latter eventually adds
 	// the midpoint calcuated here.
-	if (vector.distance(lmp, bmp.v) <= settings.precision) {
-		addRibbonSlice(ribbon, bpt0, vectorFactory, settings);  
+	if (vector.distance(lmp, bmp.v) <= precision) {
+		addRibbonSlice(ribbon, bpt0, vectorFactory);  
 	} else {
-		interpolateCurve(ribbon, points, t0, midtime, bpt0, bmp, vectorFactory, settings);
-		interpolateCurve(ribbon, points, midtime, t1, bmp, bpt1, vectorFactory, settings);
+		interpolateCurve(ribbon, curve, t0, midtime, bpt0, bmp, vectorFactory, precision);
+		interpolateCurve(ribbon, curve, midtime, t1, bmp, bpt1, vectorFactory, precision);
 	}
 }
 

@@ -44,8 +44,11 @@
 		<label for="tracks">Choose a track:</label>
 		<select name="tracks" id="tracks">
 			<option value="track0">Track 0 (closed oval)</option>
+			<option value="track0a">Track 0a (track 0 with variable wall height)</option>
 			<option value="track1">Track 1 (single ramp)</option>
+			<option value="track1a">Track 1a (track 1 with variable track width)</option>
 			<option value="track2">Track 2 (ramp with jump and left curve)</option>
+			<!--option value="track2a">Track 2a (track 2 with 23&#176; bank)</option-->
 			<option value="track3">Track 3 (ramp with jump and right curve)</option>
 		</select>
 	</div>
@@ -84,14 +87,15 @@
 		
 		const tracks = {};
 		const options = {};
-		
-		//----------------------------------------------------------------------
-		// Track 0, the original demo track
+
 		const posX = new BABYLON.Vector3.Right;
 		const negX = new BABYLON.Vector3.Left;
 		const posZ = new BABYLON.Vector3.Forward;
 		const negZ = new BABYLON.Vector3.Backward;
 		const zero = { x:0, y:0, z:0 };
+		
+		//----------------------------------------------------------------------
+		// Track 0, the original demo track
 
 		const trackWidth = 0.5;
 		const cpDistance = 0.5;		// This is now the forward/backward weight
@@ -101,7 +105,6 @@
 			forwardWeight: cpDistance,
 			trackWidth: trackWidth,
 		};
-
 		
 		// Note that the original implementation used 'closePath: true' when
 		// creating the ribbon. The system does not do this so we manually
@@ -123,6 +126,37 @@
 			closed: true,
 		}
 		options.track0 = t0ds;
+		
+		//----------------------------------------------------------------------
+		// Track 0a, track 0 with variable wall height
+		
+		const t0ads = {
+			backwardWeight: cpDistance,
+			forwardWeight: cpDistance,
+			trackWidth: trackWidth,
+		};
+		
+		// Note that the original implementation used 'closePath: true' when
+		// creating the ribbon. The system does not do this so we manually
+		// close the track by adding an extra segment.
+		const t0as1 = {
+			points: [
+				{ center: new BABYLON.Vector3(2, 0, 0), forward: posZ },	// Start position
+				{ center: new BABYLON.Vector3(2, 0, 4), forward: posZ, wallHeight: .6 },
+				{ center: new BABYLON.Vector3(0, 0, 6), forward: negX, wallHeight: .7 },
+				{ center: new BABYLON.Vector3(-2, 0, 4), forward: negZ, wallHeight: .6 },
+				{ center: new BABYLON.Vector3(-2, 0, 0), forward: negZ },
+				{ center: new BABYLON.Vector3(-2, 0, -4), forward: negZ },
+				{ center: new BABYLON.Vector3(0, 0, -6), forward: posX },
+				{ center: new BABYLON.Vector3(2, 0, -4), forward: posZ },
+			],
+		}
+		
+		tracks.track0a = {
+			segments: [ t0as1 ],
+			closed: true,
+		}
+		options.track0a = t0ads;
 		
 		//----------------------------------------------------------------------
 		// Track 1, a simple slope
@@ -157,6 +191,39 @@
 		};
 		
 		//----------------------------------------------------------------------
+		// Track 1a, track 1 with variable track width
+		const t1av1 = { x:10 , y:5, z:0 };
+		const t1av2 = { x:9, y:4.9, z:0 };
+		const t1at1_2 = TrackPOC.vector.direction(t1v1, t1v2);
+		const t1aep1 = {	// Start of starting ramp
+			center: t1v1,
+			forward: t1t1_2,
+		};
+		const t1aep2 = {	// End of starting ramp, start of runout
+			center: t1v2,
+			forward: t1t1_2,
+			forwardWeight: 1.1,
+		};
+		const t1aep3 = {	// End of slope, start of runout
+			center: zero,
+			forward: negX,
+			backwardWeight: 4,
+		};
+		const t1aep4 = {	// End of runout flat
+			center: { x:-2, y:0, z:0 },
+			forward: negX,
+			trackWidth: 2,
+		};
+		
+		const t1as1 = {
+			points: [ t1aep1, t1aep2, t1aep3, t1aep4 ]
+		};
+		
+		tracks.track1a = {
+			segments: [ t1as1 ]
+		};
+		
+		//----------------------------------------------------------------------
 		// Track 2, slope into a jump with a turn left looping underneath the jump
 		
 		// NOTE: This may need some adjustments on the curve to avoid bumps where
@@ -164,7 +231,7 @@
 		
 		const t2v1 = { x:10 , y:5, z:0 };
 		const t2v2 = { x:9, y:4.9, z:0 };
-		const t2t1_2 = TrackPOC.vector.direction(t1v1, t1v2);
+		const t2t1_2 = TrackPOC.vector.direction(t2v1, t2v2);
 		const t2ep1 = {	// Start of starting ramp
 			center: t2v1,
 			forward: t2t1_2,
@@ -217,6 +284,62 @@
 		
 		//----------------------------------------------------------------------
 		// Track 2a, track 2 with bank
+		const t2av1 = { x:10 , y:5, z:0 };
+		const t2av2 = { x:9, y:4.9, z:0 };
+		const t2at1_2 = TrackPOC.vector.direction(t2av1, t2av2);
+		const t2aep1 = {	// Start of starting ramp
+			center: t2av1,
+			forward: t2at1_2,
+		};
+		const t2aep2 = {	// End of starting ramp, start of runout
+			center: t2av2,
+			forward: t2at1_2,
+			forwardWeight: 1.1,
+		};
+		const t2aep3 = {	// End of slope, start of runout
+			center: { x:.5, y:1, z:0 },
+			forward: negX,
+			backwardWeight: 4,
+		};
+		const t2aep4 = {	// Start of catch
+			center: { x:-.5, y:.9, z:0 },
+			forward: negX,
+		};
+		const t2aep5 = {	// Start of curve
+			center: { x:-1.5, y:.8, z:0 },
+			forward: negX,
+			trackBank: 10,
+		};
+		const t2aep6 = {	// Top of curve
+			center: { x:-3, y:.7, z:-1.5 },
+			forward: negZ,
+			trackBank: 23,
+		};
+		const t2aep7 = {	// Left extent of curve
+			center: { x:-1.5, y:.6, z:-3 },
+			forward: posX,
+			trackBank: 23,
+		};
+		const t2aep8 = {	// End of curve
+			center: { x:0, y:.5, z:-1.5 },
+			forward: posZ,
+			trackBank: 10,
+		};
+		const t2aep9 = {	// Runout
+			center: { x:0, y:0, z:2 },
+			forward: posZ,
+		};
+		
+		const t2as1 = {
+			points: [ t2aep1, t2aep2, t2aep3 ]
+		};
+		const t2as2 = {
+			points: [ t2aep4, t2aep5, t2aep6, t2aep7, t2aep8, t2aep9 ]
+		};
+		
+		tracks.track2a = {
+			segments: [ t2as1, t2as2 ]
+		};
 		
 		//----------------------------------------------------------------------
 		// Track 3, slope into a jump with a turn right looping underneath the jump
