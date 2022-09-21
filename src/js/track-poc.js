@@ -73,7 +73,7 @@ function jsonOrObject(o, name) {
 	else throw new TypeError(`${name} must be an JSON string or object`);
 }
 
-function mergeSettings(masterSettings, overrideSettings, namePrefix) {
+function mergeSettings(namePrefix, masterSettings, overrideSettings) {
 	const mergedSettings = {...masterSettings};
 	for (let vs of validSettings) {
 		if (!(overrideSettings[vs.key] === undefined || overrideSettings[vs.key] === null)) {
@@ -265,7 +265,7 @@ function buildSegment(name, segment, vectorFactory, masterSettings) {
 	checkForObject(name, segment);
 	
 	// Create settings
-	const settings = mergeSettings(masterSettings, segment, name);
+	const settings = mergeSettings(name, masterSettings, segment);
 	
 	// Make sure that 'points' is an array with at least two elements
 	checkForArray(name + '.points', segment.points, 2);
@@ -274,9 +274,9 @@ function buildSegment(name, segment, vectorFactory, masterSettings) {
 	const segmentPoints = [];
 	for (let i = 0; i < segment.points.length; i++) {
 		segmentPoints[i] = constructSegmentPoint(
+			`${name}.points[${i}]`,
 			segment.points[i],
-			settings,
-			`${name}.points[${i}]`);
+			settings);
 	}
 	
 	// Loop through the points, creating curves between them
@@ -287,7 +287,7 @@ function buildSegment(name, segment, vectorFactory, masterSettings) {
 	return ribbon;
 }
 	
-function constructSegmentPoint(rawPoint, masterSettings, name) {
+function constructSegmentPoint(name, rawPoint, masterSettings) {
 	
 	// The raw point must be an object
 	checkForObject(name, rawPoint);
@@ -298,7 +298,7 @@ function constructSegmentPoint(rawPoint, masterSettings, name) {
 	}
 	
 	// Create the point with its settings and name
-	const segmentPoint = mergeSettings(masterSettings, rawPoint, name);
+	const segmentPoint = mergeSettings(name, masterSettings, rawPoint);
 	segmentPoint.name = name;
 	
 	// The raw point must have a center object with x, y, and z numeric
@@ -337,7 +337,7 @@ function constructSegmentPoint(rawPoint, masterSettings, name) {
 function buildTrack(track, vectorFactory, masterSettings) {
 	
 	// Create settings
-	const settings = mergeSettings(masterSettings, track, 'track');
+	const settings = mergeSettings('track', masterSettings, track);
 	
 	// Make sure that 'segments' is an array with at least one element
 	checkForArray('track.segments', track.segments, 1); 
@@ -375,7 +375,7 @@ TrackPOC.build = function(specs, vectorFactory, appSettings = {}) {
 	}
 
 	// Create a settings block. This also validates the settings.
-	const settings = mergeSettings(defaultSettings, appSettings, 'appSettings');
+	const settings = mergeSettings('appSettings', defaultSettings, appSettings);
 	
 	// Build the ribbons
 	return buildTrack(objSpecs, vectorFactory, settings);

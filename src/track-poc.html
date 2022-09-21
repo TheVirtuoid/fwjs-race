@@ -58,7 +58,6 @@
 		// TRACK SELECTION
 		const trackSelector = document.getElementById("tracks");
 		trackSelector.addEventListener("change", () => {
-			console.log(trackSelector.value);
 			createMesh();
 		});
 
@@ -308,7 +307,7 @@
 		var engine = null;
 		var scene = null;
 		let sceneToRender = null;
-		const trackMesh = [];
+		const trackMeshes = [];
 		
 		const createDefaultEngine = function() {
 			return new BABYLON.Engine(canvas, true, {
@@ -335,10 +334,10 @@
 		
 		const createMesh = function() {
 		
-			for (let mesh of trackMesh) {
+			for (let mesh of trackMeshes) {
 				scene.removeMesh(mesh);
 			}
-			trackMesh.length = 0;
+			trackMeshes.length = 0;
 			
 			const track = tracks[trackSelector.value];
 			let settings = options[trackSelector.value];
@@ -346,7 +345,7 @@
 			
 			const ribbons = TrackPOC.build(track, (u) => { return new BABYLON.Vector3(u.x, u.y, u.z); }, settings);
 			for (let i = 0; i < ribbons.length; i++) {
-				trackMesh.push(BABYLON.MeshBuilder.CreateRibbon(
+				trackMeshes.push(BABYLON.MeshBuilder.CreateRibbon(
 					`Segment${i}`,
 					{
 						pathArray: ribbons[i],
