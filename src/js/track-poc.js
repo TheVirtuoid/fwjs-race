@@ -199,7 +199,8 @@ function createRibbon() {
 //==============================================================================
 // BEZIER CURVE BUILDER
 
-function buildCurve(ribbon, sp0, sp1, vectorFactory, settings, includeFirst) {
+function buildCurve(ribbon, sp0, sp1, vectorFactory, settings) {
+
 	// Compute the Bezier cubic curve points
 	const points = [
 		sp0.center,
@@ -208,13 +209,11 @@ function buildCurve(ribbon, sp0, sp1, vectorFactory, settings, includeFirst) {
 		sp1.center,
 	];
 	
-	// Add the first point if required
-	if (includeFirst) {
-		addRibbonSlice(ribbon, getBezierPoint(points, 0), vectorFactory, settings);
-	}
-	
 	// Fill out the curve
-	interpolateCurve(ribbon, points, 0, 1, points[0], points[3], getBezierPoint(points, 1), vectorFactory, settings);
+	interpolateCurve(ribbon, points, 0, 1, points[0], points[3], getBezierPoint(points, 0), vectorFactory, settings);
+	
+	// Return the points array
+	return points;
 }
 
 function getBezierPoint(points, t) {
@@ -237,8 +236,17 @@ function getBezierPoint(points, t) {
 	return { v: v, forward: forward, roadBed: vector.down };
 }
 
-function interpolateCurve(ribbon, points, t0, t1, p0, p1, bmp1, vectorFactory, settings)
+// Generate the Bezier cubic curve between t0 and t1
+function interpolateCurve(ribbon, points, t0, t1, p0, p1, bmp0, vectorFactory, settings)
 {
+	// NOTE: A cubic Bezier curve generates points, or slices in our case,
+	// p0, ..., pn where p0 is the point at t0 and pn is the point at t1.
+	// However, for consecutive curves c and d, the last point of c is the
+	// same as the first point of d. To avoid duplication of points in the
+	// ribbon, this routine only adds points p0, ..., pn-1. Note that same
+	// holds for contiguous sections of a curve.
+	
+	// Calculate the linear and curve midpoints of the current subsection
 	const midtime = (t0 + t1) / 2;
 	const lmp = vector.midpoint(p0, p1);			// Linear midpoint
 	const bmp = getBezierPoint(points, midtime);	// Bezier midpoint
@@ -246,20 +254,23 @@ function interpolateCurve(ribbon, points, t0, t1, p0, p1, bmp1, vectorFactory, s
 	// TODO: This precision test is insufficient. It is possible for the curve to pass
 	// through the linear midpoint but the tangent at the midpoint be different (e.g.,
 	// an 'S' curve passing through the midpoint).
+	
+	// If the linear midpoint is close enough to the curve midpoint, add bmp0
+	// to the  ribbon. Otherwise recursively add the sections of the curve
+	// (t0, midtime) and (midtime, t1). Note that the latter eventually adds
+	// the midpoint calcuated here.
 	if (vector.distance(lmp, bmp.v) <= settings.precision) {
-		// Add just bp1 as either buildCurve or prior interpolateCurves added p0
-		addRibbonSlice(ribbon, bmp1, vectorFactory, settings);  
+		addRibbonSlice(ribbon, bmp0, vectorFactory, settings);  
 	} else {
-		// Split the curve
-		interpolateCurve(ribbon, points, t0, midtime, p0, bmp.v, bmp, vectorFactory, settings);
-		interpolateCurve(ribbon, points, midtime, t1, bmp.v, p1, bmp1, vectorFactory, settings);
+		interpolateCurve(ribbon, points, t0, midtime, p0, bmp.v, bmp0, vectorFactory, settings);
+		interpolateCurve(ribbon, points, midtime, t1, bmp.v, p1, bmp, vectorFactory, settings);
 	}
 }
 
 //==============================================================================
 // SEGMENT BUILDER
 
-function buildSegment(name, segment, vectorFactory, masterSettings) {
+function buildSegment(name, segment, vectorFactory, masterSettings, isClosed) {
 	
 	// Segment must be an object
 	checkForObject(name, segment);
@@ -281,9 +292,16 @@ function buildSegment(name, segment, vectorFactory, masterSettings) {
 	
 	// Loop through the points, creating curves between them
 	const ribbon = createRibbon();
+	let points = null;
 	for (let i = 1; i < segmentPoints.length; i++) {
-		buildCurve(ribbon, segmentPoints[i - 1], segmentPoints[i], vectorFactory, settings, i === 1);
+		points = buildCurve(ribbon, segmentPoints[i - 1], segmentPoints[i], vectorFactory, settings);
 	}
+	
+	// If this is not a closed segment, add the last point to the ribbon
+	if (!isClosed) {
+		addRibbonSlice(ribbon, getBezierPoint(points, 1), vectorFactory, settings);
+	}
+	
 	return ribbon;
 }
 	
@@ -342,6 +360,9 @@ function buildTrack(track, vectorFactory, masterSettings) {
 	// Make sure that 'segments' is an array with at least one element
 	checkForArray('track.segments', track.segments, 1); 
 	
+	// Check if this is a closed track
+	const isClosed = track.segments.length == 1 && track.closed;
+	
 	// Loop through the segments
 	const ribbons = [];
 	for (let i = 0; i < track.segments.length; i++) {
@@ -349,7 +370,8 @@ function buildTrack(track, vectorFactory, masterSettings) {
 			'track.segments[' + i.toString() + ']',
 			track.segments[i],
 			vectorFactory,
-			settings);
+			settings,
+			isClosed);
 		ribbons[i] = ribbon;
 	}
 	return ribbons;

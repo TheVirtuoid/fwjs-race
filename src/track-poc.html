@@ -91,12 +91,10 @@
 		const negX = new BABYLON.Vector3.Left;
 		const posZ = new BABYLON.Vector3.Forward;
 		const negZ = new BABYLON.Vector3.Backward;
-		const up = new BABYLON.Vector3.Up;
 		const zero = { x:0, y:0, z:0 };
 
 		const trackWidth = 0.5;
 		const cpDistance = 0.5;		// This is now the forward/backward weight
-		const segmentation = 6;		// Obsolete. The new system uses 'precision'.
 		
 		const t0ds = {
 			backwardWeight: cpDistance,
@@ -104,29 +102,25 @@
 			trackWidth: trackWidth,
 		};
 
-		const centerLine = [
-			{ center: new BABYLON.Vector3(2, 0, 0), forward: posZ },	// Start position
-			{ center: new BABYLON.Vector3(2, 0, 4), forward: posZ },
-			{ center: new BABYLON.Vector3(0, 0, 6), forward: negX },
-			{ center: new BABYLON.Vector3(-2, 0, 4), forward: negZ },
-			{ center: new BABYLON.Vector3(-2, 0, -4), forward: negZ },
-			{ center: new BABYLON.Vector3(0, 0, -6), forward: posX },
-			{ center: new BABYLON.Vector3(2, 0, -4), forward: posZ },
-		];
 		
 		// Note that the original implementation used 'closePath: true' when
 		// creating the ribbon. The system does not do this so we manually
 		// close the track by adding an extra segment.
 		const t0s1 = {
-			points: centerLine
-		}
-		
-		const t0s2 = {
-			points: [ centerLine[centerLine.length - 1], centerLine[0] ]
+			points: [
+				{ center: new BABYLON.Vector3(2, 0, 0), forward: posZ },	// Start position
+				{ center: new BABYLON.Vector3(2, 0, 4), forward: posZ },
+				{ center: new BABYLON.Vector3(0, 0, 6), forward: negX },
+				{ center: new BABYLON.Vector3(-2, 0, 4), forward: negZ },
+				{ center: new BABYLON.Vector3(-2, 0, -4), forward: negZ },
+				{ center: new BABYLON.Vector3(0, 0, -6), forward: posX },
+				{ center: new BABYLON.Vector3(2, 0, -4), forward: posZ },
+			],
 		}
 		
 		tracks.track0 = {
-			segments: [ t0s1, t0s2 ]
+			segments: [ t0s1 ],
+			closed: true,
 		}
 		options.track0 = t0ds;
 		
@@ -349,7 +343,8 @@
 					`Segment${i}`,
 					{
 						pathArray: ribbons[i],
-						sideOrientation: BABYLON.Mesh.DOUBLESIDE
+						sideOrientation: BABYLON.Mesh.DOUBLESIDE,
+						closePath: track.closed,
 					},
 					scene));
 			}
