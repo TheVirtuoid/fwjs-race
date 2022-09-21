@@ -210,10 +210,12 @@ function buildCurve(ribbon, sp0, sp1, vectorFactory, settings) {
 	];
 	
 	// Fill out the curve
-	interpolateCurve(ribbon, points, 0, 1, points[0], points[3], getBezierPoint(points, 0), vectorFactory, settings);
+	const bpt0 = getBezierPoint(points, 0);
+	const bpt1 = getBezierPoint(points, 1);
+	interpolateCurve(ribbon, points, 0, 1, bpt0, bpt1, vectorFactory, settings);
 	
 	// Return the points array
-	return points;
+	return bpt1;
 }
 
 function getBezierPoint(points, t) {
@@ -237,7 +239,7 @@ function getBezierPoint(points, t) {
 }
 
 // Generate the Bezier cubic curve between t0 and t1
-function interpolateCurve(ribbon, points, t0, t1, p0, p1, bmp0, vectorFactory, settings)
+function interpolateCurve(ribbon, points, t0, t1, bpt0, bpt1, vectorFactory, settings)
 {
 	// NOTE: A cubic Bezier curve generates points, or slices in our case,
 	// p0, ..., pn where p0 is the point at t0 and pn is the point at t1.
@@ -248,7 +250,7 @@ function interpolateCurve(ribbon, points, t0, t1, p0, p1, bmp0, vectorFactory, s
 	
 	// Calculate the linear and curve midpoints of the current subsection
 	const midtime = (t0 + t1) / 2;
-	const lmp = vector.midpoint(p0, p1);			// Linear midpoint
+	const lmp = vector.midpoint(bpt0.v, bpt1.v);	// Linear midpoint
 	const bmp = getBezierPoint(points, midtime);	// Bezier midpoint
 
 	// TODO: This precision test is insufficient. It is possible for the curve to pass
@@ -260,10 +262,10 @@ function interpolateCurve(ribbon, points, t0, t1, p0, p1, bmp0, vectorFactory, s
 	// (t0, midtime) and (midtime, t1). Note that the latter eventually adds
 	// the midpoint calcuated here.
 	if (vector.distance(lmp, bmp.v) <= settings.precision) {
-		addRibbonSlice(ribbon, bmp0, vectorFactory, settings);  
+		addRibbonSlice(ribbon, bpt0, vectorFactory, settings);  
 	} else {
-		interpolateCurve(ribbon, points, t0, midtime, p0, bmp.v, bmp0, vectorFactory, settings);
-		interpolateCurve(ribbon, points, midtime, t1, bmp.v, p1, bmp, vectorFactory, settings);
+		interpolateCurve(ribbon, points, t0, midtime, bpt0, bmp, vectorFactory, settings);
+		interpolateCurve(ribbon, points, midtime, t1, bmp, bpt1, vectorFactory, settings);
 	}
 }
 
@@ -292,14 +294,14 @@ function buildSegment(name, segment, vectorFactory, masterSettings, isClosed) {
 	
 	// Loop through the points, creating curves between them
 	const ribbon = createRibbon();
-	let points = null;
+	let lastPoint = null;
 	for (let i = 1; i < segmentPoints.length; i++) {
-		points = buildCurve(ribbon, segmentPoints[i - 1], segmentPoints[i], vectorFactory, settings);
+		lastPoint = buildCurve(ribbon, segmentPoints[i - 1], segmentPoints[i], vectorFactory, settings);
 	}
 	
 	// If this is not a closed segment, add the last point to the ribbon
 	if (!isClosed) {
-		addRibbonSlice(ribbon, getBezierPoint(points, 1), vectorFactory, settings);
+		addRibbonSlice(ribbon, lastPoint, vectorFactory, settings);
 	}
 	
 	return ribbon;
