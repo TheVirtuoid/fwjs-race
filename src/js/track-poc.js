@@ -24,10 +24,10 @@ const defaultSettings = {
 };
 
 const validSettings = [
-	{ key: 'precision', isPositive: true },
-	{ key: 'trackBank', normalizeDegrees: true },
-	{ key: 'trackWidth', isPositive: true },
-	{ key: 'wallHeight', isPositive: true },
+	{ key: 'precision', validator: validatePositiveNumber },
+	{ key: 'trackBank', validator: validateTrackBank, },
+	{ key: 'trackWidth', validator: validatePositiveNumber },
+	{ key: 'wallHeight', validator: validatePositiveNumber },
 ];
 
 function combineNames(prefix, nameStr) {
@@ -45,7 +45,7 @@ function mergeSettings(masterSettings, overrideSettings, name) {
 	for (let vs of validSettings) {
 		const value = overrideSettings[vs.key];
 		if (isDefined(value)) {
-			mergedSettings[vs.key] = validateValue(resolveName(name), vs, value);
+			mergedSettings[vs.key] = vs.validator(value, () => { return combineNames(resolveName(name), vs.key); });
 		}
 	}
 	return mergedSettings;
@@ -102,12 +102,21 @@ function isVector(value, coords) {
 	return true;
 }
 
+function isVector3(value) {
+	return isVector(value, coords3);
+}
+
 //==============================================================================
 // VALIDATORS
 
 function validateObject(value, name) {
 	if (isObject(value)) return value;
 	throw new TypeError(`${resolveName(name)} must be an object`);
+}
+
+function validatePositiveNumber(value, name) {
+	if (isPositiveNumber(value)) return value;
+	throw new RangeError(`${resolveName(name)} number be a positive number`);
 }
 
 function validateSizedArray(value, minElements, name) {
@@ -118,24 +127,19 @@ function validateSizedArray(value, minElements, name) {
 	throw new TypeError(`${resolveName(name)} must be an Array`);
 }
 
-function validateValue(namePrefix, vs, value) {
-	if (!isNumber(value)) {
-		throw new TypeError(`${combineNames(namePrefix, vs.key)} must be a number`);
-	}
-	if (vs.isPositive && value <= 0) {
-		throw new RangeError(`${combineNames(namePrefix, vs.key)} number be positive`);
-	}
-	let v = value;
-	if (vs.normalizeDegrees) {
-		v %= 360;
+function validateTrackBank(value, name) {
+	if (isVector3(value)) return value;
+	if (isNumber(value)) {
+		let v = value % 360;
 		if (v > 180) v -= 360;
 		if (v <= -180) v += 360;
+		return v;
 	}
-	return v;
+	throw new TypeError(`${resolveName(name)} must be a number or 3D vector`);
 }
 
 function validateVector3(value, name) {
-	if (isVector(value, coords3)) return value;
+	if (isVector3(value)) return value;
 	throw new TypeError(`${resolveName(name)} must be a 3D vector`);
 }
 	
@@ -431,7 +435,7 @@ function constructSegmentPoint(rawPoint, masterSettings, nameStr) {
 	// If the raw point has a 'forward' vector, validate that. Otherwise
 	// use the vector (1, 0, 0)
 	if (rawPoint.forward == null) {
-		segmentPoint.forward = {x:1, y:0, z:0};
+		segmentPoint.forward = vector.right;
 	} else {
 		segmentPoint.forward = validateVector3(
 			rawPoint.forward,

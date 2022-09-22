@@ -51,6 +51,7 @@
 			<option value="track2a">Track 2a (track 2 with 45&#176; bank)</option>
 			<option value="track3">Track 3 (ramp with jump and right curve)</option>
 			<option value="track3a">Track 3a (track 3 with 45&#176; bank)</option>
+			<option value="track4">Track 4 (loop)</option>
 		</select>
 	</div>
 	<div>
@@ -91,6 +92,8 @@
 
 		const posX = new BABYLON.Vector3.Right;
 		const negX = new BABYLON.Vector3.Left;
+		const posY = new BABYLON.Vector3.Up;
+		const negY = new BABYLON.Vector3.Down;
 		const posZ = new BABYLON.Vector3.Forward;
 		const negZ = new BABYLON.Vector3.Backward;
 		const zero = { x:0, y:0, z:0 };
@@ -372,6 +375,83 @@
 		
 		//----------------------------------------------------------------------
 		// Track 4, slope into a loop
+
+		const t4loopRadius = 3;
+		const t4loopOffset = .4;
+		const t4loopWeight = t4loopRadius / 1.717;
+		
+		const t4ep3 = {	// End of slope, start of flat
+			center: zero,
+			forward: negX,
+			backwardWeight: 4,
+		};
+		const t4ep4 = {	// Entry into loop
+			center: {
+				x: t4ep3.center.x - t4loopRadius,
+				y: t4ep3.center.y,
+				z: t4ep3.center.z
+			},
+			forward: negX,
+			forwardWeight: t4loopWeight,
+		};
+		const t4ep5 = {	// First quarter of loop
+			backwardWeight: t4loopWeight,
+			center: {
+				x: t4ep4.center.x - t4loopRadius,
+				y: t4ep4.center.y + t4loopRadius,
+				z: t4ep4.center.z + t4loopOffset
+			},
+			forward: posY,	// This should have a small z-component
+			forwardWeight: t4loopWeight,
+			trackBank: negX,
+		};
+		const t4ep6 = {	// Top of loop
+			backwardWeight: t4loopWeight,
+			center: {
+				x: t4ep5.center.x + t4loopRadius,
+				y: t4ep5.center.y + t4loopRadius,
+				z: t4ep5.center.z + t4loopOffset
+			},
+			forward: posX,	// This should have a small z-component
+			forwardWeight: t4loopWeight,
+			trackBank: posY,
+		};
+		const t4ep7 = {	// Last quarter of loop
+			backwardWeight: t4loopWeight,
+			center: {
+				x: t4ep6.center.x + t4loopRadius,
+				y: t4ep6.center.y - t4loopRadius,
+				z: t4ep6.center.z + t4loopOffset
+			},
+			forward: negY,	// This should have a small z-component
+			forwardWeight: t4loopWeight,
+			trackBank: posX,
+		};
+		const t4ep8 = {	// Exit of loop
+			backwardWeight: t4loopWeight,
+			center: {
+				x: t4ep7.center.x - t4loopRadius,
+				y: t4ep7.center.y - t4loopRadius,
+				z: t4ep7.center.z + t4loopOffset
+			},
+			forward: negX,
+		};
+		const t4ep9 = {	// Runout
+			center: {
+				x: t4ep8.center.x - 2 * t4loopRadius,
+				y: t4ep8.center.y,
+				z: t4ep8.center.z
+			},
+			forward: negX,
+		};
+		
+		const t4s1 = {
+			points: [ lep1, lep2, t4ep3, t4ep4, t4ep5, t4ep6, t4ep7, t4ep8, t4ep9 ]
+		};
+		
+		tracks.track4 = {
+			segments: [ t4s1 ]
+		};
 		
 		//======================================================================
 		// BABYLON IMPLEMENTATION
