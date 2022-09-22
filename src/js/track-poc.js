@@ -20,14 +20,13 @@ const validSettings = [
 ];
 
 function combineNames(prefix, name) {
-	if (prefix.length == 0) return name;
-	return prefix + '.' + name;
+	return prefix.length == 0 ? name : (prefix + '.' + name);
 }
 
-function jsonOrObject(o, name) {
+function jsonOrObject(o, getName) {
 	if (isString(o)) return JSON.parse(o);
 	if (isObject(o)) return o;
-	throw new TypeError(`${name} must be an JSON string or object`);
+	throw new TypeError(`${getName()} must be an JSON string or object`);
 }
 
 function mergeSettings(namePrefix, masterSettings, overrideSettings) {
@@ -90,14 +89,6 @@ function isVector(value, coords) {
 //==============================================================================
 // VALIDATORS
 
-function checkForArray(name, value, minElements) {
-	if (isArray(value)) {
-		if (value.length >= minElements) return value;
-		throw new RangeError(`${name} must have at least ${minElements} element(s)`);
-	}
-	throw new TypeError(`${name} must be an Array`);
-}
-
 function checkForObject(name, value) {
 	if (isObject(value)) return value;
 	throw new TypeError(`${name} must be an object`);
@@ -112,6 +103,14 @@ function checkForWeight(name, value) {
 	if (isDefault(value)) return 1;
 	if (isPositiveNumber(value)) return value;
 	throw new RangeError(`${name} must be a positive number`);
+}
+
+function validateSizedArray(value, minElements, getName) {
+	if (isArray(value)) {
+		if (value.length >= minElements) return value;
+		throw new RangeError(`${getName()} must have at least ${minElements} element(s)`);
+	}
+	throw new TypeError(`${getName()} must be an Array`);
 }
 
 function validateValue(namePrefix, vs, value) {
@@ -364,7 +363,7 @@ function buildSegment(name, segment, vectorFactory, masterSettings, isClosed) {
 	const settings = mergeSettings(name, masterSettings, segment);
 	
 	// Make sure that 'points' is an array with at least two elements
-	checkForArray(name + '.points', segment.points, 2);
+	validateSizedArray(segment.points, 2, () => { return name + '.points' });
 	
 	// Convert points into internal representations
 	const segmentPoints = [];
@@ -443,7 +442,7 @@ function buildTrack(track, vectorFactory, masterSettings) {
 	const settings = mergeSettings('track', masterSettings, track);
 	
 	// Make sure that 'segments' is an array with at least one element
-	checkForArray('track.segments', track.segments, 1); 
+	validateSizedArray(track.segments, 1, () => { return 'track.segments'; }); 
 	
 	// Check if this is a closed track
 	const isClosed = track.segments.length == 1 && track.closed;
@@ -474,7 +473,7 @@ function buildTrack(track, vectorFactory, masterSettings) {
 TrackPOC.build = function(specs, vectorFactory, appSettings = {}) {
 	
 	// Validate the arguments
-	const objSpecs = jsonOrObject(specs, 'specs');
+	const objSpecs = jsonOrObject(specs, () => { return 'specs'; });
 	if (!isFunction(vectorFactory)) {
 		throw new TypeError('vectorFactory must be a function');
 	}
