@@ -7,6 +7,8 @@ const TrackPOC = {}
 //		function that returns a string or a string. This allows late creation
 //		of strings, mainly for the occasional exception. The function
 //		'resolveName' handles this resolution of the name.
+// (2)	In cases where a string-only name is needed, the argument name is
+//		'nameStr'.
 
 
 //==============================================================================
@@ -28,8 +30,8 @@ const validSettings = [
 	{ key: 'wallHeight', isPositive: true },
 ];
 
-function combineNames(prefix, postfix) {
-	return prefix.length == 0 ? postfix : (prefix + '.' + postfix);
+function combineNames(prefix, nameStr) {
+	return prefix.length == 0 ? nameStr : (prefix + '.' + nameStr);
 }
 
 function jsonOrObject(o, name) {
@@ -213,6 +215,8 @@ const vector = {
 		};
 	},
 	
+	right: { x:1, y:0, z:0 },
+	
 	rotate: function(axis, u, angle) {
 		const theta = angle * vector.angleToRadians;
 		const cosTheta = Math.cos(theta);
@@ -368,24 +372,24 @@ function interpolateCurve(ribbon, curve, t0, t1, bpt0, bpt1, vectorFactory, prec
 //==============================================================================
 // SEGMENT BUILDER
 
-function buildSegment(name, segment, vectorFactory, masterSettings, isClosed) {
+function buildSegment(segment, vectorFactory, masterSettings, isClosed, nameStr) {
 	
 	// Segment must be an object
-	validateObject(segment, name);
+	validateObject(segment, nameStr);
 	
 	// Create settings
-	const settings = mergeSettings(masterSettings, segment, name);
+	const settings = mergeSettings(masterSettings, segment, nameStr);
 	
 	// Make sure that 'points' is an array with at least two elements
-	validateSizedArray(segment.points, 2, () => { return name + '.points' });
+	validateSizedArray(segment.points, 2, () => { return nameStr + '.points' });
 	
 	// Convert points into internal representations
 	const segmentPoints = [];
 	for (let i = 0; i < segment.points.length; i++) {
 		segmentPoints[i] = constructSegmentPoint(
-			`${name}.points[${i}]`,
 			segment.points[i],
-			settings);
+			settings,
+			`${nameStr}.points[${i}]`);
 	}
 	
 	// Loop through the points, creating curves between them
@@ -403,26 +407,26 @@ function buildSegment(name, segment, vectorFactory, masterSettings, isClosed) {
 	return ribbon;
 }
 	
-function constructSegmentPoint(name, rawPoint, masterSettings) {
+function constructSegmentPoint(rawPoint, masterSettings, nameStr) {
 	
 	// The raw point must be an object
-	validateObject(rawPoint, name);
+	validateObject(rawPoint, nameStr);
 	
 	// The raw point cannot have a 'precision' element
-	if (rawPoint.precision != null) {
-		throw new TypeError(`${name} cannot define precision`);
+	if (isDefined(rawPoint.precision)) {
+		throw new TypeError(`${nameStr} cannot define precision`);
 	}
 	
 	// Create the point with its settings and name
-	const segmentPoint = mergeSettings(masterSettings, rawPoint, name);
-	segmentPoint.name = name;
+	const segmentPoint = mergeSettings(masterSettings, rawPoint, nameStr);
+	segmentPoint.name = nameStr;
 	
 	// The raw point must have a center object with x, y, and z numeric
 	// elements
 	segmentPoint.center = validateVector3(
 		rawPoint.center,
 		coords3,
-		name + '.center');
+		() => { return nameStr + '.center'; });
 	
 	// If the raw point has a 'forward' vector, validate that. Otherwise
 	// use the vector (1, 0, 0)
@@ -432,16 +436,16 @@ function constructSegmentPoint(name, rawPoint, masterSettings) {
 		segmentPoint.forward = validateVector3(
 			rawPoint.forward,
 			coords3,
-			name + '.forward');
+			() => { return nameStr + '.forward'; });
 	}
 	
 	// Get the weights
 	segmentPoint.forwardWeight = this.validateWeight(
 		rawPoint.forwardWeight,
-		name + '.forwardWeight');
+		() => { return nameStr + '.forwardWeight'; });
 	segmentPoint.backwardWeight = this.validateWeight(
 		rawPoint.backwardWeight,
-		name + '.backwardWeight');
+		() => { return nameStr + '.backwardWeight'; });
 		
 	// And we are done!
 	return segmentPoint;
@@ -465,11 +469,11 @@ function buildTrack(track, vectorFactory, masterSettings) {
 	const ribbons = [];
 	for (let i = 0; i < track.segments.length; i++) {
 		const ribbon = buildSegment(
-			'track.segments[' + i.toString() + ']',
 			track.segments[i],
 			vectorFactory,
 			settings,
-			isClosed);
+			isClosed,
+			'track.segments[' + i.toString() + ']');
 		ribbons[i] = ribbon;
 	}
 	return ribbons;
