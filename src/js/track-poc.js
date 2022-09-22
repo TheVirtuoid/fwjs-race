@@ -103,20 +103,9 @@ function isVector(value, coords) {
 //==============================================================================
 // VALIDATORS
 
-function checkForObject(name, value) {
+function validateObject(value, name) {
 	if (isObject(value)) return value;
-	throw new TypeError(`${name} must be an object`);
-}
-
-function checkForVector(name, value, coords) {
-	if (isVector(value, coords)) return value;
-	throw new TypeError(`${name} must be a vector`);
-}
-	
-function checkForWeight(name, value) {
-	if (isDefault(value)) return 1;
-	if (isPositiveNumber(value)) return value;
-	throw new RangeError(`${name} must be a positive number`);
+	throw new TypeError(`${resolveName(name)} must be an object`);
 }
 
 function validateSizedArray(value, minElements, name) {
@@ -141,6 +130,17 @@ function validateValue(namePrefix, vs, value) {
 		if (v <= -180) v += 360;
 	}
 	return v;
+}
+
+function validateVector3(value, name) {
+	if (isVector(value, coords3)) return value;
+	throw new TypeError(`${resolveName(name)} must be a 3D vector`);
+}
+	
+function validateWeight(value, name) {
+	if (isDefault(value)) return 1;
+	if (isPositiveNumber(value)) return value;
+	throw new RangeError(`${resolveName(name)} must be a positive number`);
 }
 
 //==============================================================================
@@ -371,7 +371,7 @@ function interpolateCurve(ribbon, curve, t0, t1, bpt0, bpt1, vectorFactory, prec
 function buildSegment(name, segment, vectorFactory, masterSettings, isClosed) {
 	
 	// Segment must be an object
-	checkForObject(name, segment);
+	validateObject(segment, name);
 	
 	// Create settings
 	const settings = mergeSettings(masterSettings, segment, name);
@@ -406,7 +406,7 @@ function buildSegment(name, segment, vectorFactory, masterSettings, isClosed) {
 function constructSegmentPoint(name, rawPoint, masterSettings) {
 	
 	// The raw point must be an object
-	checkForObject(name, rawPoint);
+	validateObject(rawPoint, name);
 	
 	// The raw point cannot have a 'precision' element
 	if (rawPoint.precision != null) {
@@ -419,29 +419,29 @@ function constructSegmentPoint(name, rawPoint, masterSettings) {
 	
 	// The raw point must have a center object with x, y, and z numeric
 	// elements
-	segmentPoint.center = checkForVector(
-		name + '.center',
+	segmentPoint.center = validateVector3(
 		rawPoint.center,
-		coords3);
+		coords3,
+		name + '.center');
 	
 	// If the raw point has a 'forward' vector, validate that. Otherwise
 	// use the vector (1, 0, 0)
 	if (rawPoint.forward == null) {
 		segmentPoint.forward = {x:1, y:0, z:0};
 	} else {
-		segmentPoint.forward = checkForVector(
-			name + '.forward',
+		segmentPoint.forward = validateVector3(
 			rawPoint.forward,
-			coords3);
+			coords3,
+			name + '.forward');
 	}
 	
 	// Get the weights
-	segmentPoint.forwardWeight = this.checkForWeight(
-		name + '.forwardWeight',
-		rawPoint.forwardWeight);
-	segmentPoint.backwardWeight = this.checkForWeight(
-		name + '.backwardWeight',
-		rawPoint.backwardWeight);
+	segmentPoint.forwardWeight = this.validateWeight(
+		rawPoint.forwardWeight,
+		name + '.forwardWeight');
+	segmentPoint.backwardWeight = this.validateWeight(
+		rawPoint.backwardWeight,
+		name + '.backwardWeight');
 		
 	// And we are done!
 	return segmentPoint;
