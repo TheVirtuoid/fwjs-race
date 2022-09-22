@@ -190,6 +190,15 @@ const vector = {
 	
 	down: { x:0, y:-1, z:0 },
 	
+	interpolate: function(u, v, t) {
+		const olt = 1 - t;
+		return {
+			x: olt * u.x + t * v.x,
+			y: olt * u.y + t * v.y,
+			z: olt * u.z + t * v.z,
+		}
+	},
+	
 	length: function(u) {
 		return Math.sqrt(u.x * u.x + u.y * u.y + u.z * u.z);
 	},
@@ -276,7 +285,7 @@ function buildCurve(ribbon, sp0, sp1, vectorFactory, settings) {
 			vector.add(sp1.center, -sp1.backwardWeight, sp1.forward),
 			sp1.center,
 		],
-		trackBanks: [ sp0.trackBank, sp1.trackBank ],
+		trackBanks: [ getSegmentPointDownVector(sp0), getSegmentPointDownVector(sp1) ],
 		trackWidths: [ sp0.trackWidth, sp1.trackWidth ],
 		wallHeights: [ sp0.wallHeight, sp1.wallHeight ],
 	}
@@ -313,25 +322,8 @@ function getBezierPoint(curve, t) {
 	const trackWidth = olt * curve.trackWidths[0] + t * curve.trackWidths[1];
 	const wallHeight = olt * curve.wallHeights[0] + t * curve.wallHeights[1];
 	
-	// TODO: See how much of the down calculation can be moved to
-	// addRibbonSlice. In theory, all we need to compute is the banking and
-	// not the actual down vector. This saves a bit of time as
-	// interpolateCurve computes midpoints for the precision test that it
-	// then may not use.
-	
-	// Compute the down vector. This must be orthogonal to the forward vector.
-	// Remove any component of the down vector inline with the forward vector.
-	let down = vector.down;
-	const dot = vector.dot(forward, down);
-	if (dot > .0001) {
-		down = vector.normalize(vector.add(down, -dot, forward));
-	}
-	
-	// Compute the banking. If not zero, then rotate the down vector.
-	const trackBank = olt * curve.trackBanks[0] + t * curve.trackBanks[1];
-	if (Math.abs(trackBank) > .0001) {
-		down = vector.rotate(forward, down, trackBank);
-	}
+	// Interpolate the down vector
+	const down = vector.normalize(vector.interpolate(curve.trackBanks[0], curve.trackBanks[1], t));
 	
 	return {
 		center: center,				// center line position at t
@@ -340,6 +332,27 @@ function getBezierPoint(curve, t) {
 		trackWidth: trackWidth,
 		wallHeight: wallHeight,
 	};
+}
+
+function getSegmentPointDownVector(sp) {
+	
+	// We are done if we already have a vector
+	if (isVector3(sp.trackBank)) return sp.trackBank;
+	
+	// Compute the true 'down' vector. This must be orthogonal to the forward vector.
+	// Remove any component of the down vector inline with the forward vector.
+	let down = vector.down;
+	const dot = vector.dot(sp.forward, down);
+	if (Math.abs(dot) > .0001)  {
+		down = vector.normalize(vector.add(down, -dot, sp.forward));
+	}
+	
+	// Rotate the down vector if there is banking
+	if (Math.abs(sp.trackBank) > .0001) {
+		down = vector.rotate(forward, down, sp.trackBank);
+	}
+	
+	return vector.normalize(down);
 }
 
 // Generate the Bezier cubic curve between t0 and t1
