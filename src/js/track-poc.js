@@ -349,7 +349,7 @@ function getSegmentPointDownVector(sp) {
 	
 	// Rotate the down vector if there is banking
 	if (Math.abs(sp.trackBank) > .0001) {
-		down = vector.rotate(forward, down, sp.trackBank);
+		down = vector.rotate(sp.forward, down, sp.trackBank);
 	}
 	
 	return vector.normalize(down);
