@@ -19,58 +19,15 @@ const validSettings = [
 	{ key: 'wallHeight', isPositive: true },
 ];
 
-function checkForArray(name, value, minElements) {
-	const ok = typeof(value) === 'object' &&
-		value.constructor.toString().indexOf('Array') > -1;
-	if (!ok) {
-		throw new TypeError(`${name} must be an Array`);
-	}
-	if (value.length < minElements) {
-		throw new RangeError(`${name} must have at least ${minElements} element(s)`);
-	}
-}
-
-function checkForObject(name, value) {
-	if (typeof(value) !== 'object') {
-		throw new TypeError(`${name} must be an object`);
-	}
-}
-
-function checkForVector(name, value, coords) {
-	if (typeof(value) !== 'object') {
-		throw new TypeError(`${name} must be an object`);
-	}
-	
-	let result = {};
-	for (let coord of coords) {
-		if (typeof(value[coord]) !== 'number') {
-			throw new TypeError(`${name}.${coord} must be a number`);
-		}
-		result[coord] = value[coord];
-	}
-	return result;
-}
-	
-function checkForWeight(name, value) {
-	if (value === null || value === undefined) return 1;
-	if (typeof(value) !== 'number') {
-		throw new TypeError(`${name} must be a number`);
-	}
-	if (value <= 0) {
-		throw new RangeError(`${name} must be positive`);
-	}
-	return value;
-}
-
 function combineNames(prefix, name) {
 	if (prefix.length == 0) return name;
 	return prefix + '.' + name;
 }
 
 function jsonOrObject(o, name) {
-	if (typeof(o) === 'string') return JSON.parse(o);
-	else if (typeof(o) === 'object') return o;
-	else throw new TypeError(`${name} must be an JSON string or object`);
+	if (isString(o)) return JSON.parse(o);
+	if (isObject(o)) return o;
+	throw new TypeError(`${name} must be an JSON string or object`);
 }
 
 function mergeSettings(namePrefix, masterSettings, overrideSettings) {
@@ -83,8 +40,82 @@ function mergeSettings(namePrefix, masterSettings, overrideSettings) {
 	return mergedSettings;
 }
 
+//==============================================================================
+// TYPE CHECKERS
+
+function isArray(value) {
+	return isObject(value) && isInstance(value, 'Array');
+}
+
+function isDefault(value) {
+	return value === null || value === undefined;
+}
+
+function isDefined(value) {
+	return value !== null && value !== undefined;
+}
+
+function isFunction(value) {
+	return typeof(value) === 'function';
+}
+
+function isInstance(value, className) {
+	return value.constructor.toString().indexOf(className) > -1;
+}
+
+function isNumber(value) {
+	return typeof(value) === 'number';
+}
+
+function isObject(value) {
+	return typeof(value) === 'object';
+}
+
+function isPositiveNumber(value) {
+	return isNumber(value) && value > 0;
+}
+
+function isString(value) {
+	return typeof(value) === 'string';
+}
+
+function isVector(value, coords) {
+	if (!isObject(value)) return false;
+	for (let coord of coords) {
+		if (!isNumber(value[coord])) return false;
+	}
+	return true;
+}
+
+//==============================================================================
+// VALIDATORS
+
+function checkForArray(name, value, minElements) {
+	if (isArray(value)) {
+		if (value.length >= minElements) return value;
+		throw new RangeError(`${name} must have at least ${minElements} element(s)`);
+	}
+	throw new TypeError(`${name} must be an Array`);
+}
+
+function checkForObject(name, value) {
+	if (isObject(value)) return value;
+	throw new TypeError(`${name} must be an object`);
+}
+
+function checkForVector(name, value, coords) {
+	if (isVector(value, coords)) return value;
+	throw new TypeError(`${name} must be a vector`);
+}
+	
+function checkForWeight(name, value) {
+	if (isDefault(value)) return 1;
+	if (isPositiveNumber(value)) return value;
+	throw new RangeError(`${name} must be a positive number`);
+}
+
 function validateValue(namePrefix, vs, value) {
-	if (typeof(value) !== 'number') {
+	if (!isNumber(value)) {
 		throw new TypeError(`${combineNames(namePrefix, vs.key)} must be a number`);
 	}
 	if (vs.isPositive && value <= 0) {
@@ -439,14 +470,15 @@ function buildTrack(track, vectorFactory, masterSettings) {
 // vectorFactory	function to build an application friendly 3D vector,
 //					v = vectorFactory(u) where u has keys x, y, z.
 // settings			application settings for the build
+
 TrackPOC.build = function(specs, vectorFactory, appSettings = {}) {
 	
 	// Validate the arguments
 	const objSpecs = jsonOrObject(specs, 'specs');
-	if (typeof(vectorFactory) !== 'function') {
+	if (!isFunction(vectorFactory)) {
 		throw new TypeError('vectorFactory must be a function');
 	}
-	if (typeof(appSettings) !== 'object') {
+	if (!isObject(appSettings)) {
 		throw new TypeError('appSettings must be an object');
 	}
 
