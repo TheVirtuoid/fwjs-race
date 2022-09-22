@@ -1,6 +1,15 @@
 const TrackPOC = {}
 
 //==============================================================================
+// NOTES
+//
+// (1)	Any function that takes a 'name' argument treats 'name' as either a
+//		function that returns a string or a string. This allows late creation
+//		of strings, mainly for the occasional exception. The function
+//		'resolveName' handles this resolution of the name.
+
+
+//==============================================================================
 // HELPER ROUTINES
 
 const coords3 = ['x', 'y', 'z'];
@@ -19,24 +28,29 @@ const validSettings = [
 	{ key: 'wallHeight', isPositive: true },
 ];
 
-function combineNames(prefix, name) {
-	return prefix.length == 0 ? name : (prefix + '.' + name);
+function combineNames(prefix, postfix) {
+	return prefix.length == 0 ? postfix : (prefix + '.' + postfix);
 }
 
-function jsonOrObject(o, getName) {
+function jsonOrObject(o, name) {
 	if (isString(o)) return JSON.parse(o);
 	if (isObject(o)) return o;
-	throw new TypeError(`${getName()} must be an JSON string or object`);
+	throw new TypeError(`${resolveName(name)} must be an JSON string or object`);
 }
 
-function mergeSettings(namePrefix, masterSettings, overrideSettings) {
+function mergeSettings(masterSettings, overrideSettings, name) {
 	const mergedSettings = {...masterSettings};
 	for (let vs of validSettings) {
-		if (!(overrideSettings[vs.key] === undefined || overrideSettings[vs.key] === null)) {
-			mergedSettings[vs.key] = validateValue(namePrefix, vs, overrideSettings[vs.key]);
+		const value = overrideSettings[vs.key];
+		if (isDefined(value)) {
+			mergedSettings[vs.key] = validateValue(resolveName(name), vs, value);
 		}
 	}
 	return mergedSettings;
+}
+
+function resolveName(name) {
+	return isFunction(name) ? name() : name;
 }
 
 //==============================================================================
@@ -105,12 +119,12 @@ function checkForWeight(name, value) {
 	throw new RangeError(`${name} must be a positive number`);
 }
 
-function validateSizedArray(value, minElements, getName) {
+function validateSizedArray(value, minElements, name) {
 	if (isArray(value)) {
 		if (value.length >= minElements) return value;
-		throw new RangeError(`${getName()} must have at least ${minElements} element(s)`);
+		throw new RangeError(`${resolveName(name)} must have at least ${minElements} element(s)`);
 	}
-	throw new TypeError(`${getName()} must be an Array`);
+	throw new TypeError(`${resolveName(name)} must be an Array`);
 }
 
 function validateValue(namePrefix, vs, value) {
@@ -360,7 +374,7 @@ function buildSegment(name, segment, vectorFactory, masterSettings, isClosed) {
 	checkForObject(name, segment);
 	
 	// Create settings
-	const settings = mergeSettings(name, masterSettings, segment);
+	const settings = mergeSettings(masterSettings, segment, name);
 	
 	// Make sure that 'points' is an array with at least two elements
 	validateSizedArray(segment.points, 2, () => { return name + '.points' });
@@ -400,7 +414,7 @@ function constructSegmentPoint(name, rawPoint, masterSettings) {
 	}
 	
 	// Create the point with its settings and name
-	const segmentPoint = mergeSettings(name, masterSettings, rawPoint);
+	const segmentPoint = mergeSettings(masterSettings, rawPoint, name);
 	segmentPoint.name = name;
 	
 	// The raw point must have a center object with x, y, and z numeric
@@ -439,10 +453,10 @@ function constructSegmentPoint(name, rawPoint, masterSettings) {
 function buildTrack(track, vectorFactory, masterSettings) {
 	
 	// Create settings
-	const settings = mergeSettings('track', masterSettings, track);
+	const settings = mergeSettings(masterSettings, track, 'track');
 	
 	// Make sure that 'segments' is an array with at least one element
-	validateSizedArray(track.segments, 1, () => { return 'track.segments'; }); 
+	validateSizedArray(track.segments, 1, 'track.segments'); 
 	
 	// Check if this is a closed track
 	const isClosed = track.segments.length == 1 && track.closed;
@@ -473,7 +487,7 @@ function buildTrack(track, vectorFactory, masterSettings) {
 TrackPOC.build = function(specs, vectorFactory, appSettings = {}) {
 	
 	// Validate the arguments
-	const objSpecs = jsonOrObject(specs, () => { return 'specs'; });
+	const objSpecs = jsonOrObject(specs, 'specs');
 	if (!isFunction(vectorFactory)) {
 		throw new TypeError('vectorFactory must be a function');
 	}
@@ -482,7 +496,7 @@ TrackPOC.build = function(specs, vectorFactory, appSettings = {}) {
 	}
 
 	// Create a settings block. This also validates the settings.
-	const settings = mergeSettings('appSettings', defaultSettings, appSettings);
+	const settings = mergeSettings(defaultSettings, appSettings, 'appSettings');
 	
 	// Build the ribbons
 	return buildTrack(objSpecs, vectorFactory, settings);
