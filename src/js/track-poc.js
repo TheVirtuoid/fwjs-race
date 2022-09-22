@@ -104,6 +104,8 @@ function validateValue(namePrefix, vs, value) {
 
 const vector = {
 	
+	angleToRadians: Math.PI / 180,
+	
 	add: function(u, k, v) {
 		return {
 			x: u.x + k * v.x,
@@ -130,6 +132,10 @@ const vector = {
 	
 	distance: function(u, v) {
 		return vector.length(this.difference(u, v));
+	},
+	
+	dot: function(u, v) {
+		return u.x * v.x + u.y * v.y + u.z * v.z;
 	},
 	
 	down: { x:0, y:-1, z:0 },
@@ -163,6 +169,15 @@ const vector = {
 		};
 	},
 	
+	rotate: function(axis, u, angle) {
+		const theta = angle * vector.angleToRadians;
+		const cosTheta = Math.cos(theta);
+		const sinTheta = Math.sin(theta);
+		let result = vector.multiply(cosTheta, u);
+		result = vector.add(result, sinTheta, vector.cross(axis, u));
+		return vector.add(result, vector.dot(axis, u) * (1 - cosTheta), axis);
+	},
+	
 	sum: function(coeffs, us) {
 		let sum = vector.zero;
 		for (let i = 0; i < coeffs.length; i++) {
@@ -181,11 +196,11 @@ const vector = {
 // top, [1] left road edge, [2] right road edge, and [3] right wall top.
 
 function addRibbonSlice(ribbon, bp, vectorFactory) {
-	const left = vector.normalize(vector.cross(bp.forward, bp.roadBed));
-	const wall = vector.multiply(-bp.wallHeight, bp.roadBed);
+	const left = vector.cross(bp.forward, bp.down);
+	const wall = vector.multiply(-bp.wallHeight, bp.down);
 	const edgeDistance = bp.trackWidth / 2;
-	const leftEdge = vector.add(bp.v, edgeDistance, left);
-	const rightEdge = vector.add(bp.v, -edgeDistance, left);
+	const leftEdge = vector.add(bp.center, edgeDistance, left);
+	const rightEdge = vector.add(bp.center, -edgeDistance, left);
 	ribbon[0].push(vectorFactory(vector.add(leftEdge, 1, wall)));
 	ribbon[1].push(vectorFactory(leftEdge));
 	ribbon[2].push(vectorFactory(rightEdge));
@@ -209,6 +224,7 @@ function buildCurve(ribbon, sp0, sp1, vectorFactory, settings) {
 			vector.add(sp1.center, -sp1.backwardWeight, sp1.forward),
 			sp1.center,
 		],
+		trackBanks: [ sp0.trackBank, sp1.trackBank ],
 		trackWidths: [ sp0.trackWidth, sp1.trackWidth ],
 		wallHeights: [ sp0.wallHeight, sp1.wallHeight ],
 	}
@@ -225,32 +241,58 @@ function buildCurve(ribbon, sp0, sp1, vectorFactory, settings) {
 function getBezierPoint(curve, t) {
 	const olt = 1 - t;	// one less t
 
-	// Compute the point
+	// Compute the point at t
+	// v(t) = (1-t)^3*p0 + 3*(1-t)^2*t*p1 + 3*(1-t)*t^2*p2 + t^3*p3
 	let coeffs = [olt * olt * olt, 3 * olt * olt * t, 3 * olt * t * t, t * t * t];
-	const v = vector.sum(coeffs, curve.points);
+	const center = vector.sum(coeffs, curve.points);
 	
-	// Compute the slope
+	// Compute the forward vector with is the tangent at t
+	// v'(t) = 3*(1-t)^2*(p1 - p0) + 6*(1-t)*t*(p2-p1) + 3*t^2*(p3-p2).
+	// Note that we normalize this to get a unit vector.
 	coeffs = [3 * olt *olt, 6 * olt * t, 3 * t * t];
 	const deltaPoints = [
 		vector.add(curve.points[1], -1, curve.points[0]),
 		vector.add(curve.points[2], -1, curve.points[1]),
 		vector.add(curve.points[3], -1, curve.points[2]),
 	];
-	const forward = vector.sum(coeffs, deltaPoints);
+	const forward = vector.normalize(vector.sum(coeffs, deltaPoints));
 	
-	// TODO: Need to compute roadbed
+	// Compute the track width and wall height through linear interpolation
+	const trackWidth = olt * curve.trackWidths[0] + t * curve.trackWidths[1];
+	const wallHeight = olt * curve.wallHeights[0] + t * curve.wallHeights[1];
+	
+	// TODO: See how much of the down calculation can be moved to
+	// addRibbonSlice. In theory, all we need to compute is the banking and
+	// not the actual down vector. This saves a bit of time as
+	// interpolateCurve computes midpoints for the precision test that it
+	// then may not use.
+	
+	// Compute the down vector. This must be orthogonal to the forward vector.
+	// Remove any component of the down vector inline with the forward vector.
+	let down = vector.down;
+	const dot = vector.dot(forward, down);
+	if (dot > .0001) {
+		down = vector.normalize(vector.add(down, -dot, forward));
+	}
+	
+	// Compute the banking. If not zero, then rotate the down vector.
+	const trackBank = olt * curve.trackBanks[0] + t * curve.trackBanks[1];
+	if (Math.abs(trackBank) > .0001) {
+		down = vector.rotate(forward, down, trackBank);
+	}
+	
 	return {
-		v: v,
-		forward: forward,
-		roadBed: vector.down,
-		trackWidth: olt * curve.trackWidths[0] + t * curve.trackWidths[1],
-		wallHeight: olt * curve.wallHeights[0] + t * curve.wallHeights[1],
+		center: center,				// center line position at t
+		down: down,					// Down vector at t
+		forward: forward,			// Forward vector at t
+		trackWidth: trackWidth,
+		wallHeight: wallHeight,
 	};
 }
 
 // Generate the Bezier cubic curve between t0 and t1
-function interpolateCurve(ribbon, curve, t0, t1, bpt0, bpt1, vectorFactory, precision)
-{
+function interpolateCurve(ribbon, curve, t0, t1, bpt0, bpt1, vectorFactory, precision) {
+	
 	// NOTE: A cubic Bezier curve generates points, or slices in our case,
 	// p0, ..., pn where p0 is the point at t0 and pn is the point at t1.
 	// However, for consecutive curves c and d, the last point of c is the
@@ -260,8 +302,8 @@ function interpolateCurve(ribbon, curve, t0, t1, bpt0, bpt1, vectorFactory, prec
 	
 	// Calculate the linear and curve midpoints of the current subsection
 	const midtime = (t0 + t1) / 2;
-	const lmp = vector.midpoint(bpt0.v, bpt1.v);	// Linear midpoint
-	const bmp = getBezierPoint(curve, midtime);	// Bezier midpoint
+	const lmp = vector.midpoint(bpt0.center, bpt1.center);	// Linear midpoint
+	const bmp = getBezierPoint(curve, midtime);				// Bezier midpoint
 
 	// TODO: This precision test is insufficient. It is possible for the curve to pass
 	// through the linear midpoint but the tangent at the midpoint be different (e.g.,
@@ -271,7 +313,7 @@ function interpolateCurve(ribbon, curve, t0, t1, bpt0, bpt1, vectorFactory, prec
 	// to the  ribbon. Otherwise recursively add the sections of the curve
 	// (t0, midtime) and (midtime, t1). Note that the latter eventually adds
 	// the midpoint calcuated here.
-	if (vector.distance(lmp, bmp.v) <= precision) {
+	if (vector.distance(lmp, bmp.center) <= precision) {
 		addRibbonSlice(ribbon, bpt0, vectorFactory);  
 	} else {
 		interpolateCurve(ribbon, curve, t0, midtime, bpt0, bmp, vectorFactory, precision);

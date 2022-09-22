@@ -48,8 +48,9 @@
 			<option value="track1">Track 1 (single ramp)</option>
 			<option value="track1a">Track 1a (track 1 with variable track width)</option>
 			<option value="track2">Track 2 (ramp with jump and left curve)</option>
-			<!--option value="track2a">Track 2a (track 2 with 23&#176; bank)</option-->
+			<option value="track2a">Track 2a (track 2 with 45&#176; bank)</option>
 			<option value="track3">Track 3 (ramp with jump and right curve)</option>
+			<option value="track3a">Track 3a (track 3 with 45&#176; bank)</option>
 		</select>
 	</div>
 	<div>
@@ -159,19 +160,24 @@
 		options.track0a = t0ads;
 		
 		//----------------------------------------------------------------------
-		// Track 1, a simple slope
-		const t1v1 = { x:10 , y:5, z:0 };
-		const t1v2 = { x:9, y:4.9, z:0 };
-		const t1t1_2 = TrackPOC.vector.direction(t1v1, t1v2);
-		const t1ep1 = {	// Start of starting ramp
-			center: t1v1,
-			forward: t1t1_2,
+		// Common launch points
+		
+		const lv1 = { x:10 , y:5, z:0 };
+		const lv2 = { x:9, y:4.9, z:0 };
+		const lt1_2 = TrackPOC.vector.direction(lv1, lv2);
+		const lep1 = {	// Start of starting ramp
+			center: lv1,
+			forward: lt1_2,
 		};
-		const t1ep2 = {	// End of starting ramp, start of runout
-			center: t1v2,
-			forward: t1t1_2,
+		const lep2 = {	// End of starting ramp, start of runout
+			center: lv2,
+			forward: lt1_2,
 			forwardWeight: 1.1,
 		};
+		
+		//----------------------------------------------------------------------
+		// Track 1, a simple slope
+
 		const t1ep3 = {	// End of slope, start of runout
 			center: zero,
 			forward: negX,
@@ -183,7 +189,7 @@
 		};
 		
 		const t1s1 = {
-			points: [ t1ep1, t1ep2, t1ep3, t1ep4 ]
+			points: [ lep1, lep2, t1ep3, t1ep4 ]
 		};
 		
 		tracks.track1 = {
@@ -192,18 +198,7 @@
 		
 		//----------------------------------------------------------------------
 		// Track 1a, track 1 with variable track width
-		const t1av1 = { x:10 , y:5, z:0 };
-		const t1av2 = { x:9, y:4.9, z:0 };
-		const t1at1_2 = TrackPOC.vector.direction(t1v1, t1v2);
-		const t1aep1 = {	// Start of starting ramp
-			center: t1v1,
-			forward: t1t1_2,
-		};
-		const t1aep2 = {	// End of starting ramp, start of runout
-			center: t1v2,
-			forward: t1t1_2,
-			forwardWeight: 1.1,
-		};
+
 		const t1aep3 = {	// End of slope, start of runout
 			center: zero,
 			forward: negX,
@@ -216,11 +211,32 @@
 		};
 		
 		const t1as1 = {
-			points: [ t1aep1, t1aep2, t1aep3, t1aep4 ]
+			points: [ lep1, lep2, t1aep3, t1aep4 ]
 		};
 		
 		tracks.track1a = {
 			segments: [ t1as1 ]
+		};
+		
+		//----------------------------------------------------------------------
+		// Common jump ramp points
+
+		const jrep3 = {
+			center: { x:.5, y:1, z:0 },
+			forward: negX,
+			backwardWeight: 4,
+		};
+
+		const jrep4 = {	// Start of catch
+			center: { x:-.5, y:.9, z:0 },
+			forward: negX,
+		};
+
+		const jrv5 = { x:-1.5, y:.8, z:0 };
+		const jrt5 = negX;
+
+		const jrs1 = {
+			points: [ lep1, lep2, jrep3 ]
 		};
 		
 		//----------------------------------------------------------------------
@@ -229,30 +245,9 @@
 		// NOTE: This may need some adjustments on the curve to avoid bumps where
 		// we specify the tangent to have no y component.
 		
-		const t2v1 = { x:10 , y:5, z:0 };
-		const t2v2 = { x:9, y:4.9, z:0 };
-		const t2t1_2 = TrackPOC.vector.direction(t2v1, t2v2);
-		const t2ep1 = {	// Start of starting ramp
-			center: t2v1,
-			forward: t2t1_2,
-		};
-		const t2ep2 = {	// End of starting ramp, start of runout
-			center: t2v2,
-			forward: t2t1_2,
-			forwardWeight: 1.1,
-		};
-		const t2ep3 = {	// End of slope, start of runout
-			center: { x:.5, y:1, z:0 },
-			forward: negX,
-			backwardWeight: 4,
-		};
-		const t2ep4 = {	// Start of catch
-			center: { x:-.5, y:.9, z:0 },
-			forward: negX,
-		};
 		const t2ep5 = {	// Start of curve
-			center: { x:-1.5, y:.8, z:0 },
-			forward: negX,
+			center: jrv5,
+			forward: jrt5,
 		};
 		const t2ep6 = {	// Top of curve
 			center: { x:-3, y:.7, z:-1.5 },
@@ -271,103 +266,52 @@
 			forward: posZ,
 		};
 		
-		const t2s1 = {
-			points: [ t2ep1, t2ep2, t2ep3 ]
-		};
 		const t2s2 = {
-			points: [ t2ep4, t2ep5, t2ep6, t2ep7, t2ep8, t2ep9 ]
+			points: [ jrep4, t2ep5, t2ep6, t2ep7, t2ep8, t2ep9 ]
 		};
 		
 		tracks.track2 = {
-			segments: [ t2s1, t2s2 ]
+			segments: [ jrs1, t2s2 ]
 		};
 		
 		//----------------------------------------------------------------------
 		// Track 2a, track 2 with bank
-		const t2av1 = { x:10 , y:5, z:0 };
-		const t2av2 = { x:9, y:4.9, z:0 };
-		const t2at1_2 = TrackPOC.vector.direction(t2av1, t2av2);
-		const t2aep1 = {	// Start of starting ramp
-			center: t2av1,
-			forward: t2at1_2,
-		};
-		const t2aep2 = {	// End of starting ramp, start of runout
-			center: t2av2,
-			forward: t2at1_2,
-			forwardWeight: 1.1,
-		};
-		const t2aep3 = {	// End of slope, start of runout
-			center: { x:.5, y:1, z:0 },
-			forward: negX,
-			backwardWeight: 4,
-		};
-		const t2aep4 = {	// Start of catch
-			center: { x:-.5, y:.9, z:0 },
-			forward: negX,
-		};
+		
 		const t2aep5 = {	// Start of curve
-			center: { x:-1.5, y:.8, z:0 },
-			forward: negX,
+			center: jrv5,
+			forward: jrt5,
 			trackBank: 10,
 		};
 		const t2aep6 = {	// Top of curve
 			center: { x:-3, y:.7, z:-1.5 },
 			forward: negZ,
-			trackBank: 23,
+			trackBank: 45,
 		};
 		const t2aep7 = {	// Left extent of curve
 			center: { x:-1.5, y:.6, z:-3 },
 			forward: posX,
-			trackBank: 23,
+			trackBank: 45,
 		};
 		const t2aep8 = {	// End of curve
 			center: { x:0, y:.5, z:-1.5 },
 			forward: posZ,
 			trackBank: 10,
 		};
-		const t2aep9 = {	// Runout
-			center: { x:0, y:0, z:2 },
-			forward: posZ,
-		};
 		
-		const t2as1 = {
-			points: [ t2aep1, t2aep2, t2aep3 ]
-		};
 		const t2as2 = {
-			points: [ t2aep4, t2aep5, t2aep6, t2aep7, t2aep8, t2aep9 ]
+			points: [ jrep4, t2aep5, t2aep6, t2aep7, t2aep8, t2ep9 ]
 		};
 		
 		tracks.track2a = {
-			segments: [ t2as1, t2as2 ]
+			segments: [ jrs1, t2as2 ]
 		};
 		
 		//----------------------------------------------------------------------
 		// Track 3, slope into a jump with a turn right looping underneath the jump
 
-		const t3v1 = { x:10 , y:5, z:0 };
-		const t3v2 = { x:9, y:4.9, z:0 };
-		const t3t1_2 = TrackPOC.vector.direction(t1v1, t1v2);
-		const t3ep1 = {	// Start of starting ramp
-			center: t3v1,
-			forward: t3t1_2,
-		};
-		const t3ep2 = {	// End of starting ramp, start of runout
-			center: t3v2,
-			forward: t3t1_2,
-			forwardWeight: 1.1,
-		};
-		const t3ep3 = {	// End of slope, start of runout
-			center: { x:.5, y:1, z:0 },
-			forward: negX,
-			backwardWeight: 4,
-		};
-		const t3ep4 = {	// Start of catch
-			center: { x:-.5, y:.9, z:0 },
-			forward: negX,
-		};
 		const t3ep5 = {	// Start of curve
-			center: { x:-1.5, y:.8, z:0 },
-			forward: negX,
+			center: jrv5,
+			forward: jrt5,
 		};
 		const t3ep6 = {	// Top of curve
 			center: { x:-3, y:.7, z:1.5 },
@@ -386,19 +330,45 @@
 			forward: negZ,
 		};
 		
-		const t3s1 = {
-			points: [ t3ep1, t3ep2, t3ep3 ]
-		};
 		const t3s2 = {
-			points: [ t3ep4, t3ep5, t3ep6, t3ep7, t3ep8, t3ep9 ]
+			points: [ jrep4, t3ep5, t3ep6, t3ep7, t3ep8, t3ep9 ]
 		};
 		
 		tracks.track3 = {
-			segments: [ t3s1, t3s2 ]
+			segments: [ jrs1, t3s2 ]
 		};
 		
 		//----------------------------------------------------------------------
 		// Track 3a, track 3 with bank
+
+		const t3aep5 = {	// Start of curve
+			center: jrv5,
+			forward: jrt5,
+			trackBank: -10,
+		};
+		const t3aep6 = {	// Top of curve
+			center: { x:-3, y:.7, z:1.5 },
+			forward: posZ,
+			trackBank: -45,
+		};
+		const t3aep7 = {	// Right extent of curve
+			center: { x:-1.5, y:.6, z:3 },
+			forward: posX,
+			trackBank: -45,
+		};
+		const t3aep8 = {	// End of curve
+			center: { x:0, y:.5, z:1.5 },
+			forward: negZ,
+			trackBank: -10,
+		};
+		
+		const t3as2 = {
+			points: [ jrep4, t3aep5, t3aep6, t3aep7, t3aep8, t3ep9 ]
+		};
+		
+		tracks.track3a = {
+			segments: [ jrs1, t3as2 ]
+		};
 		
 		//----------------------------------------------------------------------
 		// Track 4, slope into a loop
