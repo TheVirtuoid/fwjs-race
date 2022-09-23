@@ -101,6 +101,12 @@
 		const posZ = new BABYLON.Vector3.Forward;
 		const negZ = new BABYLON.Vector3.Backward;
 		const zero = { x:0, y:0, z:0 };
+
+		// See https://spencermortensen.com/articles/bezier-circle/
+		// If we want a closer approximation, we would need to break the
+		// convention that backward = -forward and allow backward to be
+		// forward rotated 180 degrees around down.
+		const circleWeight = 0.5519150244935105707435627;
 		
 		//----------------------------------------------------------------------
 		// Track 0, the original demo track
@@ -227,6 +233,11 @@
 		
 		//----------------------------------------------------------------------
 		// Common jump ramp points
+		
+		const jrGap = 1;
+		const jrRadius = 2;
+		const jrCatchDrop = .1;
+		const jrDescent = 1;
 
 		const jrep3 = {
 			center: { x:.5, y:1, z:0 },
@@ -235,11 +246,19 @@
 		};
 
 		const jrep4 = {	// Start of catch
-			center: { x:-.5, y:.9, z:0 },
+			center: {
+				x: jrep3.center.x - jrGap,
+				y: jrep3.center.y - jrCatchDrop,
+				z: jrep3.center.z,
+			},
 			forward: negX,
 		};
 
-		const jrv5 = { x:-1.5, y:.8, z:0 };
+		const jrv5 = {
+			x: jrep4.center.x - jrRadius + jrGap / 2,
+			y: jrep4.center.y - jrDescent / 4,
+			z: jrep4.center.z
+		};
 		const jrt5 = negX;
 
 		const jrs1 = {
@@ -255,21 +274,43 @@
 		const t2ep5 = {	// Start of curve
 			center: jrv5,
 			forward: jrt5,
+			forwardWeight: circleWeight * jrRadius,
 		};
 		const t2ep6 = {	// Top of curve
-			center: { x:-3, y:.7, z:-1.5 },
+			backwardWeight: circleWeight * jrRadius,
+			center: {
+				x: t2ep5.center.x - jrRadius,
+				y: t2ep5.center.y - jrDescent / 4,
+				z: t2ep5.center.z - jrRadius,
+			},
 			forward: negZ,
+			forwardWeight: circleWeight * jrRadius,
 		};
 		const t2ep7 = {	// Left extent of curve
-			center: { x:-1.5, y:.6, z:-3 },
+			backwardWeight: circleWeight * jrRadius,
+			center: {
+				x: t2ep6.center.x + jrRadius,
+				y: t2ep6.center.y - jrDescent / 4,
+				z: t2ep6.center.z - jrRadius
+			},
 			forward: posX,
+			forwardWeight: circleWeight * jrRadius,
 		};
 		const t2ep8 = {	// End of curve
-			center: { x:0, y:.5, z:-1.5 },
+			backwardWeight: circleWeight * jrRadius,
+			center: {
+				x: t2ep7.center.x + jrRadius,
+				y: t2ep7.center.y - jrDescent / 4,
+				z: t2ep7.center.z + jrRadius
+			},
 			forward: posZ,
 		};
 		const t2ep9 = {	// Runout
-			center: { x:0, y:0, z:2 },
+			center: {
+				x: t2ep8.center.x,
+				y: t2ep8.center.y,
+				z: t2ep8.center.z + 2 * jrRadius
+			},
 			forward: posZ,
 		};
 		
@@ -285,23 +326,29 @@
 		// Track 2a, track 2 with bank
 		
 		const t2aep5 = {	// Start of curve
-			center: jrv5,
-			forward: jrt5,
+			center: t2ep5.center,
+			forward: t2ep5.forward,
+			forwardWeight: t2ep5.forwardWeight,
 			trackBank: 10,
 		};
 		const t2aep6 = {	// Top of curve
-			center: { x:-3, y:.7, z:-1.5 },
-			forward: negZ,
+			backwardWeight: t2ep6.backwardWeight,
+			center: t2ep6.center,
+			forward: t2ep6.forward,
+			forwardWeight: t2ep6.forwardWeight,
 			trackBank: 45,
 		};
 		const t2aep7 = {	// Left extent of curve
-			center: { x:-1.5, y:.6, z:-3 },
-			forward: posX,
+			backwardWeight: t2ep7.backwardWeight,
+			center: t2ep7.center,
+			forward: t2ep7.forward,
+			forwardWeight: t2ep7.forwardWeight,
 			trackBank: 45,
 		};
 		const t2aep8 = {	// End of curve
-			center: { x:0, y:.5, z:-1.5 },
-			forward: posZ,
+			backwardWeight: t2ep8.backwardWeight,
+			center: t2ep8.center,
+			forward: t2ep8.forward,
 			trackBank: 10,
 		};
 		
@@ -319,21 +366,43 @@
 		const t3ep5 = {	// Start of curve
 			center: jrv5,
 			forward: jrt5,
+			forwardWeight: circleWeight * jrRadius,
 		};
 		const t3ep6 = {	// Top of curve
-			center: { x:-3, y:.7, z:1.5 },
+			backwardWeight: circleWeight * jrRadius,
+			center: {
+				x: t3ep5.center.x - jrRadius,
+				y: t3ep5.center.y - jrDescent / 4,
+				z: t3ep5.center.z + jrRadius,
+			},
 			forward: posZ,
+			forwardWeight: circleWeight * jrRadius,
 		};
 		const t3ep7 = {	// Right extent of curve
-			center: { x:-1.5, y:.6, z:3 },
+			backwardWeight: circleWeight * jrRadius,
+			center: {
+				x: t3ep6.center.x + jrRadius,
+				y: t3ep6.center.y - jrDescent / 4,
+				z: t3ep6.center.z + jrRadius
+			},
 			forward: posX,
+			forwardWeight: circleWeight * jrRadius,
 		};
 		const t3ep8 = {	// End of curve
-			center: { x:0, y:.5, z:1.5 },
+			backwardWeight: circleWeight * jrRadius,
+			center: {
+				x: t3ep7.center.x + jrRadius,
+				y: t3ep7.center.y - jrDescent / 4,
+				z: t3ep7.center.z - jrRadius
+			},
 			forward: negZ,
 		};
 		const t3ep9 = {	// Runout
-			center: { x:0, y:0, z:-2 },
+			center: {
+				x: t2ep8.center.x,
+				y: t2ep8.center.y,
+				z: t2ep8.center.z - 2 * jrRadius
+			},
 			forward: negZ,
 		};
 		
@@ -349,23 +418,29 @@
 		// Track 3a, track 3 with bank
 
 		const t3aep5 = {	// Start of curve
-			center: jrv5,
-			forward: jrt5,
+			center: t3ep5.center,
+			forward: t3ep5.forward,
+			forwardWeight: t3ep5.forwardWeight,
 			trackBank: -10,
 		};
 		const t3aep6 = {	// Top of curve
-			center: { x:-3, y:.7, z:1.5 },
-			forward: posZ,
+			backwardWeight: t3ep6.backwardWeight,
+			center: t3ep6.center,
+			forward: t3ep6.forward,
+			forwardWeight: t3ep6.forwardWeight,
 			trackBank: -45,
 		};
 		const t3aep7 = {	// Right extent of curve
-			center: { x:-1.5, y:.6, z:3 },
-			forward: posX,
+			backwardWeight: t3ep7.backwardWeight,
+			center: t3ep7.center,
+			forward: t3ep7.forward,
+			forwardWeight: t3ep7.forwardWeight,
 			trackBank: -45,
 		};
 		const t3aep8 = {	// End of curve
-			center: { x:0, y:.5, z:1.5 },
-			forward: negZ,
+			backwardWeight: t3ep8.backwardWeight,
+			center: t3ep8.center,
+			forward: t3ep8.forward,
 			trackBank: -10,
 		};
 		
@@ -380,9 +455,14 @@
 		//----------------------------------------------------------------------
 		// Track 4, slope into a loop
 
+		// See https://spencermortensen.com/articles/bezier-circle/
+		// If we want a closer approximation, we would need to break the
+		// convention that backward = -forward and allow backward to be
+		// forward rotated 180 degrees around down.
+
 		const t4loopRadius = 3;
 		const t4loopOffset = .4;
-		const t4loopWeight = t4loopRadius / 1.717;
+		const t4loopWeight = circleWeight * t4loopRadius;
 		
 		const t4ep3 = {	// End of slope, start of flat
 			center: zero,
@@ -488,7 +568,7 @@
 			});
 		};
 		
-		const createScene = function (track, settings = {}) {
+		const createScene = function () {
 			const scene = new BABYLON.Scene(engine);
 
 			const camera = new BABYLON.ArcRotateCamera(
@@ -542,7 +622,8 @@
 			drawLine(ribbons[0][1], green);
 			*/
 		}
-		
+
+/*		
 		const red = new BABYLON.Color4(1, 0, 0);
 		const green = new BABYLON.Color4(0, 1, 0);
 		const blue = new BABYLON.Color4(0, 0, 1);
@@ -583,6 +664,7 @@
 			for (let i = 0; i < points.length; i++) { options.colors.push(green); }
 			BABYLON.MeshBuilder.CreateLines("lines", options);
 		}
+*/
 
 		window.initFunction = async function() {
 
@@ -602,8 +684,7 @@
 
 			startRenderLoop(engine, canvas);
 			
-			// CHANGE TRACK HERE
-			window.scene = createScene(tracks[trackSelector.value]);
+			window.scene = createScene();
 			createMesh();
 		};
 		
@@ -617,15 +698,29 @@
 		});
 
 		// testing on track 2
+		const ballDiameter = .25;
+		const ballWeight = 2;
+		let ball;
 		const dropTheBall = () => {
-			const ball = BABYLON.MeshBuilder.CreateSphere("ball", { diameter: .5 }, scene);
-			ball.physicsImpostor = new BABYLON.PhysicsImpostor(ball, BABYLON.PhysicsImpostor.SphereImpostor, {mass: 1}, scene);
-			ball.position.y = 6;
-			ball.position.x = 9;
+		
+			if (ball) scene.removeMesh(ball);
+			ball = BABYLON.MeshBuilder.CreateSphere("ball", { diameter: ballDiameter }, scene);
+			ball.physicsImpostor = new BABYLON.PhysicsImpostor(ball, BABYLON.PhysicsImpostor.SphereImpostor, {mass: ballWeight}, scene);
+			
+			const track = tracks[trackSelector.value];
+			const segment = track.segments[0];
+			const p0 = segment.points[0].center;
+			const p1 = segment.points[1].center;
+			
+			const t = .8;
+			const olt = 1 - t;
+			const altitude = 1;
+			ball.position.x = p0.x * t + p1.x * olt;
+			ball.position.y = p0.y * t + p0.y * olt + altitude;	// Force the ball above the track
+			ball.position.z = p0.z * t + p1.z * olt;
 		};
 
 		document.getElementById('go').addEventListener('click', dropTheBall);
-
 
 	</script>
 </body>
