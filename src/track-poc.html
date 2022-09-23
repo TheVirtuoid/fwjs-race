@@ -9,9 +9,11 @@
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.6.2/dat.gui.min.js"></script>
 		<script src="https://assets.babylonjs.com/generated/Assets.js"></script>
 		<script src="https://preview.babylonjs.com/ammo.js"></script>
+<!--
 		<script src="https://preview.babylonjs.com/cannon.js"></script>
 		<script src="https://preview.babylonjs.com/Oimo.js"></script>
 		<script src="https://preview.babylonjs.com/earcut.min.js"></script>
+-->
 		<script src="https://preview.babylonjs.com/babylon.js"></script>
 		<script src="https://preview.babylonjs.com/materialsLibrary/babylonjs.materials.min.js"></script>
 		<script src="https://preview.babylonjs.com/proceduralTexturesLibrary/babylonjs.proceduralTextures.min.js"></script>
@@ -53,12 +55,14 @@
 			<option value="track3a">Track 3a (track 3 with 45&#176; bank)</option>
 			<option value="track4">Track 4 (loop)</option>
 		</select>
+		<button type="button" id="go">GO!</button>
 	</div>
 	<div>
 		<canvas id="renderCanvas"></canvas>
 	</div>
 	<script>
-	
+
+
 		//======================================================================
 		// TRACK SELECTION
 		const trackSelector = document.getElementById("tracks");
@@ -496,6 +500,8 @@
 			camera.attachControl(canvas, true);
 			const light = new BABYLON.HemisphericLight("hemi", new BABYLON.Vector3(0, 50, 0));
 
+			scene.enablePhysics(new BABYLON.Vector3(0, -8.91, 0), new BABYLON.AmmoJSPlugin());
+
 			return scene;
 		}
 		
@@ -512,14 +518,16 @@
 			
 			const ribbons = TrackPOC.build(track, (u) => { return new BABYLON.Vector3(u.x, u.y, u.z); }, settings);
 			for (let i = 0; i < ribbons.length; i++) {
-				trackMeshes.push(BABYLON.MeshBuilder.CreateRibbon(
-					`Segment${i}`,
-					{
-						pathArray: ribbons[i],
-						sideOrientation: BABYLON.Mesh.DOUBLESIDE,
-						closePath: track.closed,
-					},
-					scene));
+				const trackMesh = BABYLON.MeshBuilder.CreateRibbon(
+						`Segment${i}`,
+						{
+							pathArray: ribbons[i],
+							sideOrientation: BABYLON.Mesh.DOUBLESIDE,
+							closePath: track.closed,
+						},
+						scene);
+				trackMesh.physicsImpostor = new BABYLON.PhysicsImpostor(trackMesh, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0 }, scene);
+				trackMeshes.push(trackMesh);
 			}
 			
 			/*
@@ -590,6 +598,8 @@
 			window.engine = await asyncEngineCreation();
 			if (!engine) throw 'engine should not be null.';
 
+			await Ammo();
+
 			startRenderLoop(engine, canvas);
 			
 			// CHANGE TRACK HERE
@@ -605,6 +615,18 @@
 		window.addEventListener("resize", function () {
 			engine.resize();
 		});
+
+		// testing on track 2
+		const dropTheBall = () => {
+			const ball = BABYLON.MeshBuilder.CreateSphere("ball", { diameter: .5 }, scene);
+			ball.physicsImpostor = new BABYLON.PhysicsImpostor(ball, BABYLON.PhysicsImpostor.SphereImpostor, {mass: 1}, scene);
+			ball.position.y = 6;
+			ball.position.x = 9;
+		};
+
+		document.getElementById('go').addEventListener('click', dropTheBall);
+
+
 	</script>
 </body>
 </html>
