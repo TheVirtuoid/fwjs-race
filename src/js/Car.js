@@ -1,8 +1,9 @@
 import {
+	Axis,
 	Color3,
 	CreateBoxVertexData,
 	CreateCylinderVertexData,
-	Mesh, PhysicsImpostor, StandardMaterial,
+	Mesh, PhysicsImpostor, Space, StandardMaterial,
 	Vector3
 } from "@babylonjs/core";
 
@@ -36,6 +37,19 @@ export default class Car {
 			this.#vertexData.wheels[wheelName] = null;
 		});
 		this.#initialize();
+	}
+
+	get velocity () {
+		const { x, y, z } = this.#physicsAnchor.physicsImpostor.getLinearVelocity();
+		return Math.abs(x + y + z);
+	}
+
+	turnTires () {
+		if (this.velocity > 0.5) {
+			this.#wheelNames.forEach((wheelName) => {
+				this.#wheels[wheelName].rotate(Axis.Y, -.5, Space.LOCAL);
+			});
+		}
 	}
 
 	#initialize() {
@@ -88,22 +102,6 @@ export default class Car {
 
 		this.#physicsAnchor = new Mesh(`${this.#id}-physics-anchor`, scene);
 		this.#physicsAnchor.addChild(this.#body);
-		// physicsRoot.addChild(boxCollider);
-		// physicsRoot.addChild(sphereCollider);
-		// physicsRoot.position.y+=3;
-
-		// Enable physics on colliders first then physics root of the mesh
-		// boxCollider.physicsImpostor = new PhysicsImpostor(boxCollider, PhysicsImpostor.BoxImpostor, { mass: 0 }, scene);
-		// sphereCollider.physicsImpostor = new PhysicsImpostor(sphereCollider, PhysicsImpostor.SphereImpostor, { mass: 0 }, scene);
 		this.#physicsAnchor.physicsImpostor = new PhysicsImpostor(this.#physicsAnchor, PhysicsImpostor.NoImpostor, { mass: 3, friction: 0 }, scene);
-
-/*
-		this.#body.physicsImpostor = new PhysicsImpostor(this.#body, PhysicsImpostor.BoxImpostor, {}, scene);
-		this.#roof.physicsImpostor = new PhysicsImpostor(this.#roof, PhysicsImpostor.BoxImpostor, {}, scene);
-		this.#wheels.driverFront = new PhysicsImpostor(this.#wheels.driverFront, PhysicsImpostor.CylinderImpostor, {}, scene);
-		this.#wheels.driverRear = new PhysicsImpostor(this.#wheels.driverRear, PhysicsImpostor.CylinderImpostor, {}, scene);
-		this.#wheels.passengerFront = new PhysicsImpostor(this.#wheels.passengerFront, PhysicsImpostor.CylinderImpostor, {}, scene);
-		this.#wheels.passengerRear = new PhysicsImpostor(this.#wheels.passengerRear, PhysicsImpostor.CylinderImpostor, {}, scene);
-*/
 	}
 }

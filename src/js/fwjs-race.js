@@ -72,5 +72,6 @@ car.build({ scene, position: new Vector3(0, 2, 0) });
 
 engine.runRenderLoop(() => {
 	scene.render();
+	car.turnTires();
 });
 
