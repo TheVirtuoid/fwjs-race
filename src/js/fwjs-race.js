@@ -1,6 +1,9 @@
 import styles from "../css/fwjs-race.pcss";
+
+import Car from "./Car";
+
 import {
-	AmmoJSPlugin,
+	AmmoJSPlugin, Color3,
 	Engine, FreeCamera,
 	HemisphericLight, Mesh,
 	MeshBuilder, PhysicsImpostor,
@@ -30,7 +33,10 @@ const ground = MeshBuilder.CreateGround("ground1", { width: 6, height: 6 }, scen
 ground.rotation.z = Math.PI / 32;
 ground.physicsImpostor = new PhysicsImpostor(ground, PhysicsImpostor.BoxImpostor, { mass: 0, friction: 0.5, restitution: 0.7 }, scene);
 
-SceneLoader.ImportMesh("", "models/", "skull.babylon", scene, function (newMeshes) {
+const car = new Car({id: 'test', color: Color3.Green() });
+car.build({ scene, position: new Vector3(0, 2, 0) });
+
+/*SceneLoader.ImportMesh("", "models/", "skull.babylon", scene, function (newMeshes) {
 	// Scale loaded mesh
 	newMeshes[0].scaling.scaleInPlace(0.01);
 	newMeshes[0].position.set(0,0,0)
@@ -62,7 +68,7 @@ SceneLoader.ImportMesh("", "models/", "skull.babylon", scene, function (newMeshe
 	physicsRoot.rotation.x = Math.PI/5;
 	physicsRoot.rotation.z = Math.PI/6;
 
-});
+});*/
 
 engine.runRenderLoop(() => {
 	scene.render();
