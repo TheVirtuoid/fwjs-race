@@ -54,7 +54,6 @@ export default class Car {
 				faceColors: [black, black, black]
 			});
 		});
-		console.log(this.#vertexData.wheels);
 	}
 
 	#positionWheel(args) {
@@ -63,7 +62,6 @@ export default class Car {
 		const wheel = new Mesh(`${this.#id}-wheel-${wheelName}`, scene, this.#body);
 		const tire = new StandardMaterial(`${this.#id}-tire-mat`, scene);
 		tire.wireframe = true;
-		// const wheel = new Mesh(`${this.#id}-wheel-${wheelName}`, scene);
 		wheel.position = position.clone();
 		wheel.position.y += y;
 		wheel.position.z += z;
