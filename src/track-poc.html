@@ -589,6 +589,7 @@
 		
 			for (let mesh of trackMeshes) {
 				scene.removeMesh(mesh);
+				mesh.dispose();
 			}
 			trackMeshes.length = 0;
 			
