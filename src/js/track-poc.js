@@ -400,22 +400,18 @@ function buildSegment(segment, vectorFactory, masterSettings, isClosed, nameStr)
 	// Make sure that 'points' is an array with at least one element
 	validateSizedArray(segment.points, 1, () => { return nameStr + '.points' });
 	
-	// Reform the points array into two arrays of n segment builders and
+	// Reform the points array into two arrays of n section builders and
 	// n+1 segment points
 	const builders = [];
 	const points = [];
 	for (let i = 0; i < segment.points.length; i++) {
-		constructSegment(
-			builders, points, i === 0,
-			segment.points[i],
-			settings,
-			`${nameStr}.points[${i}]`);
+		parseSection(builders, points, segment.points[i], settings, `${nameStr}.points[${i}]`);
 	}
 	
-	// Ensure we have at least one constructor and two segment points
+	// Ensure we have at least one builder and two segment points
 	validateSizedArray(points, 2, () => { return nameStr + '.points' });
 	
-	// Loop through the points, creating curves between them
+	// Loop through the builders, creating curves between them
 	const ribbon = createRibbon();
 	let lastPoint = null;
 	for (let i = 0; i < builders.length; i++) {
@@ -430,27 +426,28 @@ function buildSegment(segment, vectorFactory, masterSettings, isClosed, nameStr)
 	return ribbon;
 }
 
-const segmentConstructors = {
-	point: constructSegmentPoint,
+const sectionParsers = {
+	point: parsePoint,
+	straight: parseStraight,
 };
 
-function constructSegment(builders, points, isFirst, rawPoint, masterSettings, nameStr) {
+function parseSection(builders, points, rawPoint, masterSettings, nameStr) {
 
 	// The raw point must be an object
 	validateObject(rawPoint, nameStr);
 	
 	// Check the type
-	const segmentType = isDefined(rawPoint.type) ? rawPoint.type : 'point';
-	const segmentConstructor = segmentConstructors[segmentType];
-	if (!isDefined(segmentConstructor)) {
-		throw new TypeError(`${nameStr}.type of '${segmentType}' is not recognized`);
+	const sectionType = isDefined(rawPoint.type) ? rawPoint.type : 'point';
+	const sectionParser = sectionParsers[sectionType];
+	if (!isDefined(sectionParser)) {
+		throw new TypeError(`${nameStr}.type of '${sectionType}' is not recognized`);
 	}
 	
-	// Construct the segment
-	segmentConstructor(builders, points, isFirst, rawPoint, masterSettings, nameStr);
+	// Parse the section
+	sectionParser(builders, points, rawPoint, masterSettings, nameStr);
 }
 	
-function constructSegmentPoint(builders, points, isFirst, rawPoint, masterSettings, nameStr) {
+function parsePoint(builders, points, rawPoint, masterSettings, nameStr) {
 	
 	// The raw point cannot have a 'precision' element
 	if (isDefined(rawPoint.precision)) {
@@ -463,38 +460,105 @@ function constructSegmentPoint(builders, points, isFirst, rawPoint, masterSettin
 	
 	// The raw point must have a center object with x, y, and z numeric
 	// elements
-	segmentPoint.center = validateVector3(
-		rawPoint.center,
-		coords3,
-		() => { return nameStr + '.center'; });
+	segmentPoint.center = validateVector3(rawPoint.center, () => { return nameStr + '.center'; });
 	
 	// If the raw point has a 'forward' vector, validate that. Otherwise
 	// use the vector (1, 0, 0)
 	if (rawPoint.forward == null) {
 		segmentPoint.forward = vector.right;
 	} else {
-		segmentPoint.forward = validateVector3(
-			rawPoint.forward,
-			coords3,
-			() => { return nameStr + '.forward'; });
+		segmentPoint.forward = validateVector3(rawPoint.forward, () => { return nameStr + '.forward'; });
 	}
 	
 	// Get the weights
-	segmentPoint.forwardWeight = this.validateWeight(
+	segmentPoint.forwardWeight = validateWeight(
 		rawPoint.forwardWeight,
 		() => { return nameStr + '.forwardWeight'; });
-	segmentPoint.backwardWeight = this.validateWeight(
+	segmentPoint.backwardWeight = validateWeight(
 		rawPoint.backwardWeight,
 		() => { return nameStr + '.backwardWeight'; });
 		
 	// And we are done!
 	points.push(segmentPoint);
-	if (!isFirst) {
-		builders.push({
-			builder: buildCurve,
-			precision: masterSettings.precision
-		});
+	if (points.length > 1) builders.push(createBuilder(buildCurve, masterSettings));
+}
+
+function parseStraight(builders, points, rawStraight, masterSettings, nameStr) {
+	
+	// All straight sections have either (a) a length or (b) an ending vertex.
+	// If a length is specified, the ending vertex is the starting vertex plus
+	// length times the forward direction at the starting vertex.
+	
+	// A straight section starting a segment must have a starting vertex. If
+	// it has a length, it must also have a forward direction.
+	
+	// Any interior straight section uses the last segment point as its starting
+	// vertex. Hence it cannot specify a starting vertex or forward direction at
+	// the start of the straight section.
+	
+	// The ending segment point is the ending vertex with a forward direction
+	// of the ending vertex less the starting vertex, normalized. The straight
+	// section's 'forwardWeight' and 'backwardWeight' are applied to this segment
+	// point.
+	
+	// NOTE: It is possible that the starting point's forward direction is
+	// different from the ending point's forward direction.
+	
+	// If the section starts the segment and needs to control the starting vertex'same
+	// forward weight, use the 'startingWeight' setting for the straight.
+	
+	// Check that the ending vertex or length is specified.
+	const usesLength = isDefined(rawStraight.length);
+	const usesEndsAt = isDefined(rawStraight.endsAt);
+	if (!usesLength && !usesEndsAt) {
+		throw new TypeError(`${nameStr} must define 'length' or 'endsAt'`);
 	}
+	if (usesLength && usesEndsAt) {
+		throw new TypeError(`${nameStr} cannot define both 'length' and 'endsAt'`);
+	}
+	
+	// Create the end point with its settings and name
+	const endPoint = mergeSettings(masterSettings, rawStraight, nameStr);
+	endPoint.name = nameStr;
+	if (usesEndsAt) {
+		endPoint.center = validateVector3(rawStraight.endsAt, () => { return nameStr + '.endsAt'; });
+	}
+	
+	// Get the starting vertex
+	let startPoint;
+	const generateStart = points.length === 0;
+	if (!generateStart) {
+		startPoint = points[points.length - 1];
+	} else {
+		startPoint = mergeSettings(masterSettings, rawStraight, nameStr);
+		startPoint.name = nameStr + '*';
+		startPoint.center = validateVector3(rawStraight.startsAt, () => { return nameStr + '.startsAt'; });
+		startPoint.forwardWeight = validateWeight(rawStraight.startingWeight, () => { return nameStr + '.startingWeight'; });
+		if (usesEndsAt) {
+			endPoint.forward = vector.normalize(vector.difference(startPoint.center, endPoint.center));
+			startPoint.forward = endPoint.forward;
+		} else {
+			startPoint.forward = validateVector3(rawStraight.forward, () => { return nameStr + '.forward'; });;
+		}
+	}
+	
+	// Compute the end point's center and forward
+	if (usesLength) {
+		const length = validatePositiveNumber(rawStraight.length, () => { return nameStr + '.length'; });
+		endPoint.center = vector.add(startPoint.center, length, startPoint.forward);
+		endPoint.forward = startPoint.forward;
+	} else if (!generateStart) {
+		endPoint.forward = vector.normalize(vector.difference(startPoint.center, endPoint.center));
+	}
+	
+	// Get the weights
+	endPoint.forwardWeight = validateWeight(rawStraight.forwardWeight, () => { return nameStr + '.forwardWeight'; });
+	endPoint.backwardWeight = validateWeight(rawStraight.backwardWeight, () => { return nameStr + '.backwardWeight'; });
+		
+	// And we are done!
+	if (generateStart) points.push(startPoint);
+	points.push(endPoint);
+	builders.push(createBuilder(buildCurve, masterSettings));
 }
 
 function createBuilder(builder, settings) {

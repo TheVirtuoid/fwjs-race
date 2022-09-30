@@ -49,6 +49,7 @@
 			<option value="track0a">Track 0a (track 0 with variable wall height)</option>
 			<option value="track1">Track 1 (single ramp)</option>
 			<option value="track1a">Track 1a (track 1 with variable track width)</option>
+			<option value="track1b">Track 1b (track 1a with alternate straight)</option>
 			<option value="track2">Track 2 (ramp with jump and left curve)</option>
 			<option value="track2a">Track 2a (track 2 with 45&#176; bank)</option>
 			<option value="track3">Track 3 (ramp with jump and right curve)</option>
@@ -187,7 +188,30 @@
 			forward: lt1_2,
 			forwardWeight: 1.1,
 		};
-		const launchStraight = { type: 'straight', start: lv1, end: lv2 }
+		const launchStraight1 = {
+			type: 'straight',
+			endsAt: lv2,
+			forwardWeight: 1.1
+		};
+		const launchStraight2 = {
+			type: 'straight',
+			endsAt: lv2,
+			startsAt: lv1,
+			forwardWeight: 1.1
+		};
+		// Straight with just length demonstrated elsewhere
+		//const launchStraight3 = {
+		//	type: 'straight',
+		//	length: 1.004987562112089,
+		//	forwardWeight: 1.1
+		//};
+		const launchStraight4 = {
+			type: 'straight',
+			startsAt: lv1,
+			forward: lt1_2,
+			length: 1.004987562112089,
+			forwardWeight: 1.1
+		};
 		
 		//----------------------------------------------------------------------
 		// Track 1, a simple slope
@@ -198,13 +222,12 @@
 			backwardWeight: 4,
 		};
 		const t1ep4 = {	// End of runout flat
-			center: { x:-2, y:0, z:0 },
-			forward: negX,
+			type: 'straight',
+			length: 2,
 		};
 		
 		const t1s1 = {
-			//points: [ launchStraight, t1ep3, t1ep4 ]
-			points: [ lep1, lep2, t1ep3, t1ep4 ]
+			points: [ lep1, launchStraight1, t1ep3, t1ep4 ]
 		};
 		
 		tracks.track1 = {
@@ -220,17 +243,39 @@
 			backwardWeight: 4,
 		};
 		const t1aep4 = {	// End of runout flat
-			center: { x:-2, y:0, z:0 },
-			forward: negX,
+			type: 'straight',
+			length: 2,
 			trackWidth: 2,
 		};
 		
 		const t1as1 = {
-			points: [ lep1, lep2, t1aep3, t1aep4 ]
+			points: [ lep1, launchStraight2, t1aep3, t1aep4 ]
 		};
 		
 		tracks.track1a = {
 			segments: [ t1as1 ]
+		};
+		
+		//----------------------------------------------------------------------
+		// Track 1b, track 1a with alternate straight
+
+		const t1bep3 = {	// End of slope, start of runout
+			center: zero,
+			forward: negX,
+			backwardWeight: 4,
+		};
+		const t1bep4 = {	// End of runout flat
+			type: 'straight',
+			length: 2,
+			trackWidth: 2,
+		};
+		
+		const t1bs1 = {
+			points: [ launchStraight4, t1bep3, t1bep4 ]
+		};
+		
+		tracks.track1b = {
+			segments: [ t1bs1 ]
 		};
 		
 		//----------------------------------------------------------------------
@@ -264,7 +309,7 @@
 		const jrt5 = negX;
 
 		const jrs1 = {
-			points: [ lep1, lep2, jrep3 ]
+			points: [ launchStraight2, jrep3 ]
 		};
 		
 		//----------------------------------------------------------------------
@@ -308,12 +353,8 @@
 			forward: posZ,
 		};
 		const t2ep9 = {	// Runout
-			center: {
-				x: t2ep8.center.x,
-				y: t2ep8.center.y,
-				z: t2ep8.center.z + 2 * jrRadius
-			},
-			forward: posZ,
+			type: 'straight',
+			length: 2 * jrRadius,
 		};
 		
 		const t2s2 = {
@@ -400,12 +441,8 @@
 			forward: negZ,
 		};
 		const t3ep9 = {	// Runout
-			center: {
-				x: t2ep8.center.x,
-				y: t2ep8.center.y,
-				z: t2ep8.center.z - 2 * jrRadius
-			},
-			forward: negZ,
+			type: 'straight',
+			length: 2 * jrRadius,
 		};
 		
 		const t3s2 = {
@@ -523,12 +560,8 @@
 			forward: negX,
 		};
 		const t4ep9 = {	// Runout
-			center: {
-				x: t4ep8.center.x - 2 * t4loopRadius,
-				y: t4ep8.center.y,
-				z: t4ep8.center.z
-			},
-			forward: negX,
+			type: 'straight',
+			length: 2 * t4loopRadius,
 		};
 		
 		const t4s1 = {
