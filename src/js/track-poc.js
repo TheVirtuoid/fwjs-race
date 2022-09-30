@@ -275,7 +275,7 @@ function createRibbon() {
 //==============================================================================
 // BEZIER CURVE BUILDER
 
-function buildCurve(ribbon, sp0, sp1, vectorFactory, settings) {
+function buildCurve(ribbon, sp0, sp1, vectorFactory, precision) {
 
 	// Compute the Bezier cubic curve points
 	const curve = {
@@ -293,7 +293,7 @@ function buildCurve(ribbon, sp0, sp1, vectorFactory, settings) {
 	// Fill out the curve
 	const bpt0 = getBezierPoint(curve, 0);
 	const bpt1 = getBezierPoint(curve, 1);
-	interpolateCurve(ribbon, curve, 0, 1, bpt0, bpt1, vectorFactory, settings.precision);
+	interpolateCurve(ribbon, curve, 0, 1, bpt0, bpt1, vectorFactory, precision);
 	
 	// Return the points array
 	return bpt1;
@@ -397,23 +397,29 @@ function buildSegment(segment, vectorFactory, masterSettings, isClosed, nameStr)
 	// Create settings
 	const settings = mergeSettings(masterSettings, segment, nameStr);
 	
-	// Make sure that 'points' is an array with at least two elements
-	validateSizedArray(segment.points, 2, () => { return nameStr + '.points' });
+	// Make sure that 'points' is an array with at least one element
+	validateSizedArray(segment.points, 1, () => { return nameStr + '.points' });
 	
-	// Convert points into internal representations
-	const segmentPoints = [];
+	// Reform the points array into two arrays of n segment builders and
+	// n+1 segment points
+	const builders = [];
+	const points = [];
 	for (let i = 0; i < segment.points.length; i++) {
-		segmentPoints[i] = constructSegmentPoint(
+		constructSegment(
+			builders, points, i === 0,
 			segment.points[i],
 			settings,
 			`${nameStr}.points[${i}]`);
 	}
 	
+	// Ensure we have at least one constructor and two segment points
+	validateSizedArray(points, 2, () => { return nameStr + '.points' });
+	
 	// Loop through the points, creating curves between them
 	const ribbon = createRibbon();
 	let lastPoint = null;
-	for (let i = 1; i < segmentPoints.length; i++) {
-		lastPoint = buildCurve(ribbon, segmentPoints[i - 1], segmentPoints[i], vectorFactory, settings);
+	for (let i = 0; i < builders.length; i++) {
+		lastPoint = executeBuilder(builders[i], ribbon, points[i], points[i+1], vectorFactory);
 	}
 	
 	// If this is not a closed segment, add the last point to the ribbon
@@ -423,11 +429,28 @@ function buildSegment(segment, vectorFactory, masterSettings, isClosed, nameStr)
 	
 	return ribbon;
 }
-	
-function constructSegmentPoint(rawPoint, masterSettings, nameStr) {
-	
+
+const segmentConstructors = {
+	point: constructSegmentPoint,
+};
+
+function constructSegment(builders, points, isFirst, rawPoint, masterSettings, nameStr) {
+
 	// The raw point must be an object
 	validateObject(rawPoint, nameStr);
+	
+	// Check the type
+	const segmentType = isDefined(rawPoint.type) ? rawPoint.type : 'point';
+	const segmentConstructor = segmentConstructors[segmentType];
+	if (!isDefined(segmentConstructor)) {
+		throw new TypeError(`${nameStr}.type of '${segmentType}' is not recognized`);
+	}
+	
+	// Construct the segment
+	segmentConstructor(builders, points, isFirst, rawPoint, masterSettings, nameStr);
+}
+	
+function constructSegmentPoint(builders, points, isFirst, rawPoint, masterSettings, nameStr) {
 	
 	// The raw point cannot have a 'precision' element
 	if (isDefined(rawPoint.precision)) {
@@ -465,7 +488,24 @@ function constructSegmentPoint(rawPoint, masterSettings, nameStr) {
 		() => { return nameStr + '.backwardWeight'; });
 		
 	// And we are done!
-	return segmentPoint;
+	points.push(segmentPoint);
+	if (!isFirst) {
+		builders.push({
+			builder: buildCurve,
+			precision: masterSettings.precision
+		});
+	}
+}
+
+function createBuilder(builder, settings) {
+	return {
+		builder: builder,
+		precision: settings.precision
+	}
+}
+
+function executeBuilder(builder, ribbon, sp0, sp1, vectorFactory) {
+	return builder.builder(ribbon, sp0, sp1, vectorFactory, builder.precision);
 }
 
 //==============================================================================
