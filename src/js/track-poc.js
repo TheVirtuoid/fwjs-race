@@ -186,9 +186,8 @@ const dropTheBall = () => {
 
 	const track = tracks[trackSelector.value];
 	const segment = track.segments[0];
-	const p0 = segment.points[0].center;
-	const p1 = segment.points[1].center;
-	console.log(p0, p1);
+	const p0 = segment.points[0].center || segment.points[0].startsAt;
+	const p1 = segment.points[1].center || segment.points[1].endsAt;
 
 	const t = .8;
 	const olt = 1 - t;
