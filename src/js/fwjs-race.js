@@ -33,8 +33,17 @@ const ground = MeshBuilder.CreateGround("ground1", { width: 6, height: 6 }, scen
 ground.rotation.z = Math.PI / 32;
 ground.physicsImpostor = new PhysicsImpostor(ground, PhysicsImpostor.BoxImpostor, { mass: 0, friction: 0.5, restitution: 0.7 }, scene);
 
-const car = new Car({id: 'test', color: Color3.Green() });
-car.build({ scene, position: new Vector3(0, 2, 0) });
+let car;
+
+document.getElementById('go').addEventListener('click', () => {
+/*
+	if (car) {
+		car.junk(scene);
+	}
+*/
+	car = new Car({id: 'test', color: Color3.Green(), scene, Ammo });
+	car.build({ scene, Ammo, position: new Vector3(0, 3, 0) });
+});
 
 /*SceneLoader.ImportMesh("", "models/", "skull.babylon", scene, function (newMeshes) {
 	// Scale loaded mesh
@@ -72,6 +81,10 @@ car.build({ scene, position: new Vector3(0, 2, 0) });
 
 engine.runRenderLoop(() => {
 	scene.render();
-	car.turnTires();
+/*
+	if (car) {
+		car.turnTires();
+	}
+*/
 });
 
