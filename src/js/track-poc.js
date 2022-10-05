@@ -428,6 +428,7 @@ function buildSegment(segment, vectorFactory, masterSettings, isClosed, nameStr)
 
 const sectionParsers = {
 	point: parsePoint,
+	spiral: parseSpiral,
 	straight: parseStraight,
 };
 
@@ -481,6 +482,101 @@ function parsePoint(builders, points, rawPoint, masterSettings, nameStr) {
 	// And we are done!
 	points.push(segmentPoint);
 	if (points.length > 1) builders.push(createBuilder(buildCurve, masterSettings));
+}
+
+function parseSpiral(builders, points, rawSpiral, masterSettings, nameStr) {
+	throw "Not implemented";
+	
+	//--------------------------------------------------------------------------
+	// THEORETICAL FOUNDATION
+	
+	// A spiral section has (a) a center of the rotation, (b) a normalized
+	// rotation axis, (c) an entry point, (d) an exit point, and (e) a number of
+	// full rotations, or turns, between the entry and exit points.
+	
+	// Let the rotation plane be the plane defined by the center and rotation
+	// axis with the plane's normal being the rotation axis.
+	
+	// Note that the rotation axis, being on one side or the other of the plane,
+	// determines if the sprial turns left or right relative to the perceived
+	// 'up' of the entry point.
+	
+	// Let the rotation plane have an arbitrary 'x' axis or 0 angle vector,
+	// orthogonal to the rotation axis.
+	
+	// Note that all points projected on the rotation plane can be expressed in
+	// polar coordinates [d, θ] where d is the distance of the projection from
+	// the center point and θ is the angle off the plane's x axis.
+	
+	// Let the entry and exit projection points be the projections of the entry
+	// and exit points onto the rotation plane.
+	
+	// Let the entry and exit angles be the angle components of the projection
+	// points' polar cooordinates.
+	
+	// Let the entry and exit radii be the distances of the projection points'
+	// polar coordinates.
+	
+	// Note that the radii do not need to be the same. This allows for the
+	// construction of increasing or decreasing radii curves.
+	
+	// Let the sweep of the spiral being the sum of (a) 360° times the number
+	// of turns and (b) the difference between the entry and exit angles in the
+	// direction of rotation.
+	
+	// Let the entry and exit altitudes be the distances of the entry and exit
+	// points from the rotation plane. Note that this is the dot product of the
+	// points and the rotation axis.
+	
+	// Note that the altitudes may have the same sign as the spiral does not
+	// need to pass through the rotation plane.
+	
+	// Furthermore, note that if the altitudes are the same, all points on the
+	// spiral have the same altitude and the number of turns should be 0.
+	
+	//--------------------------------------------------------------------------
+	// IMPLEMENTATION
+	
+	// TODO: Determine if the rotation direction coefficient is needed. The
+	// rotation functions may handle this innately.
+	
+	// Note that the rotation direction is either 1 or -1 to reflect,
+	// respectively, a counterclockwise or clockwise rotation.
+	
+	// First we need a series of parametric functions on t = 0 to 1.
+	
+	// Let Sweep(t) return the linearly interpolated sweep between 0 at t = 0
+	// and the spiral's sweep at t = 1.
+	
+	// Let Altitude(t) return the linearly interpolated altitude between the
+	// entry altitude at t = 0 and the exit altitude at t = 1.
+
+	// Let Radius(t) return the linearly interpolated radius between the entry
+	// radius at t = 0 and the exit radius at t = 1.
+	
+	// Let Angle(t) return the sum of the entry angle and the product of
+	// Sweep(t) and rotation direction, normalized to the range [0°, 360°).
+	
+	// Let PlanarPoint(t) return the point at [Radius(t), Angle(t)].
+	
+	// Let Point(t) return the sum of PlanarPoint(t) and the product of
+	// Altitude(t) and the rotation axis.
+	
+	// Now let Spiral(u) be a Bezier cubic function to compute the spiral
+	// points.
+	
+	// The current implementation of the Bezier cubic curve for circles
+	// requires that a circle be partitioned into 90° segments. The Bezier
+	// function Spiral(u) treat u = 0 as 0° and u = 1 as 90°.
+	
+	// This requires the top-level algorithm to break the sprial into a series
+	// of 90 sections [0°, 90°], [90°, 180°], ..., [(k-1)90°, k90°] where
+	// (k-1)90° < the spiral's sweep <= k90°. This requires additional
+	// arguments to the Bezier function to allow mapping of u onto the
+	// parameteric argument t in the other functions. Also note that the for
+	// the last section, even though Point(k90°) is used to determine the
+	// the control points of the curve, range of points produced are up to
+	// Point(sweep - (k-1)90°).
 }
 
 function parseStraight(builders, points, rawStraight, masterSettings, nameStr) {
