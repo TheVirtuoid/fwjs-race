@@ -1,62 +1,86 @@
 import {
 	Axis,
-	Color3,
+	Color3, Color4,
 	CreateBoxVertexData,
 	CreateCylinderVertexData, HingeJoint,
 	Mesh, MeshBuilder, PhysicsImpostor, Quaternion, Space, StandardMaterial, Texture,
 	Vector3
 } from "@babylonjs/core";
 
+const wheels = [
+	{ name: 'driverFront', offset: new Vector3(-3, 0, -3), left: true },
+	{ name: 'driverRear', offset: new Vector3(3, 0, -3), left: true },
+	{ name: 'passengerFront', offset: new Vector3(-3, 0, 3), left: false },
+	{ name: 'passengerRear', offset: new Vector3(3, 0, 3), left: false }
+];
+
 export default class Car {
 
-	constructor() {
+	#wheels = [];
 
-	}
+	constructor() {}
 
 	build (args = {}) {
 		const { scene, position } = args;
-		let axel = MeshBuilder.CreateCylinder("axel", {diameter: .5, height:4}, scene);
+		const bodyPosition = position.clone();
+		const chassis = this.#addChassis({ name: 'mikey', position: bodyPosition, scene });
+		const wheelPosition = position.clone();
+		wheelPosition.addInPlace(wheels[0].offset);
+		const wheel = this.#addWheel({ name: wheels[0].name, scene, position: wheelPosition, left: wheels[0].left });
+
+
+/*		chassis.addChild(wheel.axel);
+		chassis.addChild(wheel.wheel);*/
+/*
+		wheels.forEach((wheel) => {
+			const wheelPosition = position.clone();
+			wheelPosition.addInPlace(wheel.offset);
+			this.#wheels.push(this.#addWheel({ name: wheel.name, scene, position: wheelPosition, left: wheel.left }));
+		});
+*/
+
+	}
+
+	#addChassis(args = {}) {
+		const { name, scene, position } = args;
+		const chassisPosition = position.clone();
+		const color = new Color4(0, 1, 0, 1);
+		const faceColors = [color, color, color, color, color, color];
+		const chassis = MeshBuilder.CreateBox(`${name}-chassis`, { width: 4, height: 1, depth: 2, faceColors }, scene);
+		chassis.position = chassisPosition;
+		chassis.physicsImpostor = new PhysicsImpostor(chassis, PhysicsImpostor.BoxImpostor, { mass: 1 });
+		return chassis;
+	}
+
+	#addWheel(args = {}) {
+		const { name, scene, position, left } = args;
+		const axel = MeshBuilder.CreateCylinder(`${name}-axel`, {diameter: .5, height:1}, scene);
 		axel.material = new StandardMaterial("", scene);
-		// axel.material.diffuseColor = new Color3(0, 1, 0);
 		axel.material.diffuseTexture = new Texture("https://i.imgur.com/JbvoYlB.png", scene);
 		axel.rotation.x = Math.PI / 2;
 		axel.position = position.clone();
 
-		let wheel = MeshBuilder.CreateCylinder("base", {diameter: 2, height:.5}, scene);
+		const wheel = MeshBuilder.CreateCylinder(`${name}-wheel`, {diameter: 2, height:.5}, scene);
 		wheel.material = new StandardMaterial("wheelMat", scene);
 		wheel.material.diffuseTexture = new Texture("https://i.imgur.com/JbvoYlB.png", scene);
 		wheel.rotation.x = Math.PI / 2;
 		wheel.position = position.clone();
-		wheel.position.z += 1.5;
+		// wheel.position.z -= .5 * (left ? -1 : 1);
 
-		let wheel2 = MeshBuilder.CreateCylinder("base2", {diameter: 2, height:.5}, scene);
-		wheel2.material = new StandardMaterial("wheelMat", scene);
-		wheel2.material.diffuseTexture = new Texture("https://i.imgur.com/JbvoYlB.png", scene);
-		wheel2.rotation.x = Math.PI / 2;
-		wheel2.position = position.clone();
-		wheel2.position.z += -1.5;
-
-		wheel.physicsImpostor = new PhysicsImpostor(wheel, PhysicsImpostor.CylinderImpostor, {mass: 1});
-		wheel2.physicsImpostor = new PhysicsImpostor(wheel2, PhysicsImpostor.CylinderImpostor, {mass: 1});
-
+		wheel.physicsImpostor = new PhysicsImpostor(wheel, PhysicsImpostor.CylinderImpostor, {mass: 10});
 		axel.physicsImpostor = new PhysicsImpostor(axel, PhysicsImpostor.CylinderImpostor, {mass: 1});
 
 		const joint1 = new HingeJoint({
-			mainPivot: new Vector3(0, 0, 0),
-			connectedPivot: new Vector3(0, 0, 0),
-			mainAxis: new Vector3(0, 1, 0),
-			connectedAxis: new Vector3(0, 0, 0),
-			nativeParams: {}
-		});
-		const joint2 = new HingeJoint({
-			mainPivot: new Vector3(0, 0, 0),
+			mainPivot: new Vector3(0, .5 * (left ? -1 : 1), 0),
+			// mainPivot: new Vector3(0, 0, 0),
 			connectedPivot: new Vector3(0, 0, 0),
 			mainAxis: new Vector3(0, 1, 0),
 			connectedAxis: new Vector3(0, 0, 0),
 			nativeParams: {}
 		});
 		axel.physicsImpostor.addJoint(wheel.physicsImpostor, joint1);
-		// axel.physicsImpostor.addJoint(wheel2.physicsImpostor, joint2);
+		console.log(axel.physicsImpostor);
+		return { wheel, axel };
 	}
 }
 
