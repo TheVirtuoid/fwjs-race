@@ -138,9 +138,9 @@ function validateTrackBank(value, name) {
 	throw new TypeError(`${resolveName(name)} must be a number or 3D vector`);
 }
 
-function validateVector3(value, name) {
-	if (isVector3(value)) return value;
-	throw new TypeError(`${resolveName(name)} must be a 3D vector`);
+function validateVector3(object, memberName, objectName) {
+	if (isVector3(object[memberName])) return object[memberName];
+	throw new TypeError(`${objectName}.${memberName} must be a 3D vector`);
 }
 	
 function validateWeight(value, name) {
@@ -461,14 +461,14 @@ function parsePoint(builders, points, rawPoint, masterSettings, nameStr) {
 	
 	// The raw point must have a center object with x, y, and z numeric
 	// elements
-	segmentPoint.center = validateVector3(rawPoint.center, () => { return nameStr + '.center'; });
+	segmentPoint.center = validateVector3(rawPoint, 'center', nameStr);
 	
 	// If the raw point has a 'forward' vector, validate that. Otherwise
 	// use the vector (1, 0, 0)
 	if (rawPoint.forward == null) {
 		segmentPoint.forward = vector.right;
 	} else {
-		segmentPoint.forward = validateVector3(rawPoint.forward, () => { return nameStr + '.forward'; });
+		segmentPoint.forward = validateVector3(rawPoint, 'forward', nameStr);
 	}
 	
 	// Get the weights
@@ -617,7 +617,7 @@ function parseStraight(builders, points, rawStraight, masterSettings, nameStr) {
 	const endPoint = mergeSettings(masterSettings, rawStraight, nameStr);
 	endPoint.name = nameStr;
 	if (usesEndsAt) {
-		endPoint.center = validateVector3(rawStraight.endsAt, () => { return nameStr + '.endsAt'; });
+		endPoint.center = validateVector3(rawStraight, 'endsAt', nameStr);
 	}
 	
 	// Get the starting vertex
@@ -628,13 +628,13 @@ function parseStraight(builders, points, rawStraight, masterSettings, nameStr) {
 	} else {
 		startPoint = mergeSettings(masterSettings, rawStraight, nameStr);
 		startPoint.name = nameStr + '*';
-		startPoint.center = validateVector3(rawStraight.startsAt, () => { return nameStr + '.startsAt'; });
+		startPoint.center = validateVector3(rawStraight, 'startsAt', nameStr);
 		startPoint.forwardWeight = validateWeight(rawStraight.startingWeight, () => { return nameStr + '.startingWeight'; });
 		if (usesEndsAt) {
 			endPoint.forward = vector.normalize(vector.difference(startPoint.center, endPoint.center));
 			startPoint.forward = endPoint.forward;
 		} else {
-			startPoint.forward = validateVector3(rawStraight.forward, () => { return nameStr + '.forward'; });;
+			startPoint.forward = validateVector3(rawStraight, 'forward', nameStr);;
 		}
 	}
 	
