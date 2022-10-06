@@ -535,6 +535,40 @@ const spiral = {
 	// Furthermore, note that if the altitudes are the same, all points on the
 	// spiral have the same altitude and the number of turns should be 0.
 
+	parse: function(builders, points, rawSpiral, masterSettings, nameStr) {
+		const specs = this.getSpecs(points, rawSpiral, masterSettings, nameStr);
+		this.generate(builders, points, specs, masterSettings);
+	},
+
+	//--------------------------------------------------------------------------
+	// SPECIFICATION
+
+	// As stated above, we need these elements to be specified:
+	// (a) the rotation center and axis which define the rotation plane
+	// (b) the entry and exit angles
+	// (c) the entry and exit altitudes
+	// (d) the entry and exit radii
+	// (e) the number of turns
+	// (f) The entry point if the sprial starts the segment.
+	
+	// Note that if the spiral starts a segment, the entry point implicitly
+	// supplies the entry angle, altitude, and radius.
+
+	// 'forwardWeight'
+	//		If specified, applies to the last point generated.
+	// 'overrideFirstWeight'
+	//		If not specified or is true, resets the entry point's forward weight
+	//		to the weight used by the circular Bezier algorithm. This is illegal
+	//		if the spiral starts the segment.
+	// 'startsAt'
+	//		This is required if the spiral starts the track segment. This sets
+	//		the entry point of the spiral in such a case. This is illegal if
+	//		the spiral does not start the segment.
+
+	getSpecs: function(points, rawSpiral, masterSettings, nameStr) {
+		throw "Not implemented";
+	},
+
 	//--------------------------------------------------------------------------
 	// IMPLEMENTATION
 
@@ -579,7 +613,26 @@ const spiral = {
 	// the control points of the curve, range of points produced are up to
 	// Point(sweep).
 
-	parse: function(builders, points, rawSpiral, masterSettings, nameStr) {
+	generate: function(builders, points, spiralSpecs, masterSettings) {
+		
+		// Insert the entry point if this is the first point of the segment.
+		// Otherwise patch its forwardWeight if required.
+		if (points.length === 0) {
+			points.push(spiralSpecs.startsAt);
+		} else if (spiralSpecs.overrideFirstWeight) {
+			points[points.length - 1].forwardWeight = spiralSpecs.entryRadius * circleWeight;
+		}
+		
+		// Add the 90° sections
+		for (let angle = 0; angle < spiralSpecs.sweep; angle += 90) {
+			this.generateSection(builders, points, angle, spiralSpecs);
+		}
+		
+		// Patch the forward weight of the last point
+		points[points.length - 1].forwardWeight = spiralSpecs.forwardWeight;
+	},
+	
+	generateSection: function(builders, points, angle, spiralSpecs) {
 		throw "Not implemented";
 	},
 };
