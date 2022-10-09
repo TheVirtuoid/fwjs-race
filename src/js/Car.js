@@ -7,80 +7,90 @@ import {
 	Vector3
 } from "@babylonjs/core";
 
-const wheels = [
-	{ name: 'driverFront', offset: new Vector3(-3, 0, -3), left: true },
-	{ name: 'driverRear', offset: new Vector3(3, 0, -3), left: true },
-	{ name: 'passengerFront', offset: new Vector3(-3, 0, 3), left: false },
-	{ name: 'passengerRear', offset: new Vector3(3, 0, 3), left: false }
+/*const wheels = [
+	{ wheelName: 'driverFront', offset: new Vector3(-3, 0, -3), left: true },
+	{ wheelName: 'driverRear', offset: new Vector3(3, 0, -3), left: true },
+	{ wheelName: 'passengerFront', offset: new Vector3(-3, 0, 3), left: false },
+	{ wheelName: 'passengerRear', offset: new Vector3(3, 0, 3), left: false }
+];*/
+
+const wheelParameters = [
+	{ wheelName: 'rightFront', offset: new Vector3(0, 0, 0), pivot: new Vector3(0, -2.5, 0) },
+	{ wheelName: 'rightRear', offset: new Vector3(-5, 0, 0), pivot: new Vector3(-5, -2.5, 0) },
+	{ wheelName: 'leftFront', offset: new Vector3(0, 0, 5),  pivot: new Vector3(0, 2.5, 0)},
+	{ wheelName: 'leftRear', offset: new Vector3(-5, 0, 5), pivot: new Vector3(-5, 2.5, 0) }
 ];
+const defaults = {
+	wheel: {
+		diameter: 2,
+		height:.5,
+		mass: 10
+	},
+	wheelBase: {
+		depth: 1,
+		width: .5,
+		height: 5,
+		mass: 1
+	}
+};
 
 export default class Car {
-
-	#wheels = [];
 
 	constructor() {}
 
 	build (args = {}) {
-		const { scene, position } = args;
-		const bodyPosition = position.clone();
-		const chassis = this.#addChassis({ name: 'mikey', position: bodyPosition, scene });
-		const wheelPosition = position.clone();
-		wheelPosition.addInPlace(wheels[0].offset);
-		const wheel = this.#addWheel({ name: wheels[0].name, scene, position: wheelPosition, left: wheels[0].left });
-
-
-/*		chassis.addChild(wheel.axel);
-		chassis.addChild(wheel.wheel);*/
-/*
-		wheels.forEach((wheel) => {
-			const wheelPosition = position.clone();
-			wheelPosition.addInPlace(wheel.offset);
-			this.#wheels.push(this.#addWheel({ name: wheel.name, scene, position: wheelPosition, left: wheel.left }));
+		const { scene, position, name } = args;
+		let wheelBase = this.#addWheelBase({ scene, position, name });
+		let wheels = wheelParameters.map((wheel) => {
+			const { wheelName, offset, pivot } = wheel;
+			return this.#addWheel({ name, scene, position, wheelName, offset, pivot });
 		});
-*/
-
+		({ wheelBase, wheels } = this.#setPhysics({ wheelBase, wheels }));
 	}
 
-	#addChassis(args = {}) {
+	// the wheelBase was the old axle
+	#addWheelBase(args = {}) {
 		const { name, scene, position } = args;
-		const chassisPosition = position.clone();
-		const color = new Color4(0, 1, 0, 1);
-		const faceColors = [color, color, color, color, color, color];
-		const chassis = MeshBuilder.CreateBox(`${name}-chassis`, { width: 4, height: 1, depth: 2, faceColors }, scene);
-		chassis.position = chassisPosition;
-		chassis.physicsImpostor = new PhysicsImpostor(chassis, PhysicsImpostor.BoxImpostor, { mass: 1 });
-		return chassis;
+		const { depth, width, height } = defaults.wheelBase;
+		const wheelBase = MeshBuilder.CreateBox(`${name}-wheelbase`, { depth, width, height }, scene);
+		wheelBase.rotation.x = Math.PI / 2;
+		wheelBase.position = position.clone();
+		wheelBase.isVisible = true;
+		return wheelBase;
 	}
 
 	#addWheel(args = {}) {
-		const { name, scene, position, left } = args;
-		const axel = MeshBuilder.CreateCylinder(`${name}-axel`, {diameter: .5, height:1}, scene);
-		axel.material = new StandardMaterial("", scene);
-		axel.material.diffuseTexture = new Texture("https://i.imgur.com/JbvoYlB.png", scene);
-		axel.rotation.x = Math.PI / 2;
-		axel.position = position.clone();
-
-		const wheel = MeshBuilder.CreateCylinder(`${name}-wheel`, {diameter: 2, height:.5}, scene);
-		wheel.material = new StandardMaterial("wheelMat", scene);
+		const { name, scene, position, wheelName, offset, pivot } = args;
+		const { diameter, height } = defaults.wheel;
+		const wheel = MeshBuilder.CreateCylinder(`${name}-wheel-${wheelName}`, { diameter, height }, scene);
+		wheel.material = new StandardMaterial(`${name}-wheelmat-${wheelName}`, scene);
 		wheel.material.diffuseTexture = new Texture("https://i.imgur.com/JbvoYlB.png", scene);
 		wheel.rotation.x = Math.PI / 2;
 		wheel.position = position.clone();
-		// wheel.position.z -= .5 * (left ? -1 : 1);
+		wheel.position.addInPlace(offset);
+		return { wheel, pivot };
+	}
 
-		wheel.physicsImpostor = new PhysicsImpostor(wheel, PhysicsImpostor.CylinderImpostor, {mass: 10});
-		axel.physicsImpostor = new PhysicsImpostor(axel, PhysicsImpostor.CylinderImpostor, {mass: 1});
+	#setPhysics(args = {}) {
+		const { wheelBase, wheels } = args;
+		const { mass: wheelMass } = defaults.wheel;
+		const { mass: wheelBaseMass, height } = defaults.wheelBase;
 
-		const joint1 = new HingeJoint({
-			mainPivot: new Vector3(0, .5 * (left ? -1 : 1), 0),
-			// mainPivot: new Vector3(0, 0, 0),
-			connectedPivot: new Vector3(0, 0, 0),
-			mainAxis: new Vector3(0, 1, 0),
-			connectedAxis: new Vector3(0, 0, 0),
-			nativeParams: {}
+		wheelBase.physicsImpostor = new PhysicsImpostor(wheelBase, PhysicsImpostor.CylinderImpostor, { mass: wheelBaseMass });
+		wheels.forEach((wheelData) => {
+			const { wheel, pivot } = wheelData;
+			console.log(wheel, pivot);
+			wheel.physicsImpostor = new PhysicsImpostor(wheel, PhysicsImpostor.CylinderImpostor, { mass: wheelMass });
+			const joint = new HingeJoint({
+				mainPivot: pivot,
+				connectedPivot: new Vector3(0, 0, 0),
+				mainAxis: new Vector3(0, 1, 0),
+				connectedAxis: new Vector3(0, 1, 0),
+				nativeParams: {}
+			});
+			wheelBase.physicsImpostor.addJoint(wheel.physicsImpostor, joint);
 		});
-		axel.physicsImpostor.addJoint(wheel.physicsImpostor, joint1);
-		console.log(axel.physicsImpostor);
-		return { wheel, axel };
+		return { wheelBase, wheels: wheels.map((wheelData) => wheelData.wheel)};
 	}
 }
 
