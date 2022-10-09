@@ -15,13 +15,13 @@ export const lep2 = {	// End of starting ramp, start of runout
 export const launchStraight1 = {
 	type: 'straight',
 	endsAt: lv2,
-	forwardWeight: 1.1
+	forwardWeight: 1.1,
 };
 export const launchStraight2 = {
 	type: 'straight',
 	endsAt: lv2,
 	startsAt: lv1,
-	forwardWeight: 1.1
+	forwardWeight: 1.1,
 };
 // Straight with just length demonstrated elsewhere
 //const launchStraight3 = {
@@ -34,7 +34,7 @@ export const launchStraight4 = {
 	startsAt: lv1,
 	forward: lt1_2,
 	length: 1.004987562112089,
-	forwardWeight: 1.1
+	forwardWeight: 1.1,
 };
 
 //----------------------------------------------------------------------

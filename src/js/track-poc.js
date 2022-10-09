@@ -24,6 +24,8 @@ import track2a from "../layouts/track-2a";
 import track3 from "../layouts/track-3";
 import track3a from "../layouts/track-3a";
 import track4 from "../layouts/track-4";
+import track5 from "../layouts/track-5";
+import Car from "./classes/Car";
 
 
 const defaultSettings = new LayoutSettings().toObject();
@@ -103,6 +105,9 @@ tracks.track4 = {
 	segments: track4.segments
 };
 
+tracks.track5 = {
+	segments: track5.segments
+};
 //======================================================================
 // BABYLON IMPLEMENTATION
 
@@ -155,7 +160,7 @@ const createMesh = function() {
 					closePath: track.closed,
 				},
 				scene);
-		trackMesh.physicsImpostor = new PhysicsImpostor(trackMesh, PhysicsImpostor.MeshImpostor, { mass: 0 }, scene);
+		trackMesh.physicsImpostor = new PhysicsImpostor(trackMesh, PhysicsImpostor.MeshImpostor, { mass: 0, friction: 1 }, scene);
 		trackMeshes.push(trackMesh);
 	}
 }
@@ -178,6 +183,7 @@ window.addEventListener("resize", function () {
 const ballDiameter = .25;
 const ballWeight = 2;
 let ball;
+let car;
 const dropTheBall = () => {
 
 	if (ball) scene.removeMesh(ball);
@@ -197,5 +203,29 @@ const dropTheBall = () => {
 	ball.position.z = p0.z * t + p1.z * olt;
 };
 
+const dropTheCar = () => {
+
+	if (car) {
+		car.junk();
+	}
+
+	const track = tracks[trackSelector.value];
+	const segment = track.segments[0];
+	const p0 = segment.points[0].center || segment.points[0].startsAt;
+	const p1 = segment.points[1].center || segment.points[1].endsAt;
+
+	const t = .8;
+	const olt = 1 - t;
+	const altitude = 1;
+	const x = p0.x * t + p1.x * olt + 4.5;
+	const y = p0.y * t + p0.y * olt + altitude;	// Force the ball above the track
+	const z = p0.z * t + p1.z * olt;
+
+	car = new Car();
+	car.build({ name: 'test', scene, position: new Vector3(x, y, z) });
+
+};
+
 document.getElementById('go').addEventListener('click', dropTheBall);
+document.getElementById('drop-car').addEventListener('click', dropTheCar);
 
