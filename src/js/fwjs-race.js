@@ -31,18 +31,21 @@ scene.enablePhysics(new Vector3(0,-10,0), new AmmoJSPlugin(true, Ammo));
 
 const ground = MeshBuilder.CreateGround("ground1", { width: 15, height: 15 }, scene);
 ground.rotation.z = -Math.PI / 32;
-ground.physicsImpostor = new PhysicsImpostor(ground, PhysicsImpostor.BoxImpostor, { mass: 0, friction: 0.5, restitution: 0.7 }, scene);
+ground.physicsImpostor = new PhysicsImpostor(ground, PhysicsImpostor.BoxImpostor, { mass: 0, friction: 1, restitution: 0 }, scene);
 
 let car;
 
 document.getElementById('go').addEventListener('click', () => {
-/*
 	if (car) {
-		car.junk(scene);
+		car.junk();
 	}
-*/
-	car = new Car({id: 'test', color: Color3.Green(), scene, Ammo });
-	car.build({ scene, Ammo, position: new Vector3(0, 3, 0) });
+	car = new Car();
+	car.build({
+		name: 'test',
+		scene,
+		position: new Vector3(0, 3, 0),
+		color: Color3.Green()
+	});
 });
 
 /*SceneLoader.ImportMesh("", "models/", "skull.babylon", scene, function (newMeshes) {
