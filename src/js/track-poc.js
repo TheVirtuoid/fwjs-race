@@ -3,7 +3,7 @@ import styles from "./../css/track-poc.pcss";
 import Track from "./classes/Track";
 import {
 	AmmoJSPlugin,
-	ArcRotateCamera,
+	ArcRotateCamera, Color3,
 	Engine,
 	HemisphericLight, Mesh,
 	MeshBuilder,
@@ -217,12 +217,12 @@ const dropTheCar = () => {
 	const t = .8;
 	const olt = 1 - t;
 	const altitude = 1;
-	const x = p0.x * t + p1.x * olt + 4.5;
+	const x = p0.x * t + p1.x * olt ;
 	const y = p0.y * t + p0.y * olt + altitude;	// Force the ball above the track
 	const z = p0.z * t + p1.z * olt;
 
-	car = new Car();
-	car.build({ name: 'test', scene, position: new Vector3(x, y, z) });
+	car = new Car({ scale: .25 });
+	car.build({ name: 'test', scene, position: new Vector3(x, y, z), color: new Color3.Green() });
 
 };
 
