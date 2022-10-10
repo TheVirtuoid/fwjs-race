@@ -52,6 +52,7 @@
 			<option value="track1b">Track 1b (track 1a with alternate straight)</option>
 			<option value="track2">Track 2 (ramp with jump and left curve)</option>
 			<option value="track2a">Track 2a (track 2 with 45&#176; bank)</option>
+			<option value="track2b">Track 2b (track 2 using spiral)</option>
 			<option value="track3">Track 3 (ramp with jump and right curve)</option>
 			<option value="track3a">Track 3a (track 3 with 45&#176; bank)</option>
 			<option value="track4">Track 4 (loop)</option>
@@ -73,7 +74,7 @@
 
 		//======================================================================
 		// TRACK DEFINITIONS
-		
+
 		// Nomenclature
 		//
 		// All track variables start with 'tm' denoting 'track #m'.
@@ -91,7 +92,7 @@
 		//	ep	tmepn	a Bezier curve end point
 		//	s	tmsn_o	a segment (Bezier cubic curve)
 		//	t	tmtn_o	a tangent
-		
+
 		const tracks = {};
 		const options = {};
 
@@ -108,19 +109,19 @@
 		// convention that backward = -forward and allow backward to be
 		// forward rotated 180 degrees around down.
 		const circleWeight = 0.5519150244935105707435627;
-		
+
 		//----------------------------------------------------------------------
 		// Track 0, the original demo track
 
 		const trackWidth = 0.5;
 		const cpDistance = 0.5;		// This is now the forward/backward weight
-		
+
 		const t0ds = {
 			backwardWeight: cpDistance,
 			forwardWeight: cpDistance,
 			trackWidth: trackWidth,
 		};
-		
+
 		// Note that the original implementation used 'closePath: true' when
 		// creating the ribbon. The system does not do this so we manually
 		// close the track by adding an extra segment.
@@ -135,22 +136,22 @@
 				{ center: new BABYLON.Vector3(2, 0, -4), forward: posZ },
 			],
 		}
-		
+
 		tracks.track0 = {
 			segments: [ t0s1 ],
 			closed: true,
 		}
 		options.track0 = t0ds;
-		
+
 		//----------------------------------------------------------------------
 		// Track 0a, track 0 with variable wall height
-		
+
 		const t0ads = {
 			backwardWeight: cpDistance,
 			forwardWeight: cpDistance,
 			trackWidth: trackWidth,
 		};
-		
+
 		// Note that the original implementation used 'closePath: true' when
 		// creating the ribbon. The system does not do this so we manually
 		// close the track by adding an extra segment.
@@ -166,16 +167,16 @@
 				{ center: new BABYLON.Vector3(2, 0, -4), forward: posZ },
 			],
 		}
-		
+
 		tracks.track0a = {
 			segments: [ t0as1 ],
 			closed: true,
 		}
 		options.track0a = t0ads;
-		
+
 		//----------------------------------------------------------------------
 		// Common launch points
-		
+
 		const lv1 = { x:10 , y:5, z:0 };
 		const lv2 = { x:9, y:4.9, z:0 };
 		const lt1_2 = TrackPOC.vector.direction(lv1, lv2);
@@ -212,7 +213,7 @@
 			length: 1.004987562112089,
 			forwardWeight: 1.1
 		};
-		
+
 		//----------------------------------------------------------------------
 		// Track 1, a simple slope
 
@@ -225,15 +226,15 @@
 			type: 'straight',
 			length: 2,
 		};
-		
+
 		const t1s1 = {
 			points: [ lep1, launchStraight1, t1ep3, t1ep4 ]
 		};
-		
+
 		tracks.track1 = {
 			segments: [ t1s1 ]
 		};
-		
+
 		//----------------------------------------------------------------------
 		// Track 1a, track 1 with variable track width
 
@@ -247,15 +248,15 @@
 			length: 2,
 			trackWidth: 2,
 		};
-		
+
 		const t1as1 = {
 			points: [ lep1, launchStraight2, t1aep3, t1aep4 ]
 		};
-		
+
 		tracks.track1a = {
 			segments: [ t1as1 ]
 		};
-		
+
 		//----------------------------------------------------------------------
 		// Track 1b, track 1a with alternate straight
 
@@ -269,18 +270,18 @@
 			length: 2,
 			trackWidth: 2,
 		};
-		
+
 		const t1bs1 = {
 			points: [ launchStraight4, t1bep3, t1bep4 ]
 		};
-		
+
 		tracks.track1b = {
 			segments: [ t1bs1 ]
 		};
-		
+
 		//----------------------------------------------------------------------
 		// Common jump ramp points
-		
+
 		const jrGap = 1;
 		const jrRadius = 2;
 		const jrCatchDrop = .1;
@@ -311,13 +312,13 @@
 		const jrs1 = {
 			points: [ launchStraight2, jrep3 ]
 		};
-		
+
 		//----------------------------------------------------------------------
 		// Track 2, slope into a jump with a turn left looping underneath the jump
-		
+
 		// NOTE: This may need some adjustments on the curve to avoid bumps where
 		// we specify the tangent to have no y component.
-		
+
 		const t2ep5 = {	// Start of curve
 			center: jrv5,
 			forward: jrt5,
@@ -356,18 +357,18 @@
 			type: 'straight',
 			length: 2 * jrRadius,
 		};
-		
+
 		const t2s2 = {
 			points: [ jrep4, t2ep5, t2ep6, t2ep7, t2ep8, t2ep9 ]
 		};
-		
+
 		tracks.track2 = {
 			segments: [ jrs1, t2s2 ]
 		};
-		
+
 		//----------------------------------------------------------------------
 		// Track 2a, track 2 with bank
-		
+
 		const t2aep5 = {	// Start of curve
 			center: t2ep5.center,
 			forward: t2ep5.forward,
@@ -394,15 +395,45 @@
 			forward: t2ep8.forward,
 			trackBank: 10,
 		};
-		
+
 		const t2as2 = {
 			points: [ jrep4, t2aep5, t2aep6, t2aep7, t2aep8, t2ep9 ]
 		};
-		
+
 		tracks.track2a = {
 			segments: [ jrs1, t2as2 ]
 		};
-		
+
+		//----------------------------------------------------------------------
+		// Track 2b, track 2 but using a spiral section
+
+		const t2bep5 = {	// Start of curve
+			center: jrv5,
+			forward: jrt5,
+		};
+		const t2bspiral = {
+			type: 'spiral',
+			center: 'left',
+			endsAt: {
+				x: t2bep5.center.x - jrRadius,
+				y: t2bep5.center.y - jrDescent,
+				z: t2bep5.center.z - jrRadius,
+			},
+			radius: jrRadius,
+		};
+		const t2bep9 = {	// Runout
+			type: 'straight',
+			length: 2 * jrRadius,
+		};
+
+		const t2bs2 = {
+			points: [ jrep4, t2bep5, t2bspiral, t2bep9 ]
+		};
+
+		tracks.track2b = {
+			segments: [ jrs1, t2bs2 ]
+		};
+
 		//----------------------------------------------------------------------
 		// Track 3, slope into a jump with a turn right looping underneath the jump
 
@@ -444,15 +475,15 @@
 			type: 'straight',
 			length: 2 * jrRadius,
 		};
-		
+
 		const t3s2 = {
 			points: [ jrep4, t3ep5, t3ep6, t3ep7, t3ep8, t3ep9 ]
 		};
-		
+
 		tracks.track3 = {
 			segments: [ jrs1, t3s2 ]
 		};
-		
+
 		//----------------------------------------------------------------------
 		// Track 3a, track 3 with bank
 
@@ -482,15 +513,15 @@
 			forward: t3ep8.forward,
 			trackBank: -10,
 		};
-		
+
 		const t3as2 = {
 			points: [ jrep4, t3aep5, t3aep6, t3aep7, t3aep8, t3ep9 ]
 		};
-		
+
 		tracks.track3a = {
 			segments: [ jrs1, t3as2 ]
 		};
-		
+
 		//----------------------------------------------------------------------
 		// Track 4, slope into a loop
 
@@ -502,7 +533,7 @@
 		const t4loopRadius = 3;
 		const t4loopOffset = .4;
 		const t4loopWeight = circleWeight * t4loopRadius;
-		
+
 		const t4ep3 = {	// End of slope, start of flat
 			center: zero,
 			forward: negX,
@@ -563,15 +594,15 @@
 			type: 'straight',
 			length: 2 * t4loopRadius,
 		};
-		
+
 		const t4s1 = {
 			points: [ lep1, lep2, t4ep3, t4ep4, t4ep5, t4ep6, t4ep7, t4ep8, t4ep9 ]
 		};
-		
+
 		tracks.track4 = {
 			segments: [ t4s1 ]
 		};
-		
+
 		//======================================================================
 		// BABYLON IMPLEMENTATION
 
@@ -594,7 +625,7 @@
 		var scene = null;
 		let sceneToRender = null;
 		const trackMeshes = [];
-		
+
 		const createDefaultEngine = function() {
 			return new BABYLON.Engine(canvas, true, {
 				preserveDrawingBuffer: true,
@@ -602,7 +633,7 @@
 				disableWebGL2Support: false
 			});
 		};
-		
+
 		const createScene = function () {
 			const scene = new BABYLON.Scene(engine);
 
@@ -619,19 +650,19 @@
 
 			return scene;
 		}
-		
+
 		const createMesh = function() {
-		
+
 			for (let mesh of trackMeshes) {
 				scene.removeMesh(mesh);
 				mesh.dispose();
 			}
 			trackMeshes.length = 0;
-			
+
 			const track = tracks[trackSelector.value];
 			let settings = options[trackSelector.value];
 			if (settings === null || settings === undefined) settings = {};
-			
+
 			const ribbons = TrackPOC.build(track, (u) => { return new BABYLON.Vector3(u.x, u.y, u.z); }, settings);
 			for (let i = 0; i < ribbons.length; i++) {
 				const trackMesh = BABYLON.MeshBuilder.CreateRibbon(
@@ -645,25 +676,25 @@
 				trackMesh.physicsImpostor = new BABYLON.PhysicsImpostor(trackMesh, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0 }, scene);
 				trackMeshes.push(trackMesh);
 			}
-			
+
 			/*
 			drawBigAxes();
-			
+
 			for (let s of track.segments) {
 				for (let p of s.points) {
 					drawAxes(p.center);
 				}
 			}
-			
+
 			drawLine(ribbons[0][1], green);
 			*/
 		}
 
-/*		
+/*
 		const red = new BABYLON.Color4(1, 0, 0);
 		const green = new BABYLON.Color4(0, 1, 0);
 		const blue = new BABYLON.Color4(0, 0, 1);
-		
+
 		const drawAxes = function(u) {
 			const options = {
 				points: [ new BABYLON.Vector3(u.x, u.y, u.z), new BABYLON.Vector3(u.x, u.y, u.z) ],
@@ -680,7 +711,7 @@
 			options.points[1].z += 1;
 			BABYLON.MeshBuilder.CreateLines("lines", options);
 		}
-		
+
 		const drawBigAxes = function(u) {
 			const options = {
 				points: [ new BABYLON.Vector3(-50, 0, 0), new BABYLON.Vector3(50, 0, 0) ],
@@ -691,7 +722,7 @@
 			options.points = [ new BABYLON.Vector3(0, 0, -50), new BABYLON.Vector3(0, 0, 50) ];
 			BABYLON.MeshBuilder.CreateDashedLines("lines", options).color = blue;
 		}
-		
+
 		const drawLine = function(points, color) {
 			const options = {
 				colors: [],
@@ -719,11 +750,11 @@
 			await Ammo();
 
 			startRenderLoop(engine, canvas);
-			
+
 			window.scene = createScene();
 			createMesh();
 		};
-		
+
 		initFunction().then(() => {
 			sceneToRender = scene
 		});
@@ -738,16 +769,16 @@
 		const ballWeight = 2;
 		let ball;
 		const dropTheBall = () => {
-		
+
 			if (ball) scene.removeMesh(ball);
 			ball = BABYLON.MeshBuilder.CreateSphere("ball", { diameter: ballDiameter }, scene);
 			ball.physicsImpostor = new BABYLON.PhysicsImpostor(ball, BABYLON.PhysicsImpostor.SphereImpostor, {mass: ballWeight}, scene);
-			
+
 			const track = tracks[trackSelector.value];
 			const segment = track.segments[0];
 			const p0 = segment.points[0].center;
 			const p1 = segment.points[1].center;
-			
+
 			const t = .8;
 			const olt = 1 - t;
 			const altitude = 1;

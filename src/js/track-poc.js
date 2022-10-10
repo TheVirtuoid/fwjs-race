@@ -564,7 +564,7 @@ const spiral = {
 
 	Furthermore, note that if the altitudes are the same, all points on the
 	spiral have the same altitude and the number of turns should be 0.
-	
+
 	--------------------------------------------------------------------------*/
 
 	parse: function(builders, points, rawSpiral, masterSettings, nameStr) {
@@ -632,7 +632,7 @@ const spiral = {
 	getSpecs: function(points, rawSpiral, masterSettings, nameStr) {
 
 		// Create the base spiral specification
-		const spiralSpecs = mergedSettings(masterSettings, rawSpiral, nameStr);
+		const spiralSpecs = mergeSettings(masterSettings, rawSpiral, nameStr);
 
 		// Get either the entry point or the overrideFirstWeight option
 		// *** This satisfies (f) ***
@@ -648,7 +648,7 @@ const spiral = {
 			spiralSpecs.overrideFirstWeight = validateBoolean(rawSpiral, 'overrideFirstWeight', nameStr, true);
 			spiralSpecs.startsAt = points[points.length - 1];
 		}
-		
+
 		// Get the number of turns
 		// *** This satisfies (e) ***
 		const turns = validateNonNegativeInteger(rawSpiral, 'turns', nameStr, 0);
@@ -665,7 +665,7 @@ const spiral = {
 		} else {
 			throw new RangeError(`${nameStr}.center must be either 'left', 'right', or 'up'.`);
 		}
-		
+
 		// Get the entry radius
 		// *** This either completely or partially satisfies (d)
 		let startRadius, endRadius;
@@ -679,28 +679,28 @@ const spiral = {
 		} else {
 			throw new TypeError(`${nameStr} must specify either 'radius' or 'startRadius'`);
 		}
-		
+
 		// Set the rotation center
 		// *** This finishes the satisfaction of (a) ***
 		sprialSpecs.rotationCenter = vector.add(spiralSpecs.startsAt.center, spiralSpecs.startRadius, toCenter);
-		
+
 		// Now that we have the rotation plane, we can compute the starting
 		// altitude and angle
 		// *** This partially satisfies (b) and (c) ***
 		throw 'Not implemented, need to set starting angle and altitude';
-		
+
 		// Check if the exact exit point is given
 		if (isDefined(rawSpiral.endsAt)) {
 			// *** This completely satisfies (b), (c), and (d) ***
 			throw 'Not implemented, need to parse endsAt and set ending angle, altitude, and radius';
-			
+
 		} else {
 			// Otherwise we expect exit altitude and angle to be given and possibly
 			// its radius
 			// *** This completely satisfies (b), (c), and (d) ***
 			throw 'Not implemented, need to parse the ending angle, altitude, and possibly radius';
 		}
-		
+
 		// Set the interpolation functions
 		spiralSpecs.altitude = setInterpolation(startAltitude, endAltitude);
 		spiralSpecs.angle = setInterpolation(startAngle, endAngle + 360 * turns);
@@ -709,7 +709,7 @@ const spiral = {
 		// Return the specifications
 		return spiralSpecs;
 	},
-	
+
 	setInterpolation: function(t0, t1) {
 		const delta = t1 - t0;
 		return Math.abs(delta) < .001 ?
