@@ -62,6 +62,10 @@ function isArray(value) {
 	return isObject(value) && isInstance(value, 'Array');
 }
 
+function isBoolean(value) {
+	return typeof(value) === 'boolean';
+}
+
 function isDefault(value) {
 	return value === null || value === undefined;
 }
@@ -76,6 +80,10 @@ function isFunction(value) {
 
 function isInstance(value, className) {
 	return value.constructor.toString().indexOf(className) > -1;
+}
+
+function isInteger(value) {
+	return Number.isInteger(value);
 }
 
 function isNumber(value) {
@@ -109,6 +117,18 @@ function isVector3(value) {
 //==============================================================================
 // VALIDATORS
 
+function validateBoolean(object, memberName, objectName, defaultValue) {
+	if (isDefault(object[memberName])) return defaultValue;
+	if (isBoolean(object[memberName])) return object[memberName];
+	throw new TypeError(`${objectName}.${memberName} must be 'true' or 'false'`);
+}
+
+function validateNonNegativeInteger(object, memberName, objectName, defaultValue) {
+	if (isDefault(object[memberName])) return defaultValue;
+	if (isInteger(object[memberName]) && object[memberName] >= 0) return value;
+	throw new RangeError(`${objectName}.${memberName} number be a non-negative integer`);
+}
+
 function validateObject(value, name) {
 	if (isObject(value)) return value;
 	throw new TypeError(`${resolveName(name)} must be an object`);
@@ -127,6 +147,11 @@ function validateSizedArray(value, minElements, name) {
 	throw new TypeError(`${resolveName(name)} must be an Array`);
 }
 
+function validateString(object, memberName, objectName) {
+	if (isString(object[memberName])) return object[memberName];
+	throw new TypeError(`${objectName}.${memberName} must be a string`);
+}
+
 function validateTrackBank(value, name) {
 	if (isVector3(value)) return value;
 	if (isNumber(value)) {
@@ -136,6 +161,12 @@ function validateTrackBank(value, name) {
 		return v;
 	}
 	throw new TypeError(`${resolveName(name)} must be a number or 3D vector`);
+}
+
+function validateUndefined(value, memberName, objectName, excludingMemberName) {
+	if (isDefined(value[memberName])) {
+		throw new TypeError(`Cannot specify ${objectName}.${memberName} because ${excludingMemberName} is specified.`);
+	}
 }
 
 function validateVector3(object, memberName, objectName) {
@@ -484,92 +515,217 @@ function parsePoint(builders, points, rawPoint, masterSettings, nameStr) {
 	if (points.length > 1) builders.push(createBuilder(buildCurve, masterSettings));
 }
 
+function getStartsAt(masterSettings, rawSection, nameStr) {
+	const startPoint = mergeSettings(masterSettings, rawSection, nameStr);
+	startPoint.name = nameStr + '*';
+	startPoint.center = validateVector3(rawSection, 'startsAt', nameStr);
+	return startPoint;
+}
+
 const spiral = {
 
 	circleWeight: 0.5519150244935105707435627,
 
-	//--------------------------------------------------------------------------
-	// THEORETICAL FOUNDATION
+	/*--------------------------------------------------------------------------
+	THEORETICAL FOUNDATION
 
-	// A spiral section has (a) a center of the rotation, (b) a normalized
-	// rotation axis, (c) an entry point, (d) an exit point, and (e) a number of
-	// full rotations, or turns, between the entry and exit points.
+	A spiral section has (a) a center of the rotation, (b) a normalized
+	rotation axis, (c) an entry point, (d) an exit point, and (e) a number of
+	full rotations, or turns, between the entry and exit points.
 
-	// Let the rotation plane be the plane defined by the center and rotation
-	// axis with the plane's normal being the rotation axis.
+	Let the rotation plane be the plane defined by the center and rotation
+	axis with the plane's normal being the rotation axis.
 
-	// Note that the rotation axis, being on one side or the other of the plane,
-	// determines if the sprial turns left or right relative to the perceived
-	// 'up' of the entry point.
+	Note that the rotation axis, being on one side or the other of the plane,
+	determines if the sprial turns left or right relative to the perceived
+	'up' of the entry point.
 
-	// Let the rotation plane have an arbitrary 'x' axis or 0° vector,
-	// orthogonal to the rotation axis.
+	Let the rotation plane have an arbitrary 'x' axis or 0° vector,
+	orthogonal to the rotation axis.
 
-	// Note that all points projected on the rotation plane can be expressed in
-	// polar coordinates [d, θ] where d is the distance of the projection from
-	// the center point and θ is the angle off the plane's x axis.
+	Note that all points projected on the rotation plane can be expressed in
+	polar coordinates [d, θ] where d is the distance of the projection from
+	the center point and θ is the angle off the plane's x axis.
 
-	// Let the entry and exit projection points be the projections of the entry
-	// and exit points onto the rotation plane.
+	Let the entry and exit projection points be the projections of the entry
+	and exit points onto the rotation plane.
 
-	// Let the entry and exit angles be the angle components of the projection
-	// points' polar cooordinates.
+	Let the entry and exit angles be the angle components of the projection
+	points' polar cooordinates.
 
-	// Let the entry and exit radii be the distances of the projection points'
-	// polar coordinates.
+	Let the entry and exit radii be the distances of the projection points'
+	polar coordinates.
 
-	// Note that the radii do not need to be the same. This allows for the
-	// construction of increasing or decreasing radii curves.
+	Note that the radii do not need to be the same. This allows for the
+	construction of increasing or decreasing radii curves.
 
-	// Let the sweep of the spiral being the sum of (a) 360° times the number
-	// of turns and (b) the difference between the entry and exit angles in the
-	// direction of rotation.
+	Let the sweep of the spiral being the sum of (a) 360° times the number
+	of turns and (b) the difference between the entry and exit angles in the
+	direction of rotation.
 
-	// Let the entry and exit altitudes be the distances of the entry and exit
-	// points from the rotation plane. Note that this is the dot product of the
-	// points and the rotation axis.
+	Let the entry and exit altitudes be the distances of the entry and exit
+	points from the rotation plane. Note that this is the dot product of the
+	points and the rotation axis.
 
-	// Note that the altitudes may have the same sign as the spiral does not
-	// need to pass through the rotation plane.
+	Note that the altitudes may have the same sign as the spiral does not
+	need to pass through the rotation plane.
 
-	// Furthermore, note that if the altitudes are the same, all points on the
-	// spiral have the same altitude and the number of turns should be 0.
+	Furthermore, note that if the altitudes are the same, all points on the
+	spiral have the same altitude and the number of turns should be 0.
+	
+	--------------------------------------------------------------------------*/
 
 	parse: function(builders, points, rawSpiral, masterSettings, nameStr) {
 		const specs = this.getSpecs(points, rawSpiral, masterSettings, nameStr);
 		this.generate(builders, points, specs, masterSettings);
 	},
 
-	//--------------------------------------------------------------------------
-	// SPECIFICATION
+	/*--------------------------------------------------------------------------
+	SPECIFICATION
 
-	// As stated above, we need these elements to be specified:
-	// (a) the rotation center and axis which define the rotation plane
-	// (b) the entry and exit angles
-	// (c) the entry and exit altitudes
-	// (d) the entry and exit radii
-	// (e) the number of turns
-	// (f) The entry point if the sprial starts the segment.
-	
-	// Note that if the spiral starts a segment, the entry point implicitly
-	// supplies the entry angle, altitude, and radius.
+	As stated above, we need these elements to be specified:
+	(a) the rotation center and axis which define the rotation plane
+	(b) the entry and exit angles
+	(c) the entry and exit altitudes
+	(d) the entry and exit radii
+	(e) the number of turns
+	(f) The entry point if the sprial starts the segment.
 
-	// 'forwardWeight'
-	//		If specified, applies to the last point generated.
-	// 'overrideFirstWeight'
-	//		If not specified or is true, resets the entry point's forward weight
-	//		to the weight used by the circular Bezier algorithm. This is illegal
-	//		if the spiral starts the segment.
-	// 'startsAt'
-	//		This is required if the spiral starts the track segment. This sets
-	//		the entry point of the spiral in such a case. This is illegal if
-	//		the spiral does not start the segment.
+	Note that if the spiral starts a segment, the entry point implicitly
+	supplies the entry angle, altitude, and radius.
+
+	'center' (required)
+		This either 'left', 'right', or 'up' and, along with either
+		'radius' or 'startRadius', defines the center of rotation that
+		is the appropriate radius times the entry point's left, right,
+		or up direction vector.
+	'endDepth' (required)
+		The relative depth of the exit point. This must be a number. This
+		requires 'endAngle' as well.
+	'endAngle' (required)
+		The angle of the exit point.
+	'endRadius'
+		If specified, sets the radius of the spiral at the exit point.
+		This also requires 'startRadius' to be set and renders 'radius'
+		illegal.
+	'endsAt'
+		If specified, sets the exit point of the
+		[endDepth, endAngle, endRadius illegal, radius ignored]
+	'forwardWeight'
+		If specified, applies to the exit point. Note that this does not
+		affect the spiral's shape but the shape of the following section.
+	'overrideFirstWeight'
+		If not specified or is true, resets the entry point's forward weight
+		to the weight used by the circular Bezier algorithm. This is illegal
+		if the spiral starts the segment.
+	'radius'
+		If specified, determines the radius of the spiral at both the entry
+		and exit points. In this case, the 'startRadius' and 'endRadius'
+		settings are illegal.
+		If not specified, both 'startRadius' and 'endRadius' are required.
+	'startRadius'
+		If specified, sets the radius of the spiral at the entry point.
+		This also requires 'endRadius' to be set and renders 'radius'
+		illegal.
+	'startsAt'
+		This is required if the spiral starts the track segment. This sets
+		the entry point of the spiral in such a case. This is illegal if
+		the spiral does not start the segment.
+	'turns'
+		If specified, this positive integer sets the number of complete
+		rotations in the spiral.
+
+	--------------------------------------------------------------------------*/
 
 	getSpecs: function(points, rawSpiral, masterSettings, nameStr) {
-		throw "Not implemented";
+
+		// Create the base spiral specification
+		const spiralSpecs = mergedSettings(masterSettings, rawSpiral, nameStr);
+
+		// Get either the entry point or the overrideFirstWeight option
+		// *** This satisfies (f) ***
+		if (points.length === 0) {
+			if (isDefined(rawSpiral.overrideFirstWeight)) {
+				throw new RangeError(`${nameStr}.overrideFirstWeight cannot be specified for a spiral that starts a segment`);
+			}
+			spiralSpecs.startsAt = getStartsAt(masterSettings, rawSpiral, nameStr);
+		} else {
+			if (isDefined(rawSpiral.startsAt)) {
+				throw new RangeError(`${nameStr}.startsAt cannot be specified for a spiral that does not start a segment`);
+			}
+			spiralSpecs.overrideFirstWeight = validateBoolean(rawSpiral, 'overrideFirstWeight', nameStr, true);
+			spiralSpecs.startsAt = points[points.length - 1];
+		}
+		
+		// Get the number of turns
+		// *** This satisfies (e) ***
+		const turns = validateNonNegativeInteger(rawSpiral, 'turns', nameStr, 0);
+
+		// Get the center specification
+		// *** This partially satisfies (a) ***
+		const center = validateString(rawSpiral, 'center', nameStr);
+		if (center === 'left') {
+			throw 'Not implemented, need to set toCenter and spiralSpecs.rotationAxis';
+		} else if (center === 'right') {
+			throw 'Not implemented, need to set toCenter and spiralSpecs.rotationAxis';
+		} else if (center === 'up') {
+			throw 'Not implemented, need to set toCenter and spiralSpecs.rotationAxis';
+		} else {
+			throw new RangeError(`${nameStr}.center must be either 'left', 'right', or 'up'.`);
+		}
+		
+		// Get the entry radius
+		// *** This either completely or partially satisfies (d)
+		let startRadius, endRadius;
+		if (isDefined(rawSpiral.radius)) {
+			validateUndefined(rawSpiral, 'startRadius', nameStr, 'radius');
+			validateUndefined(rawSpiral, 'endRadius', nameStr, 'radius');
+			startRadius = validatePositiveNumber(rawSpiral, 'radius', nameStr);
+			endRadius = startRadius;
+		} else if (isDefined(rawSpiral.startRadius)) {
+			startRadius = validatePositiveNumber(rawSpiral, 'radius', nameStr);
+		} else {
+			throw new TypeError(`${nameStr} must specify either 'radius' or 'startRadius'`);
+		}
+		
+		// Set the rotation center
+		// *** This finishes the satisfaction of (a) ***
+		sprialSpecs.rotationCenter = vector.add(spiralSpecs.startsAt.center, spiralSpecs.startRadius, toCenter);
+		
+		// Now that we have the rotation plane, we can compute the starting
+		// altitude and angle
+		// *** This partially satisfies (b) and (c) ***
+		throw 'Not implemented, need to set starting angle and altitude';
+		
+		// Check if the exact exit point is given
+		if (isDefined(rawSpiral.endsAt)) {
+			// *** This completely satisfies (b), (c), and (d) ***
+			throw 'Not implemented, need to parse endsAt and set ending angle, altitude, and radius';
+			
+		} else {
+			// Otherwise we expect exit altitude and angle to be given and possibly
+			// its radius
+			// *** This completely satisfies (b), (c), and (d) ***
+			throw 'Not implemented, need to parse the ending angle, altitude, and possibly radius';
+		}
+		
+		// Set the interpolation functions
+		spiralSpecs.altitude = setInterpolation(startAltitude, endAltitude);
+		spiralSpecs.angle = setInterpolation(startAngle, endAngle + 360 * turns);
+		spiralSpecs.radius = sprial.setInterpolation(startRadius, endRadius);
+
+		// Return the specifications
+		return spiralSpecs;
+	},
+	
+	setInterpolation: function(t0, t1) {
+		const delta = t1 - t0;
+		return Math.abs(delta) < .001 ?
+			(t) => { return t0; } :
+			(t) => { return t0 + t * delta; };
 	},
 
-	//--------------------------------------------------------------------------
+	/*--------------------------------------------------------------------------
 	// IMPLEMENTATION
 
 	// TODO: Determine if the rotation direction coefficient is needed. The
@@ -613,8 +769,10 @@ const spiral = {
 	// the control points of the curve, range of points produced are up to
 	// Point(sweep).
 
+	--------------------------------------------------------------------------*/
+
 	generate: function(builders, points, spiralSpecs, masterSettings) {
-		
+
 		// Insert the entry point if this is the first point of the segment.
 		// Otherwise patch its forwardWeight if required.
 		if (points.length === 0) {
@@ -622,20 +780,20 @@ const spiral = {
 		} else if (spiralSpecs.overrideFirstWeight) {
 			points[points.length - 1].forwardWeight = spiralSpecs.entryRadius * circleWeight;
 		}
-		
+
 		// Add the 90° sections
 		for (let angle = 0; angle < spiralSpecs.sweep; angle += 90) {
 			this.generateSection(builders, points, angle, spiralSpecs);
 		}
-		
+
 		// Patch the forward weight of the last point
 		points[points.length - 1].forwardWeight = spiralSpecs.forwardWeight;
 	},
-	
+
 	generateSection: function(builders, points, angle, spiralSpecs) {
 		throw "Not implemented";
 	},
-};
+}
 
 function parseSpiral(builders, points, rawStraight, masterSettings, nameStr) {
 	spiral.parse(builders, points, rawStraight, masterSettings, nameStr);
@@ -688,9 +846,7 @@ function parseStraight(builders, points, rawStraight, masterSettings, nameStr) {
 	if (!generateStart) {
 		startPoint = points[points.length - 1];
 	} else {
-		startPoint = mergeSettings(masterSettings, rawStraight, nameStr);
-		startPoint.name = nameStr + '*';
-		startPoint.center = validateVector3(rawStraight, 'startsAt', nameStr);
+		startPoint = getStartsAt(masterSettings, rawStraight, nameStr);
 		startPoint.forwardWeight = validateWeight(rawStraight.startingWeight, () => { return nameStr + '.startingWeight'; });
 		if (usesEndsAt) {
 			endPoint.forward = vector.normalize(vector.difference(startPoint.center, endPoint.center));
