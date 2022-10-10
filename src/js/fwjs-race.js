@@ -39,7 +39,7 @@ document.getElementById('go').addEventListener('click', () => {
 	if (car) {
 		car.junk();
 	}
-	car = new Car();
+	car = new Car({ scale: .25 });
 	car.build({
 		name: 'test',
 		scene,

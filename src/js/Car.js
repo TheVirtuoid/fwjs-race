@@ -18,17 +18,15 @@ const defaults = {
 		width: 1,
 		height: 2,
 		mass: 1
+	},
+	chassis: {
+		depth: 5,
+		height: .5,
+		width: 8,
+		mass: 0
 	}
 };
 
-/*
-const wheelParameters = [
-	{ wheelName: 'rightFront', offset: new Vector3(0, 0, 0), pivot: new Vector3(0, -2.5, 0) },
-	{ wheelName: 'rightRear', offset: new Vector3(-5, 0, 0), pivot: new Vector3(-5, -2.5, 0) },
-	{ wheelName: 'leftFront', offset: new Vector3(0, 0, 5),  pivot: new Vector3(0, 2.5, 0)},
-	{ wheelName: 'leftRear', offset: new Vector3(-5, 0, 5), pivot: new Vector3(-5, 2.5, 0) }
-];
-*/
 const wheelParameters = [
 	{ wheelName: 'rightFront', offset: new Vector3(2.5, 0, -2.5), pivot: new Vector3(2.5, -2.5, 0) },
 	{ wheelName: 'rightRear', offset: new Vector3(-2.5, 0, -2.5), pivot: new Vector3(-2.5, -2.5, 0) },
@@ -42,13 +40,42 @@ export default class Car {
 	#wheels;
 	#scene;
 	#chassis;
+	#scale;
+	#wheelParameters;
+	#defaults;
 
-	constructor() {}
+	constructor(args = {}) {
+		const { scale = 1 } = args;
+		this.#scale = scale;
+		this.#wheelParameters = wheelParameters.map((wheelParameter) => {
+			let { wheelName, offset, pivot } = wheelParameter;
+			return { wheelName, offset: this.#scaleVector3(offset), pivot: this.#scaleVector3(pivot) };
+		});
+		this.#defaults = {
+			wheel: {
+				diameter: defaults.wheel.diameter * this.#scale,
+				height: defaults.wheel.height * this.#scale,
+				mass: defaults.wheel.mass * this.#scale,
+			},
+			wheelBase: {
+				depth: defaults.wheelBase.depth * this.#scale,
+				width: defaults.wheelBase.width * this.#scale,
+				height: defaults.wheelBase.height * this.#scale,
+				mass: defaults.wheelBase.mass * this.#scale
+			},
+			chassis: {
+				depth: defaults.chassis.depth * this.#scale,
+				width: defaults.chassis.width * this.#scale,
+				height: defaults.chassis.height * this.#scale,
+				mass: defaults.chassis.mass * this.#scale
+			}
+		}
+	}
 
 	build (args = {}) {
 		const { scene, position, name, color } = args;
 		let wheelBase = this.#addWheelBase({ scene, position, name });
-		let wheels = wheelParameters.map((wheel) => {
+		let wheels = this.#wheelParameters.map((wheel) => {
 			const { wheelName, offset, pivot } = wheel;
 			return this.#addWheel({ name, scene, position, wheelName, offset, pivot });
 		});
@@ -74,10 +101,17 @@ export default class Car {
 		this.#wheels = [];
 	}
 
+	#scaleVector3(vector) {
+		const x = vector.x * this.#scale;
+		const y = vector.y * this.#scale;
+		const z = vector.z * this.#scale;
+		return new Vector3(x, y, z);
+	}
+
 	// the wheelBase was the old axle
 	#addWheelBase(args = {}) {
 		const { name, scene, position } = args;
-		const { depth, width, height } = defaults.wheelBase;
+		const { depth, width, height } = this.#defaults.wheelBase;
 		const wheelBase = MeshBuilder.CreateBox(`${name}-wheelbase`, { depth, width, height }, scene);
 		wheelBase.rotation.x = Math.PI / 2;
 		wheelBase.position = position.clone();
@@ -87,7 +121,7 @@ export default class Car {
 
 	#addWheel(args = {}) {
 		const { name, scene, position, wheelName, offset, pivot } = args;
-		const { diameter, height } = defaults.wheel;
+		const { diameter, height } = this.#defaults.wheel;
 		const wheel = MeshBuilder.CreateCylinder(`${name}-wheel-${wheelName}`, { diameter, height }, scene);
 		wheel.material = new StandardMaterial(`${name}-wheelmat-${wheelName}`, scene);
 		wheel.material.diffuseTexture = new Texture("https://i.imgur.com/JbvoYlB.png", scene);
@@ -100,26 +134,22 @@ export default class Car {
 	#addChassis(args = {}) {
 		const { name, scene, position, color } = args;
 		const faceColors = [color, color, color, color, color, color];
-		const chassis = MeshBuilder.CreateBox(`${name}-chassis`, {
-			depth: 5,
-			height: .5,
-			width: 8,
-			faceColors
-		}, scene);
+		const { depth, height, width } = this.#defaults.chassis;
+		const chassis = MeshBuilder.CreateBox(`${name}-chassis`, { depth, height, width, faceColors }, scene);
 		chassis.position = position.clone();
 		return chassis;
 	}
 
 	#setPhysics(args = {}) {
 		const { wheelBase, wheels, chassis } = args;
-		const { mass: wheelMass } = defaults.wheel;
-		const { mass: wheelBaseMass, height } = defaults.wheelBase;
+		const { mass: wheelMass } = this.#defaults.wheel;
+		const { mass: wheelBaseMass, height } = this.#defaults.wheelBase;
+		const { mass: chassisMass } = this.#defaults.chassis;
 
-		chassis.physicsImpostor = new PhysicsImpostor(chassis, PhysicsImpostor.BoxImpostor, { mass: wheelBaseMass, friction: 1, restitution: 0 });
+		chassis.physicsImpostor = new PhysicsImpostor(chassis, PhysicsImpostor.BoxImpostor, { mass: chassisMass, friction: 1, restitution: 0 });
 		wheelBase.physicsImpostor = new PhysicsImpostor(wheelBase, PhysicsImpostor.CylinderImpostor, { mass: wheelBaseMass, friction: 1, restitution: 0 });
 		wheels.forEach((wheelData) => {
 			const { wheel, pivot } = wheelData;
-			console.log(wheel, pivot);
 			wheel.physicsImpostor = new PhysicsImpostor(wheel, PhysicsImpostor.CylinderImpostor, { mass: wheelMass, friction: 1, restitution: 0 });
 			const joint = new HingeJoint({
 				mainPivot: pivot,
