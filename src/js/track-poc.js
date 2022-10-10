@@ -1,17 +1,6 @@
 const TrackPOC = {}
 
 //==============================================================================
-// NOTES
-//
-// (1)	Any function that takes a 'name' argument treats 'name' as either a
-//		function that returns a string or a string. This allows late creation
-//		of strings, mainly for the occasional exception. The function
-//		'resolveName' handles this resolution of the name.
-// (2)	In cases where a string-only name is needed, the argument name is
-//		'nameStr'.
-
-
-//==============================================================================
 // HELPER ROUTINES
 
 const coords3 = ['x', 'y', 'z'];
@@ -30,29 +19,20 @@ const validSettings = [
 	{ key: 'wallHeight', validator: validatePositiveNumber },
 ];
 
-function combineNames(prefix, nameStr) {
-	return prefix.length == 0 ? nameStr : (prefix + '.' + nameStr);
-}
-
 function jsonOrObject(o, name) {
 	if (isString(o)) return JSON.parse(o);
 	if (isObject(o)) return o;
-	throw new TypeError(`${resolveName(name)} must be an JSON string or object`);
+	throw new TypeError(`${name} must be an JSON string or object`);
 }
 
 function mergeSettings(masterSettings, overrideSettings, name) {
 	const mergedSettings = {...masterSettings};
 	for (let vs of validSettings) {
-		const value = overrideSettings[vs.key];
-		if (isDefined(value)) {
-			mergedSettings[vs.key] = vs.validator(value, () => { return combineNames(resolveName(name), vs.key); });
+		if (isDefined(overrideSettings[vs.key])) {
+			mergedSettings[vs.key] = vs.validator(overrideSettings, vs.key, name);
 		}
 	}
 	return mergedSettings;
-}
-
-function resolveName(name) {
-	return isFunction(name) ? name() : name;
 }
 
 //==============================================================================
@@ -118,41 +98,47 @@ function isVector3(value) {
 // VALIDATORS
 
 function validateBoolean(object, memberName, objectName, defaultValue) {
-	if (isDefault(object[memberName])) return defaultValue;
-	if (isBoolean(object[memberName])) return object[memberName];
+	const value = object[memberName];
+	if (isDefault(value)) return defaultValue;
+	if (isBoolean(value)) return value;
 	throw new TypeError(`${objectName}.${memberName} must be 'true' or 'false'`);
 }
 
 function validateNonNegativeInteger(object, memberName, objectName, defaultValue) {
-	if (isDefault(object[memberName])) return defaultValue;
-	if (isInteger(object[memberName]) && object[memberName] >= 0) return value;
+	const value = object[memberName];
+	if (isDefault(value)) return defaultValue;
+	if (isInteger(value) && value >= 0) return value;
 	throw new RangeError(`${objectName}.${memberName} number be a non-negative integer`);
 }
 
-function validateObject(value, name) {
-	if (isObject(value)) return value;
-	throw new TypeError(`${resolveName(name)} must be an object`);
+function validateObject(object, objectName) {
+	if (isObject(object)) return object;
+	throw new TypeError(`${objectName} must be an object`);
 }
 
-function validatePositiveNumber(value, name) {
+function validatePositiveNumber(object, memberName, objectName) {
+	const value = object[memberName];
 	if (isPositiveNumber(value)) return value;
-	throw new RangeError(`${resolveName(name)} number be a positive number`);
+	throw new RangeError(`${objectName}.${memberName} number be a positive number`);
 }
 
-function validateSizedArray(value, minElements, name) {
+function validateSizedArray(object, memberName, objectName, minElements) {
+	const value = getValue(object, memberName);
 	if (isArray(value)) {
 		if (value.length >= minElements) return value;
-		throw new RangeError(`${resolveName(name)} must have at least ${minElements} element(s)`);
+		throw new RangeError(`${resolveName(objectName, memberName)} must have at least ${minElements} element(s)`);
 	}
-	throw new TypeError(`${resolveName(name)} must be an Array`);
+	throw new TypeError(`${resolveName(objectName, memberName)} must be an Array`);
 }
 
 function validateString(object, memberName, objectName) {
-	if (isString(object[memberName])) return object[memberName];
+	const value = object[memberName];
+	if (isString(value)) return value;
 	throw new TypeError(`${objectName}.${memberName} must be a string`);
 }
 
-function validateTrackBank(value, name) {
+function validateTrackBank(object, memberName, objectName) {
+	const value = object[memberName];
 	if (isVector3(value)) return value;
 	if (isNumber(value)) {
 		let v = value % 360;
@@ -160,24 +146,34 @@ function validateTrackBank(value, name) {
 		if (v <= -180) v += 360;
 		return v;
 	}
-	throw new TypeError(`${resolveName(name)} must be a number or 3D vector`);
+	throw new TypeError(`${objectName}.${memberName} must be a number or 3D vector`);
 }
 
-function validateUndefined(value, memberName, objectName, excludingMemberName) {
-	if (isDefined(value[memberName])) {
+function validateUndefined(object, memberName, objectName, excludingMemberName) {
+	if (isDefined(object[memberName])) {
 		throw new TypeError(`Cannot specify ${objectName}.${memberName} because ${excludingMemberName} is specified.`);
 	}
 }
 
 function validateVector3(object, memberName, objectName) {
-	if (isVector3(object[memberName])) return object[memberName];
+	const value = object[memberName];
+	if (isVector3(value)) return value;
 	throw new TypeError(`${objectName}.${memberName} must be a 3D vector`);
 }
 
-function validateWeight(value, name) {
+function validateWeight(object, memberName, objectName) {
+	const value = object[memberName];
 	if (isDefault(value)) return 1;
 	if (isPositiveNumber(value)) return value;
-	throw new RangeError(`${resolveName(name)} must be a positive number`);
+	throw new RangeError(`${objectName}.${memberName} must be a positive number`);
+}
+
+function getValue(object, memberName) {
+	return memberName.length === 0 ? object : object[memberName];
+}
+
+function resolveName(objectName, memberName) {
+	return memberName.length === 0 ? objectName : (objectName + '.' + memberName);
 }
 
 //==============================================================================
@@ -429,7 +425,7 @@ function buildSegment(segment, vectorFactory, masterSettings, isClosed, nameStr)
 	const settings = mergeSettings(masterSettings, segment, nameStr);
 
 	// Make sure that 'points' is an array with at least one element
-	validateSizedArray(segment.points, 1, () => { return nameStr + '.points' });
+	validateSizedArray(segment, 'points', nameStr, 1);
 
 	// Reform the points array into two arrays of n section builders and
 	// n+1 segment points
@@ -440,7 +436,7 @@ function buildSegment(segment, vectorFactory, masterSettings, isClosed, nameStr)
 	}
 
 	// Ensure we have at least one builder and two segment points
-	validateSizedArray(points, 2, () => { return nameStr + '.points' });
+	validateSizedArray(points, '', nameStr, 2);
 
 	// Loop through the builders, creating curves between them
 	const ribbon = createRibbon();
@@ -503,12 +499,8 @@ function parsePoint(builders, points, rawPoint, masterSettings, nameStr) {
 	}
 
 	// Get the weights
-	segmentPoint.forwardWeight = validateWeight(
-		rawPoint.forwardWeight,
-		() => { return nameStr + '.forwardWeight'; });
-	segmentPoint.backwardWeight = validateWeight(
-		rawPoint.backwardWeight,
-		() => { return nameStr + '.backwardWeight'; });
+	segmentPoint.forwardWeight = validateWeight(rawPoint, 'forwardWeight', nameStr);
+	segmentPoint.backwardWeight = validateWeight(rawPoint, 'backwardWeight', nameStr);
 
 	// And we are done!
 	points.push(segmentPoint);
@@ -726,48 +718,48 @@ const spiral = {
 	},
 
 	/*--------------------------------------------------------------------------
-	// IMPLEMENTATION
+	IMPLEMENTATION
 
-	// TODO: Determine if the rotation direction coefficient is needed. The
-	// rotation functions may handle this innately.
+	TODO: Determine if the rotation direction coefficient is needed. The
+	rotation functions may handle this innately.
 
-	// Note that the rotation direction is either 1 or -1 to reflect,
-	// respectively, a counterclockwise or clockwise rotation.
+	Note that the rotation direction is either 1 or -1 to reflect,
+	respectively, a counterclockwise or clockwise rotation.
 
-	// First we need a series of parametric functions on t = 0 to 1.
+	First we need a series of parametric functions on t = 0 to 1.
 
-	// Let Sweep(t) return the linearly interpolated sweep between 0 at t = 0
-	// and the spiral's sweep at t = 1.
+	Let Sweep(t) return the linearly interpolated sweep between 0 at t = 0
+	and the spiral's sweep at t = 1.
 
-	// Let Altitude(t) return the linearly interpolated altitude between the
-	// entry altitude at t = 0 and the exit altitude at t = 1.
+	Let Altitude(t) return the linearly interpolated altitude between the
+	entry altitude at t = 0 and the exit altitude at t = 1.
 
-	// Let Radius(t) return the linearly interpolated radius between the entry
-	// radius at t = 0 and the exit radius at t = 1.
+	Let Radius(t) return the linearly interpolated radius between the entry
+	radius at t = 0 and the exit radius at t = 1.
 
-	// Let Angle(t) return the sum of the entry angle and the product of
-	// Sweep(t) and rotation direction, normalized to the range [0°, 360°).
+	Let Angle(t) return the sum of the entry angle and the product of
+	Sweep(t) and rotation direction, normalized to the range [0°, 360°).
 
-	// Let PlanarPoint(t) return the point at [Radius(t), Angle(t)].
+	Let PlanarPoint(t) return the point at [Radius(t), Angle(t)].
 
-	// Let Point(t) return the sum of PlanarPoint(t) and the product of
-	// Altitude(t) and the rotation axis.
+	Let Point(t) return the sum of PlanarPoint(t) and the product of
+	Altitude(t) and the rotation axis.
 
-	// Now let Spiral(u) be a Bezier cubic function to compute the spiral
-	// points.
+	Now let Spiral(u) be a Bezier cubic function to compute the spiral
+	points.
 
-	// The current implementation of the Bezier cubic curve for circles
-	// requires that a circle be partitioned into 90° segments. The Bezier
-	// function Spiral(u) treat u = 0 as 0° and u = 1 as 90°.
+	The current implementation of the Bezier cubic curve for circles
+	requires that a circle be partitioned into 90° segments. The Bezier
+	function Spiral(u) treat u = 0 as 0° and u = 1 as 90°.
 
-	// This requires the top-level algorithm to break the sprial into a series
-	// of 90 sections [0°, 90°], [90°, 180°], ..., [(k-1)90°, k90°] where
-	// (k-1)90° < the spiral's sweep <= k90°. This requires additional
-	// arguments to the Bezier function to allow mapping of u onto the
-	// parameteric argument t in the other functions. Also note that the for
-	// the last section, even though Point(k90°) is used to determine the
-	// the control points of the curve, range of points produced are up to
-	// Point(sweep).
+	This requires the top-level algorithm to break the sprial into a series
+	of 90 sections [0°, 90°], [90°, 180°], ..., [(k-1)90°, k90°] where
+	(k-1)90° < the spiral's sweep <= k90°. This requires additional
+	arguments to the Bezier function to allow mapping of u onto the
+	parameteric argument t in the other functions. Also note that the for
+	the last section, even though Point(k90°) is used to determine the
+	the control points of the curve, range of points produced are up to
+	Point(sweep).
 
 	--------------------------------------------------------------------------*/
 
@@ -847,7 +839,7 @@ function parseStraight(builders, points, rawStraight, masterSettings, nameStr) {
 		startPoint = points[points.length - 1];
 	} else {
 		startPoint = getStartsAt(masterSettings, rawStraight, nameStr);
-		startPoint.forwardWeight = validateWeight(rawStraight.startingWeight, () => { return nameStr + '.startingWeight'; });
+		startPoint.forwardWeight = validateWeight(rawStraight, 'startingWeight', nameStr);
 		if (usesEndsAt) {
 			endPoint.forward = vector.normalize(vector.difference(startPoint.center, endPoint.center));
 			startPoint.forward = endPoint.forward;
@@ -858,7 +850,7 @@ function parseStraight(builders, points, rawStraight, masterSettings, nameStr) {
 
 	// Compute the end point's center and forward
 	if (usesLength) {
-		const length = validatePositiveNumber(rawStraight.length, () => { return nameStr + '.length'; });
+		const length = validatePositiveNumber(rawStraight, 'length', nameStr);
 		endPoint.center = vector.add(startPoint.center, length, startPoint.forward);
 		endPoint.forward = startPoint.forward;
 	} else if (!generateStart) {
@@ -866,8 +858,8 @@ function parseStraight(builders, points, rawStraight, masterSettings, nameStr) {
 	}
 
 	// Get the weights
-	endPoint.forwardWeight = validateWeight(rawStraight.forwardWeight, () => { return nameStr + '.forwardWeight'; });
-	endPoint.backwardWeight = validateWeight(rawStraight.backwardWeight, () => { return nameStr + '.backwardWeight'; });
+	endPoint.forwardWeight = validateWeight(rawStraight, 'forwardWeight', nameStr);
+	endPoint.backwardWeight = validateWeight(rawStraight, 'backwardWeight', nameStr);
 
 	// And we are done!
 	if (generateStart) points.push(startPoint);
@@ -895,7 +887,7 @@ function buildTrack(track, vectorFactory, masterSettings) {
 	const settings = mergeSettings(masterSettings, track, 'track');
 
 	// Make sure that 'segments' is an array with at least one element
-	validateSizedArray(track.segments, 1, 'track.segments');
+	validateSizedArray(track, 'segments', 'track', 1);
 
 	// Check if this is a closed track
 	const isClosed = track.segments.length == 1 && track.closed;
