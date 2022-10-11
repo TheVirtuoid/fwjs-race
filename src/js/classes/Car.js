@@ -20,7 +20,7 @@ const defaults = {
 		mass: 100
 	},
 	chassis: {
-		depth: 5,
+		depth: 4,
 		height: .5,
 		width: 8,
 		mass: 0

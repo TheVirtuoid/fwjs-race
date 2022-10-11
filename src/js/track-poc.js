@@ -26,6 +26,7 @@ import track3a from "../layouts/track-3a";
 import track4 from "../layouts/track-4";
 import track5 from "../layouts/track-5";
 import Car from "./classes/Car";
+import track6 from "../layouts/track-6";
 
 
 const defaultSettings = new LayoutSettings().toObject();
@@ -108,6 +109,10 @@ tracks.track4 = {
 tracks.track5 = {
 	segments: track5.segments
 };
+
+tracks.track6 = {
+	segments: track6.segments
+}
 //======================================================================
 // BABYLON IMPLEMENTATION
 
@@ -160,7 +165,7 @@ const createMesh = function() {
 					closePath: track.closed,
 				},
 				scene);
-		trackMesh.physicsImpostor = new PhysicsImpostor(trackMesh, PhysicsImpostor.MeshImpostor, { mass: 0, friction: 1 }, scene);
+		trackMesh.physicsImpostor = new PhysicsImpostor(trackMesh, PhysicsImpostor.MeshImpostor, { mass: 0, friction: .25, restitution: 0 }, scene);
 		trackMeshes.push(trackMesh);
 	}
 }
@@ -178,6 +183,16 @@ engine.runRenderLoop(() => {
 window.addEventListener("resize", function () {
 	engine.resize();
 });
+
+const scale = .4;
+const carDefaults = [
+	{ name: 'Waldo', scale, color: new Color3.Green(), positionOffset: { x: -10, y: -5, z: -2 } },
+	{ name: 'Bilbo', scale, color: new Color3.Red(), positionOffset: { x: 0, y: 0, z: -2 } },
+	{ name: 'Frodo', scale, color: new Color3.Blue(), positionOffset: { x: -10, y: -5, z: 2 } },
+	{ name: 'Targon', scale, color: new Color3.Yellow(), positionOffset: { x: 0, y: 0, z: 2 } },
+]
+
+let cars = [];
 
 // ball drop test
 const ballDiameter = .25;
@@ -205,9 +220,9 @@ const dropTheBall = () => {
 
 const dropTheCar = () => {
 
-	if (car) {
+	cars.forEach((car) => {
 		car.junk();
-	}
+	});
 
 	const track = tracks[trackSelector.value];
 	const segment = track.segments[0];
@@ -221,8 +236,23 @@ const dropTheCar = () => {
 	const y = p0.y * t + p0.y * olt + altitude;	// Force the ball above the track
 	const z = p0.z * t + p1.z * olt;
 
+	cars = carDefaults.map((carDefault) => {
+		const { scale, name, positionOffset, color } = carDefault;
+		const position = new Vector3(
+			x + positionOffset.x,
+			y + positionOffset.y,
+			z + positionOffset.z);
+		const car = new Car({ scale });
+		car.build({ name, scene, position, color });
+		return car;
+	});
+
+
+
+/*
 	car = new Car({ scale: .25 });
 	car.build({ name: 'test', scene, position: new Vector3(x, y, z), color: new Color3.Green() });
+*/
 
 };
 
