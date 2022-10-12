@@ -165,7 +165,7 @@ const createMesh = function() {
 					closePath: track.closed,
 				},
 				scene);
-		trackMesh.physicsImpostor = new PhysicsImpostor(trackMesh, PhysicsImpostor.MeshImpostor, { mass: 0, friction: .25, restitution: 0 }, scene);
+		trackMesh.physicsImpostor = new PhysicsImpostor(trackMesh, PhysicsImpostor.MeshImpostor, { mass: 0, friction: 4, restitution: 10 }, scene);
 		trackMeshes.push(trackMesh);
 	}
 }
@@ -184,6 +184,8 @@ window.addEventListener("resize", function () {
 	engine.resize();
 });
 
+/*
+// defaults for track6
 const scale = .4;
 const carDefaults = [
 	{ name: 'Waldo', scale, color: new Color3.Green(), positionOffset: { x: -10, y: -5, z: -2 } },
@@ -191,6 +193,18 @@ const carDefaults = [
 	{ name: 'Frodo', scale, color: new Color3.Blue(), positionOffset: { x: -10, y: -5, z: 2 } },
 	{ name: 'Targon', scale, color: new Color3.Yellow(), positionOffset: { x: 0, y: 0, z: 2 } },
 ]
+*/
+
+
+// defaults for track5
+const scale = .3;
+const carDefaults = [
+	{ name: 'Waldo', scale, color: new Color3.Green(), positionOffset: { x: -6, y: -5, z: -1.5 } },
+	{ name: 'Bilbo', scale, color: new Color3.Red(), positionOffset: { x: -1, y: 0, z: -1.5 } },
+	{ name: 'Frodo', scale, color: new Color3.Blue(), positionOffset: { x: -6, y: -5, z: 1.5 } },
+	{ name: 'Targon', scale, color: new Color3.Yellow(), positionOffset: { x: -1, y: 0, z: 1.5 } },
+]
+
 
 let cars = [];
 
@@ -231,8 +245,8 @@ const dropTheCar = () => {
 
 	const t = .8;
 	const olt = 1 - t;
-	const altitude = 1;
-	const x = p0.x * t + p1.x * olt ;
+	const altitude = /* 1 */ 0;
+	const x = p0.x * t + p1.x * olt + 5 ;
 	const y = p0.y * t + p0.y * olt + altitude;	// Force the ball above the track
 	const z = p0.z * t + p1.z * olt;
 

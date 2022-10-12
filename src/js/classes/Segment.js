@@ -20,7 +20,6 @@ export default class Segment {
 
 		// Create settings
 		const settings = mergeSettings(masterSettings, segment, nameStr);
-
 		// Make sure that 'points' is an array with at least one element
 		validateSizedArray(segment.points, 1, () => { return nameStr + '.points' });
 

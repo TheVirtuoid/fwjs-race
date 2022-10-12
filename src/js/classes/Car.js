@@ -17,7 +17,7 @@ const defaults = {
 		depth: .25,
 		width: 1,
 		height: 2,
-		mass: 100
+		mass: 500
 	},
 	chassis: {
 		depth: 4,
@@ -150,7 +150,7 @@ export default class Car {
 		wheelBase.physicsImpostor = new PhysicsImpostor(wheelBase, PhysicsImpostor.CylinderImpostor, { mass: wheelBaseMass, friction: 0, restitution: 0 });
 		wheels.forEach((wheelData) => {
 			const { wheel, pivot } = wheelData;
-			wheel.physicsImpostor = new PhysicsImpostor(wheel, PhysicsImpostor.CylinderImpostor, { mass: wheelMass, friction: 10, restitution: 0 });
+			wheel.physicsImpostor = new PhysicsImpostor(wheel, PhysicsImpostor.CylinderImpostor, { mass: wheelMass, friction: 20, restitution: 0 });
 			const joint = new HingeJoint({
 				mainPivot: pivot,
 				connectedPivot: new Vector3(0, 0, 0),

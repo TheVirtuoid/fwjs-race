@@ -9,7 +9,7 @@ import {Color3} from "@babylonjs/core";
 
 const jrRadius = 14;
 const trackWidth = 10;
-const wallHeight = .5;
+const wallHeight = .75;
 
 const startingPoint = { x: 50, y: 30, z: 0 };
 let endsAt;
@@ -144,7 +144,6 @@ const launchStraight2 = {
 	type: 'straight',
 	endsAt: lv2,
 	startsAt: lv1,
-	// forwardWeight: 1.1,
 	trackWidth,
 	wallHeight
 };
@@ -159,7 +158,7 @@ const jrep3 = {
 const four = {
 	type: TrackTypes.STRAIGHT,
 	startsAt: lv2,
-	endsAt: { x: lv2.x - 20, y: lv2.y - 5, z: lv2.z },
+	endsAt: { x: lv2.x - 50, y: lv2.y - 10, z: lv2.z },
 	trackWidth,
 	wallHeight
 }
