@@ -292,7 +292,6 @@ const plane = {
 		const theta = degrees * trig.degreesToRadians;
 		const cos = trig.clampAt0And1(Math.cos(theta));
 		const sin = trig.clampAt0And1(Math.sin(theta));
-		console.log('getPolar: degrees %f, theta %f, cos %f, sin %f', degrees, theta, cos, sin);
 
 		let point = vector.add(vector.add(vector.zero, radius * cos, plane.xAxis), radius * sin, plane.yAxis);
 		if (is.defined(altitude)) point = vector.add(point, altitude, plane.normal);
@@ -628,7 +627,6 @@ const spiralParser = {
 
 		// Set the sweep
 		const { sweep, invertTangent, startAngle, endAngle } = this._getSweep(specs, rotate, turns, entry, exit);
-		console.log('_getSpecs: sweep %f, startAngle %f, endAngle %f, invertTangent %d', sweep, startAngle, endAngle, invertTangent);
 		specs.sweep = sweep;
 		specs.invertTangent = invertTangent;
 
@@ -714,7 +712,6 @@ const spiralParser = {
 		} else {
 			throw '_setSweep: need to compute sweep up';
 		}
-		console.log('_setSweep: entry %o, exit %o, sweep %f, start %f, end %f', entry, exit, sweep, startAngle, endAngle);
 		return {
 			endAngle: endAngle,
 			invertTangent: invertTangent,
@@ -775,7 +772,6 @@ const spiralParser = {
 		// Otherwise patch its forwardWeight if required.
 		if (points.length === 0) points.push(specs.startsAt);
 		points[points.length - 1].forwardWeight = specs.radius(0) * circleWeight;
-		console.log('_generate: #points %d, #builders %d, last point %o', points.length, builders.length, points[points.length - 1]);
 
 		// Add the 90° sections
 		for (let angle = 90; angle < specs.sweep; angle += 90) {
@@ -786,7 +782,6 @@ const spiralParser = {
 		points.push(specs.endsAt);
 		points[points.length - 1].backwardWeight = specs.radius(1) * this._circleWeight;
 		builders.push(createBuilder(masterSettings));
-		console.log('_generate: #points %d, #builders %d, last point %o', points.length, builders.length, points[points.length - 1]);
 	},
 
 	_addPoint: function(builders, points, t, specs, rawSpiral, masterSettings, name) {
@@ -808,7 +803,6 @@ const spiralParser = {
 
 		points.push(point);
 		builders.push(createBuilder(masterSettings));
-		console.log('_addPoint: #points %d, #builders %d, last point %o', points.length, builders.length, points[points.length - 1]);
 	},
 }
 
@@ -946,8 +940,8 @@ function buildSegment(segment, vectorFactory, masterSettings, isClosed, name) {
 	for (let i = 0; i < segment.points.length; i++) {
 		sectionParser.parse(builders, points, segment.points[i], settings, `${name}.points[${i}]`);
 	}
-	for (let i = 0; i < points.length; i++) {
-		console.log('buildSegment: %o', points[i]);
+	if (segment.debug || masterSettings.debug) {
+		for (let i = 0; i < points.length; i++) console.log('buildSegment: %o', points[i]);
 	}
 
 	// Ensure we have at least one builder and two segment points
