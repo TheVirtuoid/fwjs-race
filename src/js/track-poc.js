@@ -269,6 +269,33 @@ const vector = {
 	zero: { x:0, y:0, z:0 },
 };
 
+const plane = {
+	
+	_defaultTolerance: 0.9,
+	
+	contains: function(plane, vertex, tolerance) {
+		if (!is.defined(tolerance)) tolerance = this._defaultTolerance;
+		const toVertex = vector.add(vertex, -1, plane.origin);
+		return Math.abs(vector.dot(plane.normal, toVertex)) < (1 - tolerance);
+	},
+	
+	create: function(origin, normal) {
+		return {
+			origin: origin,
+			normal: vector.normalize(normal),
+		};
+	},
+	
+	isParallel: function(a, b, tolerance) {
+		if (!is.defined(tolerance)) tolerance = this._defaultTolerance;
+		return Math.abs(vector.dot(a.normal, b.normal)) >= tolerance;
+	},
+	
+	isSame: function(a, b, tolerance) {
+		return this.isParallel(a, b, tolerance) && this.contains(a, b.origin, tolerance);
+	},
+}
+
 const ribbonMgr = {
 
 	// A ribbon is an array of four arrays of vectors representing the [0] left
@@ -557,8 +584,8 @@ const spiralParser = {
 		// Get the endsAt
 		settings.endsAt = pointParser.validate(rawSpiral['endsAt'], settings, name + '.endsAt');
 		
-		// Determine the rotation plane
-		throw 'Not implemented, need to determine the rotation plane';
+		// Determine the rotation plane.
+		settings.rotationPlane = this._getRotationPlane(settings, rotate, rawSpiral, name);
 
 		// Now that we have the rotation plane, we can compute the angles,
 		// altitudes, and radii
@@ -571,6 +598,26 @@ const spiralParser = {
 
 		// Return the specifications
 		return settings;
+	},
+	
+	_getRotationPlane: function(settings, rotate, rawSpiral, name) {
+		const entryPlane = plane.create(settings.startsAt.center, settings.startsAt.forward);
+		const exitPlane = plane.create(settings.endsAt.center, settings.endsAt.forward);
+		if (plane.isSame(entryPlane, exitPlane)) {
+			throw '_getRotationPlane: not implemented, identical entry and exit planes';
+		} else if (plane.isParallel(entryPlane, exitPlane)) {
+			//const center = validate.vector3(rawSpiral, 'center', name);
+			//if (rotate === 'left') {
+			//	throw '_getRotationPlane: make sure centernot implemented, parallel entry and exit planes';
+			//} else if (rotate === 'right') {
+			//} else {
+			//}
+			throw '_getRotationPlane: not implemented, parallel entry and exit planes';
+		} else {
+			// 'center' is illegal
+			validate.undefined(rawSpiral, 'center', name);
+			throw '_getRotationPlane: not implemented, intersecting entry and exit planes';
+		}
 	},
 
 	_setInterpolation: function(t0, t1) {
