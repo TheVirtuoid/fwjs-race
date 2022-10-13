@@ -676,62 +676,7 @@
 				trackMesh.physicsImpostor = new BABYLON.PhysicsImpostor(trackMesh, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0 }, scene);
 				trackMeshes.push(trackMesh);
 			}
-
-			/*
-			drawBigAxes();
-
-			for (let s of track.segments) {
-				for (let p of s.points) {
-					drawAxes(p.center);
-				}
-			}
-
-			drawLine(ribbons[0][1], green);
-			*/
 		}
-
-/*
-		const red = new BABYLON.Color4(1, 0, 0);
-		const green = new BABYLON.Color4(0, 1, 0);
-		const blue = new BABYLON.Color4(0, 0, 1);
-
-		const drawAxes = function(u) {
-			const options = {
-				points: [ new BABYLON.Vector3(u.x, u.y, u.z), new BABYLON.Vector3(u.x, u.y, u.z) ],
-				colors: [ red, red ]
-			}
-			options.points[1].x += 1;
-			BABYLON.MeshBuilder.CreateLines("lines", options);
-			options.colors = [ green, green ];
-			options.points[1].x -= 1;
-			options.points[1].y += 1;
-			BABYLON.MeshBuilder.CreateLines("lines", options);
-			options.colors = [ blue, blue ];
-			options.points[1].y -= 1;
-			options.points[1].z += 1;
-			BABYLON.MeshBuilder.CreateLines("lines", options);
-		}
-
-		const drawBigAxes = function(u) {
-			const options = {
-				points: [ new BABYLON.Vector3(-50, 0, 0), new BABYLON.Vector3(50, 0, 0) ],
-			}
-			BABYLON.MeshBuilder.CreateDashedLines("lines", options).color = red;
-			options.points = [ new BABYLON.Vector3(0, -50, 0), new BABYLON.Vector3(0, 50, 0) ];
-			BABYLON.MeshBuilder.CreateDashedLines("lines", options).color = green;
-			options.points = [ new BABYLON.Vector3(0, 0, -50), new BABYLON.Vector3(0, 0, 50) ];
-			BABYLON.MeshBuilder.CreateDashedLines("lines", options).color = blue;
-		}
-
-		const drawLine = function(points, color) {
-			const options = {
-				colors: [],
-				points: points,
-			}
-			for (let i = 0; i < points.length; i++) { options.colors.push(green); }
-			BABYLON.MeshBuilder.CreateLines("lines", options);
-		}
-*/
 
 		window.initFunction = async function() {
 

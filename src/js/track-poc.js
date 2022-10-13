@@ -1,9 +1,5 @@
-const TrackPOC = {}
-
 //==============================================================================
 // HELPER ROUTINES
-
-const coords3 = ['x', 'y', 'z'];
 
 const defaultSettings = {
 	precision: .01,
@@ -12,172 +8,171 @@ const defaultSettings = {
 	wallHeight: .5,
 };
 
-const validSettings = [
-	{ key: 'precision', validator: validatePositiveNumber },
-	{ key: 'trackBank', validator: validateTrackBank, },
-	{ key: 'trackWidth', validator: validatePositiveNumber },
-	{ key: 'wallHeight', validator: validatePositiveNumber },
-];
+const is = {
+	array: function(value) {
+		return is.object(value) && is.instance(value, 'Array');
+	},
 
-function jsonOrObject(o, name) {
-	if (isString(o)) return JSON.parse(o);
-	if (isObject(o)) return o;
-	throw new TypeError(`${name} must be an JSON string or object`);
-}
+	boolean: function(value) {
+		return typeof(value) === 'boolean';
+	},
 
-function mergeSettings(masterSettings, overrideSettings, name) {
-	const mergedSettings = {...masterSettings};
-	for (let vs of validSettings) {
-		if (isDefined(overrideSettings[vs.key])) {
-			mergedSettings[vs.key] = vs.validator(overrideSettings, vs.key, name);
+	default: function(value) {
+		return value === null || value === undefined;
+	},
+
+	defined: function(value) {
+		return value !== null && value !== undefined;
+	},
+
+	function: function(value) {
+		return typeof(value) === 'function';
+	},
+
+	instance: function(value, className) {
+		return value.constructor.toString().indexOf(className) > -1;
+	},
+
+	integer: function isInteger(value) {
+		return Number.isInteger(value);
+	},
+
+	number: function(value) {
+		return typeof(value) === 'number';
+	},
+
+	object: function(value) {
+		return typeof(value) === 'object';
+	},
+
+	positiveNumber: function(value) {
+		return is.number(value) && value > 0;
+	},
+
+	string: function(value) {
+		return typeof(value) === 'string';
+	},
+
+	vector: function(value, coords) {
+		if (!is.object(value)) return false;
+		for (let coord of coords) {
+			if (!is.number(value[coord])) return false;
 		}
-	}
-	return mergedSettings;
+		return true;
+	},
+
+	vector3: function(value) {
+		return is.vector(value, this._coords3);
+	},
+	
+	_coords3: ['x', 'y', 'z'],
 }
 
-//==============================================================================
-// TYPE CHECKERS
+const validate = {
+	boolean: function(object, memberName, objectName, defaultValue) {
+		const value = object[memberName];
+		if (is.default(value)) return defaultValue;
+		if (is.boolean(value)) return value;
+		throw new TypeError(`${objectName}.${memberName} must be 'true' or 'false'`);
+	},
 
-function isArray(value) {
-	return isObject(value) && isInstance(value, 'Array');
+	nonNegativeInteger: function(object, memberName, objectName, defaultValue) {
+		const value = object[memberName];
+		if (is.default(value)) return defaultValue;
+		if (isInteger(value) && value >= 0) return value;
+		throw new RangeError(`${objectName}.${memberName} number be a non-negative integer`);
+	},
+
+	jsonOrObject: function(o, name) {
+		if (is.string(o)) return JSON.parse(o);
+		if (is.object(o)) return o;
+		throw new TypeError(`${name} must be an JSON string or object`);
+	},
+
+	object: function(object, objectName) {
+		if (is.object(object)) return object;
+		throw new TypeError(`${objectName} must be an object`);
+	},
+
+	positiveNumber: function(object, memberName, objectName) {
+		const value = object[memberName];
+		if (is.positiveNumber(value)) return value;
+		throw new RangeError(`${objectName}.${memberName} number be a positive number`);
+	},
+
+	sizedArray: function(object, memberName, objectName, minElements) {
+		const value = this._getValue(object, memberName);
+		if (is.array(value)) {
+			if (value.length >= minElements) return value;
+			throw new RangeError(`${this._resolveName(objectName, memberName)} must have at least ${minElements} element(s)`);
+		}
+		throw new TypeError(`${this._resolveName(objectName, memberName)} must be an Array`);
+	},
+
+	string: function(object, memberName, objectName) {
+		const value = object[memberName];
+		if (is.string(value)) return value;
+		throw new TypeError(`${objectName}.${memberName} must be a string`);
+	},
+
+	trackBank: function(object, memberName, objectName) {
+		const value = object[memberName];
+		if (is.vector3(value)) return value;
+		if (is.number(value)) {
+			let v = value % 360;
+			if (v > 180) v -= 360;
+			if (v <= -180) v += 360;
+			return v;
+		}
+		throw new TypeError(`${objectName}.${memberName} must be a number or 3D vector`);
+	},
+
+	undefined: function(object, memberName, objectName, excludingMemberName) {
+		if (is.defined(object[memberName])) {
+			throw new TypeError(`Cannot specify ${objectName}.${memberName} because ${excludingMemberName} is specified.`);
+		}
+	},
+
+	vector3: function(object, memberName, objectName) {
+		const value = object[memberName];
+		if (is.vector3(value)) return value;
+		throw new TypeError(`${objectName}.${memberName} must be a 3D vector`);
+	},
+
+	weight: function(object, memberName, objectName) {
+		const value = object[memberName];
+		if (is.default(value)) return 1;
+		if (is.positiveNumber(value)) return value;
+		throw new RangeError(`${objectName}.${memberName} must be a positive number`);
+	},
+
+	_getValue: function(object, memberName) {
+		return memberName.length === 0 ? object : object[memberName];
+	},
+
+	_resolveName: function(objectName, memberName) {
+		return memberName.length === 0 ? objectName : (objectName + '.' + memberName);
+	},
 }
 
-function isBoolean(value) {
-	return typeof(value) === 'boolean';
+const mergeSettings = {
+	merge: function(masterSettings, overrideSettings, name) {
+		const mergedSettings = {...masterSettings};
+		for (let vs of this._valid) {
+			if (is.defined(overrideSettings[vs.key])) {
+				mergedSettings[vs.key] = vs.validator(overrideSettings, vs.key, name);
+			}
+		}
+		return mergedSettings;
+	},
+
+	_valid: [
+		{ key: 'precision', validator: validate.positiveNumber },
+		{ key: 'trackBank', validator: validate.trackBank, },
+		{ key: 'trackWidth', validator: validate.positiveNumber },
+		{ key: 'wallHeight', validator: validate.positiveNumber },
+	],
 }
-
-function isDefault(value) {
-	return value === null || value === undefined;
-}
-
-function isDefined(value) {
-	return value !== null && value !== undefined;
-}
-
-function isFunction(value) {
-	return typeof(value) === 'function';
-}
-
-function isInstance(value, className) {
-	return value.constructor.toString().indexOf(className) > -1;
-}
-
-function isInteger(value) {
-	return Number.isInteger(value);
-}
-
-function isNumber(value) {
-	return typeof(value) === 'number';
-}
-
-function isObject(value) {
-	return typeof(value) === 'object';
-}
-
-function isPositiveNumber(value) {
-	return isNumber(value) && value > 0;
-}
-
-function isString(value) {
-	return typeof(value) === 'string';
-}
-
-function isVector(value, coords) {
-	if (!isObject(value)) return false;
-	for (let coord of coords) {
-		if (!isNumber(value[coord])) return false;
-	}
-	return true;
-}
-
-function isVector3(value) {
-	return isVector(value, coords3);
-}
-
-//==============================================================================
-// VALIDATORS
-
-function validateBoolean(object, memberName, objectName, defaultValue) {
-	const value = object[memberName];
-	if (isDefault(value)) return defaultValue;
-	if (isBoolean(value)) return value;
-	throw new TypeError(`${objectName}.${memberName} must be 'true' or 'false'`);
-}
-
-function validateNonNegativeInteger(object, memberName, objectName, defaultValue) {
-	const value = object[memberName];
-	if (isDefault(value)) return defaultValue;
-	if (isInteger(value) && value >= 0) return value;
-	throw new RangeError(`${objectName}.${memberName} number be a non-negative integer`);
-}
-
-function validateObject(object, objectName) {
-	if (isObject(object)) return object;
-	throw new TypeError(`${objectName} must be an object`);
-}
-
-function validatePositiveNumber(object, memberName, objectName) {
-	const value = object[memberName];
-	if (isPositiveNumber(value)) return value;
-	throw new RangeError(`${objectName}.${memberName} number be a positive number`);
-}
-
-function validateSizedArray(object, memberName, objectName, minElements) {
-	const value = getValue(object, memberName);
-	if (isArray(value)) {
-		if (value.length >= minElements) return value;
-		throw new RangeError(`${resolveName(objectName, memberName)} must have at least ${minElements} element(s)`);
-	}
-	throw new TypeError(`${resolveName(objectName, memberName)} must be an Array`);
-}
-
-function validateString(object, memberName, objectName) {
-	const value = object[memberName];
-	if (isString(value)) return value;
-	throw new TypeError(`${objectName}.${memberName} must be a string`);
-}
-
-function validateTrackBank(object, memberName, objectName) {
-	const value = object[memberName];
-	if (isVector3(value)) return value;
-	if (isNumber(value)) {
-		let v = value % 360;
-		if (v > 180) v -= 360;
-		if (v <= -180) v += 360;
-		return v;
-	}
-	throw new TypeError(`${objectName}.${memberName} must be a number or 3D vector`);
-}
-
-function validateUndefined(object, memberName, objectName, excludingMemberName) {
-	if (isDefined(object[memberName])) {
-		throw new TypeError(`Cannot specify ${objectName}.${memberName} because ${excludingMemberName} is specified.`);
-	}
-}
-
-function validateVector3(object, memberName, objectName) {
-	const value = object[memberName];
-	if (isVector3(value)) return value;
-	throw new TypeError(`${objectName}.${memberName} must be a 3D vector`);
-}
-
-function validateWeight(object, memberName, objectName) {
-	const value = object[memberName];
-	if (isDefault(value)) return 1;
-	if (isPositiveNumber(value)) return value;
-	throw new RangeError(`${objectName}.${memberName} must be a positive number`);
-}
-
-function getValue(object, memberName) {
-	return memberName.length === 0 ? object : object[memberName];
-}
-
-function resolveName(objectName, memberName) {
-	return memberName.length === 0 ? objectName : (objectName + '.' + memberName);
-}
-
-//==============================================================================
-// VECTOR ROUTINES
 
 const vector = {
 
@@ -364,7 +359,7 @@ function getBezierPoint(curve, t) {
 function getSegmentPointDownVector(sp) {
 
 	// We are done if we already have a vector
-	if (isVector3(sp.trackBank)) return sp.trackBank;
+	if (is.vector3(sp.trackBank)) return sp.trackBank;
 
 	// Compute the true 'down' vector. This must be orthogonal to the forward vector.
 	// Remove any component of the down vector inline with the forward vector.
@@ -419,13 +414,13 @@ function interpolateCurve(ribbon, curve, t0, t1, bpt0, bpt1, vectorFactory, prec
 function buildSegment(segment, vectorFactory, masterSettings, isClosed, nameStr) {
 
 	// Segment must be an object
-	validateObject(segment, nameStr);
+	validate.object(segment, nameStr);
 
 	// Create settings
-	const settings = mergeSettings(masterSettings, segment, nameStr);
+	const settings = mergeSettings.merge(masterSettings, segment, nameStr);
 
 	// Make sure that 'points' is an array with at least one element
-	validateSizedArray(segment, 'points', nameStr, 1);
+	validate.sizedArray(segment, 'points', nameStr, 1);
 
 	// Reform the points array into two arrays of n section builders and
 	// n+1 segment points
@@ -436,7 +431,7 @@ function buildSegment(segment, vectorFactory, masterSettings, isClosed, nameStr)
 	}
 
 	// Ensure we have at least one builder and two segment points
-	validateSizedArray(points, '', nameStr, 2);
+	validate.sizedArray(points, '', nameStr, 2);
 
 	// Loop through the builders, creating curves between them
 	const ribbon = createRibbon();
@@ -462,12 +457,12 @@ const sectionParsers = {
 function parseSection(builders, points, rawPoint, masterSettings, nameStr) {
 
 	// The raw point must be an object
-	validateObject(rawPoint, nameStr);
+	validate.object(rawPoint, nameStr);
 
 	// Check the type
-	const sectionType = isDefined(rawPoint.type) ? rawPoint.type : 'point';
+	const sectionType = is.defined(rawPoint.type) ? rawPoint.type : 'point';
 	const sectionParser = sectionParsers[sectionType];
-	if (!isDefined(sectionParser)) {
+	if (!is.defined(sectionParser)) {
 		throw new TypeError(`${nameStr}.type of '${sectionType}' is not recognized`);
 	}
 
@@ -478,29 +473,29 @@ function parseSection(builders, points, rawPoint, masterSettings, nameStr) {
 function parsePoint(builders, points, rawPoint, masterSettings, nameStr) {
 
 	// The raw point cannot have a 'precision' element
-	if (isDefined(rawPoint.precision)) {
+	if (is.defined(rawPoint.precision)) {
 		throw new TypeError(`${nameStr} cannot define precision`);
 	}
 
 	// Create the point with its settings and name
-	const segmentPoint = mergeSettings(masterSettings, rawPoint, nameStr);
+	const segmentPoint = mergeSettings.merge(masterSettings, rawPoint, nameStr);
 	segmentPoint.name = nameStr;
 
 	// The raw point must have a center object with x, y, and z numeric
 	// elements
-	segmentPoint.center = validateVector3(rawPoint, 'center', nameStr);
+	segmentPoint.center = validate.vector3(rawPoint, 'center', nameStr);
 
 	// If the raw point has a 'forward' vector, validate that. Otherwise
 	// use the vector (1, 0, 0)
 	if (rawPoint.forward == null) {
 		segmentPoint.forward = vector.right;
 	} else {
-		segmentPoint.forward = validateVector3(rawPoint, 'forward', nameStr);
+		segmentPoint.forward = validate.vector3(rawPoint, 'forward', nameStr);
 	}
 
 	// Get the weights
-	segmentPoint.forwardWeight = validateWeight(rawPoint, 'forwardWeight', nameStr);
-	segmentPoint.backwardWeight = validateWeight(rawPoint, 'backwardWeight', nameStr);
+	segmentPoint.forwardWeight = validate.weight(rawPoint, 'forwardWeight', nameStr);
+	segmentPoint.backwardWeight = validate.weight(rawPoint, 'backwardWeight', nameStr);
 
 	// And we are done!
 	points.push(segmentPoint);
@@ -508,9 +503,9 @@ function parsePoint(builders, points, rawPoint, masterSettings, nameStr) {
 }
 
 function getStartsAt(masterSettings, rawSection, nameStr) {
-	const startPoint = mergeSettings(masterSettings, rawSection, nameStr);
+	const startPoint = mergeSettings.merge(masterSettings, rawSection, nameStr);
 	startPoint.name = nameStr + '*';
-	startPoint.center = validateVector3(rawSection, 'startsAt', nameStr);
+	startPoint.center = validate.vector3(rawSection, 'startsAt', nameStr);
 	return startPoint;
 }
 
@@ -632,30 +627,30 @@ const spiral = {
 	getSpecs: function(points, rawSpiral, masterSettings, nameStr) {
 
 		// Create the base spiral specification
-		const spiralSpecs = mergeSettings(masterSettings, rawSpiral, nameStr);
+		const spiralSpecs = mergeSettings.merge(masterSettings, rawSpiral, nameStr);
 
 		// Get either the entry point or the overrideFirstWeight option
 		// *** This satisfies (f) ***
 		if (points.length === 0) {
-			if (isDefined(rawSpiral.overrideFirstWeight)) {
+			if (is.defined(rawSpiral.overrideFirstWeight)) {
 				throw new RangeError(`${nameStr}.overrideFirstWeight cannot be specified for a spiral that starts a segment`);
 			}
 			spiralSpecs.startsAt = getStartsAt(masterSettings, rawSpiral, nameStr);
 		} else {
-			if (isDefined(rawSpiral.startsAt)) {
+			if (is.defined(rawSpiral.startsAt)) {
 				throw new RangeError(`${nameStr}.startsAt cannot be specified for a spiral that does not start a segment`);
 			}
-			spiralSpecs.overrideFirstWeight = validateBoolean(rawSpiral, 'overrideFirstWeight', nameStr, true);
+			spiralSpecs.overrideFirstWeight = validate.boolean(rawSpiral, 'overrideFirstWeight', nameStr, true);
 			spiralSpecs.startsAt = points[points.length - 1];
 		}
 
 		// Get the number of turns
 		// *** This satisfies (e) ***
-		const turns = validateNonNegativeInteger(rawSpiral, 'turns', nameStr, 0);
+		const turns = validate.nonNegativeInteger(rawSpiral, 'turns', nameStr, 0);
 
 		// Get the center specification
 		// *** This partially satisfies (a) ***
-		const center = validateString(rawSpiral, 'center', nameStr);
+		const center = validate.string(rawSpiral, 'center', nameStr);
 		if (center === 'left') {
 			throw 'Not implemented, need to set toCenter and spiralSpecs.rotationAxis';
 		} else if (center === 'right') {
@@ -669,13 +664,13 @@ const spiral = {
 		// Get the entry radius
 		// *** This either completely or partially satisfies (d)
 		let startRadius, endRadius;
-		if (isDefined(rawSpiral.radius)) {
-			validateUndefined(rawSpiral, 'startRadius', nameStr, 'radius');
-			validateUndefined(rawSpiral, 'endRadius', nameStr, 'radius');
-			startRadius = validatePositiveNumber(rawSpiral, 'radius', nameStr);
+		if (is.defined(rawSpiral.radius)) {
+			validate.undefined(rawSpiral, 'startRadius', nameStr, 'radius');
+			validate.undefined(rawSpiral, 'endRadius', nameStr, 'radius');
+			startRadius = validate.positiveNumber(rawSpiral, 'radius', nameStr);
 			endRadius = startRadius;
-		} else if (isDefined(rawSpiral.startRadius)) {
-			startRadius = validatePositiveNumber(rawSpiral, 'radius', nameStr);
+		} else if (is.defined(rawSpiral.startRadius)) {
+			startRadius = validate.positiveNumber(rawSpiral, 'radius', nameStr);
 		} else {
 			throw new TypeError(`${nameStr} must specify either 'radius' or 'startRadius'`);
 		}
@@ -690,7 +685,7 @@ const spiral = {
 		throw 'Not implemented, need to set starting angle and altitude';
 
 		// Check if the exact exit point is given
-		if (isDefined(rawSpiral.endsAt)) {
+		if (is.defined(rawSpiral.endsAt)) {
 			// *** This completely satisfies (b), (c), and (d) ***
 			throw 'Not implemented, need to parse endsAt and set ending angle, altitude, and radius';
 
@@ -704,7 +699,7 @@ const spiral = {
 		// Set the interpolation functions
 		spiralSpecs.altitude = setInterpolation(startAltitude, endAltitude);
 		spiralSpecs.angle = setInterpolation(startAngle, endAngle + 360 * turns);
-		spiralSpecs.radius = sprial.setInterpolation(startRadius, endRadius);
+		spiralSpecs.radius = this.setInterpolation(startRadius, endRadius);
 
 		// Return the specifications
 		return spiralSpecs;
@@ -816,8 +811,8 @@ function parseStraight(builders, points, rawStraight, masterSettings, nameStr) {
 	// forward weight, use the 'startingWeight' setting for the straight.
 
 	// Check that the ending vertex or length is specified.
-	const usesLength = isDefined(rawStraight.length);
-	const usesEndsAt = isDefined(rawStraight.endsAt);
+	const usesLength = is.defined(rawStraight.length);
+	const usesEndsAt = is.defined(rawStraight.endsAt);
 	if (!usesLength && !usesEndsAt) {
 		throw new TypeError(`${nameStr} must define 'length' or 'endsAt'`);
 	}
@@ -826,10 +821,10 @@ function parseStraight(builders, points, rawStraight, masterSettings, nameStr) {
 	}
 
 	// Create the end point with its settings and name
-	const endPoint = mergeSettings(masterSettings, rawStraight, nameStr);
+	const endPoint = mergeSettings.merge(masterSettings, rawStraight, nameStr);
 	endPoint.name = nameStr;
 	if (usesEndsAt) {
-		endPoint.center = validateVector3(rawStraight, 'endsAt', nameStr);
+		endPoint.center = validate.vector3(rawStraight, 'endsAt', nameStr);
 	}
 
 	// Get the starting vertex
@@ -839,18 +834,18 @@ function parseStraight(builders, points, rawStraight, masterSettings, nameStr) {
 		startPoint = points[points.length - 1];
 	} else {
 		startPoint = getStartsAt(masterSettings, rawStraight, nameStr);
-		startPoint.forwardWeight = validateWeight(rawStraight, 'startingWeight', nameStr);
+		startPoint.forwardWeight = validate.weight(rawStraight, 'startingWeight', nameStr);
 		if (usesEndsAt) {
 			endPoint.forward = vector.normalize(vector.difference(startPoint.center, endPoint.center));
 			startPoint.forward = endPoint.forward;
 		} else {
-			startPoint.forward = validateVector3(rawStraight, 'forward', nameStr);;
+			startPoint.forward = validate.vector3(rawStraight, 'forward', nameStr);;
 		}
 	}
 
 	// Compute the end point's center and forward
 	if (usesLength) {
-		const length = validatePositiveNumber(rawStraight, 'length', nameStr);
+		const length = validate.positiveNumber(rawStraight, 'length', nameStr);
 		endPoint.center = vector.add(startPoint.center, length, startPoint.forward);
 		endPoint.forward = startPoint.forward;
 	} else if (!generateStart) {
@@ -858,8 +853,8 @@ function parseStraight(builders, points, rawStraight, masterSettings, nameStr) {
 	}
 
 	// Get the weights
-	endPoint.forwardWeight = validateWeight(rawStraight, 'forwardWeight', nameStr);
-	endPoint.backwardWeight = validateWeight(rawStraight, 'backwardWeight', nameStr);
+	endPoint.forwardWeight = validate.weight(rawStraight, 'forwardWeight', nameStr);
+	endPoint.backwardWeight = validate.weight(rawStraight, 'backwardWeight', nameStr);
 
 	// And we are done!
 	if (generateStart) points.push(startPoint);
@@ -884,10 +879,10 @@ function executeBuilder(builder, ribbon, sp0, sp1, vectorFactory) {
 function buildTrack(track, vectorFactory, masterSettings) {
 
 	// Create settings
-	const settings = mergeSettings(masterSettings, track, 'track');
+	const settings = mergeSettings.merge(masterSettings, track, 'track');
 
 	// Make sure that 'segments' is an array with at least one element
-	validateSizedArray(track, 'segments', 'track', 1);
+	validate.sizedArray(track, 'segments', 'track', 1);
 
 	// Check if this is a closed track
 	const isClosed = track.segments.length == 1 && track.closed;
@@ -915,28 +910,29 @@ function buildTrack(track, vectorFactory, masterSettings) {
 //					v = vectorFactory(u) where u has keys x, y, z.
 // settings			application settings for the build
 
-TrackPOC.build = function(specs, vectorFactory, appSettings = {}) {
+const TrackPOC = {
 
-	// Validate the arguments
-	const objSpecs = jsonOrObject(specs, 'specs');
-	if (!isFunction(vectorFactory)) {
-		throw new TypeError('vectorFactory must be a function');
-	}
-	if (!isObject(appSettings)) {
-		throw new TypeError('appSettings must be an object');
-	}
+	build: function(specs, vectorFactory, appSettings = {}) {
 
-	// Create a settings block. This also validates the settings.
-	const settings = mergeSettings(defaultSettings, appSettings, 'appSettings');
+		// Validate the arguments
+		const objSpecs = validate.jsonOrObject(specs, 'specs');
+		if (!is.function(vectorFactory)) {
+			throw new TypeError('vectorFactory must be a function');
+		}
+		if (!is.object(appSettings)) {
+			throw new TypeError('appSettings must be an object');
+		}
 
-	// Build the ribbons
-	return buildTrack(objSpecs, vectorFactory, settings);
+		// Create a settings block. This also validates the settings.
+		const settings = mergeSettings.merge(defaultSettings, appSettings, 'appSettings');
+
+		// Build the ribbons
+		return buildTrack(objSpecs, vectorFactory, settings);
+	},
+
+	vector: {
+		direction: function(from, to) {
+			return vector.normalize(vector.difference(from, to));
+		}
+	},
 }
-
-TrackPOC.vector = {
-	direction: function(from, to) {
-		return vector.normalize(vector.difference(from, to));
-	}
-}
-
-//export default TrackPOC;
