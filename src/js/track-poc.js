@@ -171,8 +171,30 @@ const mergeSettings = {
 	],
 }
 
+const trig = {
+	_oneZeroTolerance: .0001,
+	_degreeTolerance: .1,
+	clampAt0And1: function(v, tolerance) {
+		if (!is.defined(tolerance)) tolerance = this._oneZeroTolerance;
+		if (Math.abs(v) < tolerance) return 0;
+		if (Math.abs(v - 1) < tolerance) return 1;
+		if (Math.abs(v + 1) < tolerance) return -1;
+		return v;
+	},
+	clampDegrees: function(d, tolerance) {
+		if (!is.defined(tolerance)) tolerance = this._degreeTolerance;
+		if (d < 0) d += 360;
+		if (d < tolerance) return 0;
+		if (Math.abs(d - 90) < tolerance) return 90;
+		if (Math.abs(d - 180) < tolerance) return 180;
+		if (Math.abs(d - 270) < tolerance) return 270;
+		return d;
+	},
+	degreesToRadians: Math.PI / 180,
+	radiansToDegrees: 180 / Math.PI,
+}
+
 const vector = {
-	angleToRadians: Math.PI / 180,
 	add: function(u, k, v) {
 		return {
 			x: u.x + k * v.x,
@@ -209,6 +231,7 @@ const vector = {
 			z: olt * u.z + t * v.z,
 		}
 	},
+	forward: { x:0, y:0, z:1 },
 	length: function(u) {
 		return Math.sqrt(u.x * u.x + u.y * u.y + u.z * u.z);
 	},
@@ -236,7 +259,7 @@ const vector = {
 	},
 	right: { x:1, y:0, z:0 },
 	rotate: function(axis, u, angle) {
-		const theta = angle * vector.angleToRadians;
+		const theta = angle * trig.degreesToRadians;
 		const cosTheta = Math.cos(theta);
 		const sinTheta = Math.sin(theta);
 		let result = vector.multiply(cosTheta, u);
@@ -255,30 +278,67 @@ const vector = {
 };
 
 const plane = {
-	
-	_defaultTolerance: 0.9,
-	
+	_defaultTolerance: 0.95,
 	contains: function(plane, vertex, tolerance) {
 		if (!is.defined(tolerance)) tolerance = this._defaultTolerance;
-		const toVertex = vector.add(vertex, -1, plane.origin);
-		return Math.abs(vector.dot(plane.normal, toVertex)) < (1 - tolerance);
+		return this.getAltitude(plane, vertex) < (1 - tolerance);
 	},
-	
 	create: function(origin, normal) {
 		return {
 			origin: origin,
 			normal: vector.normalize(normal),
 		};
 	},
-	
+	getAltitude: function(plane, vertex) {
+		return vector.dot(plane.normal, vertex);
+	},
+	getAngle: function(plane, vertex) {
+		if (!is.defined(plane.xAxis)) this._setDefaultAxes(plane);
+		const toVertex = this._toVertex(plane, vertex);
+		const x = vector.dot(plane.xAxis, toVertex);
+		const y = vector.dot(plane.yAxis, toVertex);
+		return trig.clampDegrees(Math.atan2(y, x) * trig.radiansToDegrees);
+	},
+	getPolar: function(plane, radius, degrees, altitude) {
+		if (!is.defined(plane.xAxis)) this._setDefaultAxes(plane);
+		
+		const theta = degrees * trig.degreesToRadians;
+		const cos = trig.clampAt0And1(Math.cos(theta));
+		const sin = trig.clampAt0And1(Math.sin(theta));
+		
+		let point = vector.add(vector.add(vector.zero, radius * cos, plane.xAxis), radius * sin, plane.yAxis); 
+		if (is.defined(altitude)) point = vector.add(point, altitude, plane.normal);
+		
+		return {
+			point: point,
+			forward: vector.add(vector.add(vector.zero, sin, plane.xAxis), cos, plane.yAxis),
+		}
+	},
+	getRadius: function(plane, vertex) {
+		const toVertex = this._toVertex(plane, vertex);
+		return vector.length(vector.add(toVertex, -this.getAltitude(plane, toVertex), plane.normal));
+	},
 	isParallel: function(a, b, tolerance) {
 		if (!is.defined(tolerance)) tolerance = this._defaultTolerance;
 		return Math.abs(vector.dot(a.normal, b.normal)) >= tolerance;
 	},
-	
 	isSame: function(a, b, tolerance) {
 		return this.isParallel(a, b, tolerance) && this.contains(a, b.origin, tolerance);
 	},
+	setAxes: function(plane, xAxis) {
+		plane.xAxis = vector.normalize(vector.add(xAxis, -vector.dot(xAxis, plane.normal), plane.normal));
+		plane.yAxis = vector.cross(plane.xAxis, plane.normal);
+	},
+	_toVertex: function(plane, vertex) {
+		return vector.add(vertex, -1, plane.origin);
+	},
+	_setDefaultAxes: function(plane) {
+		if (vector.dot(vector.up, plane.normal) > this._defaultTolerance) {
+			this.setAxes(plane, vector.right);
+		} else {
+			throw '_setDefaultAxes: not implemented';
+		}
+	}
 }
 
 const ribbonMgr = {
@@ -505,7 +565,7 @@ const spiralParser = {
 
 	parse: function(builders, points, rawSpiral, masterSettings, name) {
 		const specs = this._getSpecs(points, rawSpiral, masterSettings, name);
-		this._generate(builders, points, specs, masterSettings);
+		this._generate(builders, points, specs, rawSpiral, masterSettings, name);
 	},
 
 	_circleWeight: 0.5519150244935105707435627,
@@ -545,16 +605,16 @@ const spiralParser = {
 	_getSpecs: function(points, rawSpiral, masterSettings, name) {
 
 		// Create the base spiral specification
-		const settings = mergeSettings.merge(masterSettings, rawSpiral, name);
+		const specs = {};
 
 		// Get either the entry point or the overrideFirstWeight option
 		if (points.length === 0) {
-			settings.startsAt = pointParser.validate(rawSpiral['startsAt'], settings, name + '.startsAt');
+			specs.startsAt = pointParser.validate(rawSpiral['startsAt'], specs, name + '.startsAt');
 		} else {
 			if (is.defined(rawSpiral.startsAt)) {
 				throw new RangeError(`${name}.startsAt cannot be specified for a spiral that does not start a segment`);
 			}
-			settings.startsAt = points[points.length - 1];
+			specs.startsAt = points[points.length - 1];
 		}
 
 		// Get the number of turns
@@ -567,36 +627,56 @@ const spiralParser = {
 		}
 		
 		// Get the endsAt
-		settings.endsAt = pointParser.validate(rawSpiral['endsAt'], settings, name + '.endsAt');
+		specs.endsAt = pointParser.validate(rawSpiral['endsAt'], specs, name + '.endsAt');
 		
 		// Determine the rotation plane.
-		settings.rotationPlane = this._getRotationPlane(settings, rotate, rawSpiral, name);
+		specs.rotationPlane = this._getRotationPlane(specs, rotate, rawSpiral, name);
 
 		// Now that we have the rotation plane, we can compute the angles,
 		// altitudes, and radii
-		throw 'Not implemented, need to determine the entry/exit angle, altitude and radius';
+		const entry = this._getAltAngleRadius(specs, 'startsAt');
+		const exit = this._getAltAngleRadius(specs, 'endsAt');
+		
+		// Set the sweep
+		this._setSweep(specs, rotate, turns, entry, exit);
 
 		// Set the interpolation functions
-		settings.altitude = setInterpolation(startAltitude, endAltitude);
-		settings.angle = setInterpolation(startAngle, endAngle + 360 * turns);
-		settings.radius = this.setInterpolation(startRadius, endRadius);
+		specs.altitude = this._getInterpolation(entry.altitude, exit.altitude);
+		specs.angle = this._getInterpolation(entry.angle, exit.angle + 360 * turns);
+		specs.radius = this._getInterpolation(entry.radius, exit.radius);
 
 		// Return the specifications
-		return settings;
+		return specs;
 	},
 	
-	_getRotationAxis: function(settings, rotate) {
+	_getAltAngleRadius: function(specs, memberName) {
+		const p = specs[memberName].center;
+		return {
+			altitude: plane.getAltitude(specs.rotationPlane, p),
+			angle: plane.getAngle(specs.rotationPlane, p),
+			radius: plane.getRadius(specs.rotationPlane, p)
+		};
+	},
+
+	_getInterpolation: function(t0, t1) {
+		const delta = t1 - t0;
+		return Math.abs(delta) < .001 ?
+			(t) => { return t0; } :
+			(t) => { return t0 + t * delta; };
+	},
+	
+	_getRotationAxis: function(specs, rotate) {
 		// TODO: This assumes the rotation axis is either up or up X forward.
 		// This may not always be the case.
 		if (rotate === 'left' || rotate === 'right') return vector.up;
 		throw '_getRotationAxis: not implemented for non-up axis';
 	},
 	
-	_getRotationPlane: function(settings, rotate, rawSpiral, name) {
+	_getRotationPlane: function(specs, rotate, rawSpiral, name) {
 		
 		// Get the entry and exit planes
-		const entryPlane = plane.create(settings.startsAt.center, settings.startsAt.forward);
-		const exitPlane = plane.create(settings.endsAt.center, settings.endsAt.forward);
+		const entryPlane = plane.create(specs.startsAt.center, specs.startsAt.forward);
+		const exitPlane = plane.create(specs.endsAt.center, specs.endsAt.forward);
 
 		// From the condition of the entry and exit planes, plus any
 		// supporting specifications, determine the rotation center and axis
@@ -606,7 +686,7 @@ const spiralParser = {
 				throw '_getRotationPlane: not implemented, user-specified center for identical entry and exit planes';
 			} else {
 				rotCenter = vector.midpoint(entryPlane.origin, exitPlane.origin);
-				rotAxis = this._getRotationAxis(settings, rotate);
+				rotAxis = this._getRotationAxis(specs, rotate);
 			}
 		} else if (plane.isParallel(entryPlane, exitPlane)) {
 			//const center = validate.vector3(rawSpiral, 'center', name);
@@ -626,13 +706,23 @@ const spiralParser = {
 		return plane.create(rotCenter, rotAxis);
 	},
 
-	_setInterpolation: function(t0, t1) {
-		const delta = t1 - t0;
-		return Math.abs(delta) < .001 ?
-			(t) => { return t0; } :
-			(t) => { return t0 + t * delta; };
+	_setSweep: function(specs, rotate, turns, entry, exit) {
+		const turnsDegrees = turns * 360;
+		if (rotate === 'left') {
+			if (entry.angle > exit.angle) exit.angle += 360;
+			specs.sweep = turnsDegrees + exit.angle - entry.angle;
+			specs.angle = this._getInterpolation(entry.angle, exit.angle + turnsDegrees);
+		} else if (rotate === 'right') {
+			if (entry.angle < exit.angle) exit.angle -= 360;
+			specs.sweep = turnsDegrees + entry.angle - exit.angle;
+			specs.angle = this._getInterpolation(entry.angle, exit.angle - turnsDegrees);
+		} else {
+			throw '_setSweep: need to compute sweep up';
+			console.log('_setSweep: entry %o, exit %o, sweep %f', entry, exit, specs.sweep);
+		}
+		console.log('_setSweep: entry %o, exit %o, sweep %f', entry, exit, specs.sweep);
 	},
-
+	
 	/*--------------------------------------------------------------------------
 	IMPLEMENTATION
 
@@ -679,27 +769,46 @@ const spiralParser = {
 
 	--------------------------------------------------------------------------*/
 
-	_generate: function(builders, points, settings, masterSettings) {
+	_generate: function(builders, points, specs, rawSpiral, masterSettings, name) {
 
 		// Insert the entry point if this is the first point of the segment.
 		// Otherwise patch its forwardWeight if required.
-		if (points.length === 0) {
-			points.push(settings.startsAt);
-		} else if (settings.overrideFirstWeight) {
-			points[points.length - 1].forwardWeight = settings.entryRadius * circleWeight;
-		}
+		if (points.length === 0) points.push(specs.startsAt);
+		points[points.length - 1].forwardWeight = specs.radius(0) * circleWeight;
+		console.log('_generate: #points %d, #builders %d, last point %o', points.length, builders.length, points[points.length - 1]);
 
 		// Add the 90° sections
-		for (let angle = 0; angle < settings.sweep; angle += 90) {
-			this.generateSection(builders, points, angle, settings);
+		for (let angle = 0; angle < specs.sweep; angle += 90) {
+			this._addPoint(builders, points, angle / specs.sweep, specs, rawSpiral, masterSettings, name);
 		}
 
-		// Patch the forward weight of the last point
-		points[points.length - 1].forwardWeight = settings.forwardWeight;
+		// Add the last point
+		points.push(specs.endsAt);
+		points[points.length - 1].backwardWeight = specs.radius(1) * this._circleWeight;
+		builders.push(createBuilder(masterSettings));
+		console.log('_generate: #points %d, #builders %d, last point %o', points.length, builders.length, points[points.length - 1]);
 	},
 
-	_generateSection: function(builders, points, angle, settings) {
-		throw "Not implemented";
+	_addPoint: function(builders, points, t, specs, rawSpiral, masterSettings, name) {
+
+		const altitude = specs.altitude(t);
+		const angle = specs.angle(t);
+		const radius = specs.radius(t);
+		console.log('_addPoint: t %f, altitude %f, angle %f, radius %f', t, altitude, angle, radius);
+
+		const polar = plane.getPolar(specs.rotationPlane, radius, angle, altitude);
+		
+		const pointName = `${name}@${angle}`;
+		const point = mergeSettings.merge(masterSettings, rawSpiral, pointName);
+		point.backwardWeight = radius * this._circleWeight;
+		point.center = polar.point;
+		point.forward = polar.forward;
+		point.forwardWeight = point.backwardWeight;
+		point.name = pointName;
+		
+		points.push(point);
+		builders.push(createBuilder(masterSettings));
+		console.log('_addPoint: #points %d, #builders %d, last point %o', points.length, builders.length, points[points.length - 1]);
 	},
 }
 
