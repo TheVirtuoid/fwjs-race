@@ -729,9 +729,12 @@
 		const t5acurveL = {
 			type: 'spiral',
 			endsAt: {
-				x: t5ep3L.center.x,
-				y: t5rightHeight,
-				z: t5ep3L.center.z,
+				center: {
+					x: t5ep3L.center.x,
+					y: t5rightHeight,
+					z: t5ep3L.center.z,
+				},
+				forward: posX,
 			},
 			rotate: 'left',
 		};
@@ -748,9 +751,12 @@
 		const t5acurveR = {
 			type: 'spiral',
 			endsAt: {
-				x: t5ep3R.center.x,
-				y: 2 * t5rightHeight,
-				z: t5ep3R.center.z,
+				center: {
+					x: t5ep3R.center.x,
+					y: 2 * t5rightHeight,
+					z: t5ep3R.center.z,
+				},
+				forward: posX,
 			},
 			rotate: 'right',
 		};

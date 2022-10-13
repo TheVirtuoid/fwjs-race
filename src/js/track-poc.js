@@ -407,7 +407,14 @@ const bezier = {
 }
 
 const pointParser = {
+
 	parse: function(builders, points, rawPoint, masterSettings, name) {
+		const point = this.validate(rawPoint, masterSettings, name);
+		points.push(point);
+		if (points.length > 1) builders.push(createBuilder(masterSettings));
+	},
+	
+	validate: function(rawPoint, masterSettings, name) {
 
 		// The raw point cannot have a 'precision' element
 		if (is.defined(rawPoint.precision)) {
@@ -415,29 +422,22 @@ const pointParser = {
 		}
 
 		// Create the point with its settings and name
-		const segmentPoint = mergeSettings.merge(masterSettings, rawPoint, name);
-		segmentPoint.name = name;
+		const point = mergeSettings.merge(masterSettings, rawPoint, name);
+		point.name = name;
 
 		// The raw point must have a center object with x, y, and z numeric
 		// elements
-		segmentPoint.center = validate.vector3(rawPoint, 'center', name);
+		point.center = validate.vector3(rawPoint, 'center', name);
 
-		// If the raw point has a 'forward' vector, validate that. Otherwise
-		// use the vector (1, 0, 0)
-		if (rawPoint.forward == null) {
-			segmentPoint.forward = vector.right;
-		} else {
-			segmentPoint.forward = validate.vector3(rawPoint, 'forward', name);
-		}
+		// The point must have a forward vector
+		point.forward = vector.normalize(validate.vector3(rawPoint, 'forward', name));
 
 		// Get the weights
-		segmentPoint.forwardWeight = validate.weight(rawPoint, 'forwardWeight', name);
-		segmentPoint.backwardWeight = validate.weight(rawPoint, 'backwardWeight', name);
-
-		// And we are done!
-		points.push(segmentPoint);
-		if (points.length > 1) builders.push(createBuilder(masterSettings));
-	},
+		point.forwardWeight = validate.weight(rawPoint, 'forwardWeight', name);
+		point.backwardWeight = validate.weight(rawPoint, 'backwardWeight', name);
+		
+		return point;
+	}
 }
 
 const spiralParser = {
@@ -496,6 +496,8 @@ const spiralParser = {
 		this._generate(builders, points, specs, masterSettings);
 	},
 
+	_circleWeight: 0.5519150244935105707435627,
+
 	/*--------------------------------------------------------------------------
 	SPECIFICATION
 
@@ -528,8 +530,6 @@ const spiralParser = {
 
 	--------------------------------------------------------------------------*/
 
-	_circleWeight: 0.5519150244935105707435627,
-
 	_getSpecs: function(points, rawSpiral, masterSettings, name) {
 
 		// Create the base spiral specification
@@ -537,15 +537,11 @@ const spiralParser = {
 
 		// Get either the entry point or the overrideFirstWeight option
 		if (points.length === 0) {
-			if (is.defined(rawSpiral.overrideFirstWeight)) {
-				throw new RangeError(`${name}.overrideFirstWeight cannot be specified for a spiral that starts a segment`);
-			}
-			settings.startsAt = getStartsAt(masterSettings, rawSpiral, name);
+			settings.startsAt = pointParser.validate(rawSpiral['startsAt'], settings, name + '.startsAt');
 		} else {
 			if (is.defined(rawSpiral.startsAt)) {
 				throw new RangeError(`${name}.startsAt cannot be specified for a spiral that does not start a segment`);
 			}
-			settings.overrideFirstWeight = validate.boolean(rawSpiral, 'overrideFirstWeight', name, true);
 			settings.startsAt = points[points.length - 1];
 		}
 
@@ -557,23 +553,16 @@ const spiralParser = {
 		if (rotate !== 'left' && rotate !== 'right' && rotate !== 'up') {
 			throw new RangeError(`${name}.rotate must be either 'left', 'right', or 'up'.`);
 		}
+		
+		// Get the endsAt
+		settings.endsAt = pointParser.validate(rawSpiral['endsAt'], settings, name + '.endsAt');
+		
+		// Determine the rotation plane
+		throw 'Not implemented, need to determine the rotation plane';
 
-		// Now that we have the rotation plane, we can compute the starting
-		// altitude and angle
-		// *** This partially satisfies (b) and (c) ***
-		throw 'Not implemented, need to set starting angle and altitude';
-
-		// Check if the exact exit point is given
-		if (is.defined(rawSpiral.endsAt)) {
-			// *** This completely satisfies (b), (c), and (d) ***
-			throw 'Not implemented, need to parse endsAt and set ending angle, altitude, and radius';
-
-		} else {
-			// Otherwise we expect exit altitude and angle to be given and possibly
-			// its radius
-			// *** This completely satisfies (b), (c), and (d) ***
-			throw 'Not implemented, need to parse the ending angle, altitude, and possibly radius';
-		}
+		// Now that we have the rotation plane, we can compute the angles,
+		// altitudes, and radii
+		throw 'Not implemented, need to determine the entry/exit angle, altitude and radius';
 
 		// Set the interpolation functions
 		settings.altitude = setInterpolation(startAltitude, endAltitude);
