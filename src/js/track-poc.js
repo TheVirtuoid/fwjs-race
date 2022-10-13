@@ -172,9 +172,7 @@ const mergeSettings = {
 }
 
 const vector = {
-
 	angleToRadians: Math.PI / 180,
-
 	add: function(u, k, v) {
 		return {
 			x: u.x + k * v.x,
@@ -182,7 +180,6 @@ const vector = {
 			z: u.z + k * v.z,
 		}
 	},
-
 	cross: function(u, v) {
 		return {
 			x: u.y * v.z - u.z * v.y,
@@ -190,7 +187,6 @@ const vector = {
 			z: u.x * v.y - u.y * v.x,
 		}
 	},
-
 	difference: function(from, to) {
 		return {
 			x: to.x - from.x,
@@ -198,17 +194,13 @@ const vector = {
 			z: to.z - from.z,
 		};
 	},
-
 	distance: function(u, v) {
 		return vector.length(this.difference(u, v));
 	},
-
 	dot: function(u, v) {
 		return u.x * v.x + u.y * v.y + u.z * v.z;
 	},
-
 	down: { x:0, y:-1, z:0 },
-
 	interpolate: function(u, v, t) {
 		const olt = 1 - t;
 		return {
@@ -217,11 +209,9 @@ const vector = {
 			z: olt * u.z + t * v.z,
 		}
 	},
-
 	length: function(u) {
 		return Math.sqrt(u.x * u.x + u.y * u.y + u.z * u.z);
 	},
-
 	midpoint: function(u, v) {
 		return {
 			x: (u.x + v.x) / 2,
@@ -229,7 +219,6 @@ const vector = {
 			z: (u.z + v.z) / 2,
 		}
 	},
-
 	multiply: function(k, u) {
 		return {
 			x: k * u.x,
@@ -237,7 +226,6 @@ const vector = {
 			z: k * u.z,
 		}
 	},
-
 	normalize: function(u) {
 		const length = vector.length(u);
 		return {
@@ -246,9 +234,7 @@ const vector = {
 			z: u.z / length,
 		};
 	},
-
 	right: { x:1, y:0, z:0 },
-
 	rotate: function(axis, u, angle) {
 		const theta = angle * vector.angleToRadians;
 		const cosTheta = Math.cos(theta);
@@ -257,7 +243,6 @@ const vector = {
 		result = vector.add(result, sinTheta, vector.cross(axis, u));
 		return vector.add(result, vector.dot(axis, u) * (1 - cosTheta), axis);
 	},
-
 	sum: function(coeffs, us) {
 		let sum = vector.zero;
 		for (let i = 0; i < coeffs.length; i++) {
@@ -265,7 +250,7 @@ const vector = {
 		}
 		return sum;
 	},
-
+	up: { x:0, y:1, z:0 },
 	zero: { x:0, y:0, z:0 },
 };
 
@@ -600,11 +585,29 @@ const spiralParser = {
 		return settings;
 	},
 	
+	_getRotationAxis: function(settings, rotate) {
+		// TODO: This assumes the rotation axis is either up or up X forward.
+		// This may not always be the case.
+		if (rotate === 'left' || rotate === 'right') return vector.up;
+		throw '_getRotationAxis: not implemented for non-up axis';
+	},
+	
 	_getRotationPlane: function(settings, rotate, rawSpiral, name) {
+		
+		// Get the entry and exit planes
 		const entryPlane = plane.create(settings.startsAt.center, settings.startsAt.forward);
 		const exitPlane = plane.create(settings.endsAt.center, settings.endsAt.forward);
+
+		// From the condition of the entry and exit planes, plus any
+		// supporting specifications, determine the rotation center and axis
+		let rotCenter, rotAxis;
 		if (plane.isSame(entryPlane, exitPlane)) {
-			throw '_getRotationPlane: not implemented, identical entry and exit planes';
+			if (is.defined(rawSpiral.center)) {
+				throw '_getRotationPlane: not implemented, user-specified center for identical entry and exit planes';
+			} else {
+				rotCenter = vector.midpoint(entryPlane.origin, exitPlane.origin);
+				rotAxis = this._getRotationAxis(settings, rotate);
+			}
 		} else if (plane.isParallel(entryPlane, exitPlane)) {
 			//const center = validate.vector3(rawSpiral, 'center', name);
 			//if (rotate === 'left') {
@@ -618,6 +621,9 @@ const spiralParser = {
 			validate.undefined(rawSpiral, 'center', name);
 			throw '_getRotationPlane: not implemented, intersecting entry and exit planes';
 		}
+		
+		// Return the rotation plane
+		return plane.create(rotCenter, rotAxis);
 	},
 
 	_setInterpolation: function(t0, t1) {
