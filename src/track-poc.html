@@ -52,10 +52,12 @@
 			<option value="track1b">Track 1b (track 1a with alternate straight)</option>
 			<option value="track2">Track 2 (ramp with jump and left curve)</option>
 			<option value="track2a">Track 2a (track 2 with 45&#176; bank)</option>
-			<option value="track2b">Track 2b (track 2 using spiral)</option>
+			<!--option value="track2b">Track 2b (track 2 using spiral)</option-->
 			<option value="track3">Track 3 (ramp with jump and right curve)</option>
 			<option value="track3a">Track 3a (track 3 with 45&#176; bank)</option>
 			<option value="track4">Track 4 (loop)</option>
+			<option value="track5">Track 5 (flat 180&#176; turns)</option>
+			<option value="track5a">Track 5a (track 5 using spiral)</option>
 		</select>
 		<button type="button" id="go">GO!</button>
 	</div>
@@ -413,13 +415,17 @@
 		};
 		const t2bspiral = {
 			type: 'spiral',
-			center: 'left',
-			endsAt: {
-				x: t2bep5.center.x - jrRadius,
-				y: t2bep5.center.y - jrDescent,
+			axis: posY,
+			center: {
+				x: t2bep5.center.x,
+				y: t2bep5.center.y,
 				z: t2bep5.center.z - jrRadius,
 			},
-			radius: jrRadius,
+			endsAt: {
+				x: t2bep5.center.x - jrRadius,
+				y: t2bep5.center.y - 3 * jrDescent / 4,
+				z: t2bep5.center.z - jrRadius,
+			},
 		};
 		const t2bep9 = {	// Runout
 			type: 'straight',
@@ -603,6 +609,183 @@
 			segments: [ t4s1 ]
 		};
 
+		//----------------------------------------------------------------------
+		// Track 5, flat 180 degree turns
+
+		const t5radius = 4;
+		const t5weight = t5radius * circleWeight;
+		const t5rightHeight = 2;
+		const t5center = { x:0, y:0, z:0 };
+		const t5runout = 1;
+		
+		const t5ep0L = {
+			center: {
+				x: t5center.x - t5runout,
+				y: 0,
+				z: t5center.z + t5radius
+			},
+			forward: posX,
+		};
+		
+		const t5ep1L = {
+			center: {
+				x: t5center.x,
+				y: 0,
+				z: t5center.z + t5radius
+			},
+			forward: posX,
+			forwardWeight: t5weight,
+		}
+		
+		const t5ep2L = {
+			backwardWeight: t5weight,
+			center: {
+				x: t5center.x + t5radius,
+				y: 0,
+				z: t5center.z,
+			},
+			forward: negZ,
+			forwardWeight: t5weight,
+		}
+		
+		const t5ep3L = {
+			backwardWeight: t5weight,
+			center: {
+				x: t5center.x,
+				y: 0,
+				z: t5center.z - t5radius,
+			},
+			forward: negX,
+		}
+		
+		const t5ep0R = {
+			center: {
+				x: t5center.x - t5runout,
+				y: t5rightHeight,
+				z: t5center.z - t5radius
+			},
+			forward: posX,
+		};
+		
+		const t5ep1R = {
+			center: {
+				x: t5center.x,
+				y: t5rightHeight,
+				z: t5center.z - t5radius
+			},
+			forward: posX,
+			forwardWeight: t5weight,
+		}
+		
+		const t5ep2R = {
+			backwardWeight: t5weight,
+			center: {
+				x: t5center.x + t5radius,
+				y: t5rightHeight,
+				z: t5center.z,
+			},
+			forward: posZ,
+			forwardWeight: t5weight,
+		}
+		
+		const t5ep3R = {
+			backwardWeight: t5weight,
+			center: {
+				x: t5center.x,
+				y: t5rightHeight,
+				z: t5center.z + t5radius,
+			},
+			forward: negX,
+		}
+		
+		const t5runoutStraight = {
+			type: 'straight',
+			length: t5runout,
+		}
+		
+		tracks.track5 = {
+			segments: [
+				{
+					points: [ t5ep0L, t5ep1L, t5ep2L, t5ep3L, t5runoutStraight ],
+				},
+				{
+					points: [ t5ep0R, t5ep1R, t5ep2R, t5ep3R, t5runoutStraight ],
+				},
+			]
+		};
+
+		//----------------------------------------------------------------------
+		// Track 5a, track 5 using spiral
+		
+		const t5acurveH = {
+			type: 'spiral',
+			axis: negY,
+			center: t5center,
+			endsAt: {
+				x: t5ep3L.center.x,
+				y: t5rightHeight,
+				z: t5ep3L.center.z,
+			},
+		};
+		
+		const t5acurveR = {
+			type: 'spiral',
+			axis: negY,
+			center: t5center,
+			endsAt: t5ep3R.center,
+		};
+		
+		const t5ep0H = {
+			center: {
+				x: t5center.x - t5runout,
+				y: t5rightHeight,
+				z: t5center.z + t5radius
+			},
+			forward: posX,
+		};
+		
+		const t5ep1H = {
+			center: {
+				x: t5center.x,
+				y: t5rightHeight,
+				z: t5center.z + t5radius
+			},
+			forward: posX,
+			forwardWeight: t5weight,
+		}
+		
+		const t5ep2H = {
+			backwardWeight: t5weight,
+			center: {
+				x: t5center.x + t5radius,
+				y: t5rightHeight,
+				z: t5center.z,
+			},
+			forward: negZ,
+			forwardWeight: t5weight,
+		}
+		
+		const t5ep3H = {
+			backwardWeight: t5weight,
+			center: {
+				x: t5center.x,
+				y: t5rightHeight,
+				z: t5center.z - t5radius,
+			},
+			forward: negX,
+		}
+		
+		tracks.track5a = {
+			segments: [
+				{
+					points: [ t5ep0L, t5ep1L, t5ep2L, t5ep3L, t5runoutStraight ],
+				},
+				{
+					points: [ t5ep0H, t5runoutStraight, t5acurveH, t5runoutStraight ],
+				},
+			]
+		};
+
 		//======================================================================
 		// BABYLON IMPLEMENTATION
 
@@ -676,7 +859,62 @@
 				trackMesh.physicsImpostor = new BABYLON.PhysicsImpostor(trackMesh, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0 }, scene);
 				trackMeshes.push(trackMesh);
 			}
+
+			/*
+			drawBigAxes();
+
+			for (let s of track.segments) {
+				for (let p of s.points) {
+					drawAxes(p.center);
+				}
+			}
+
+			drawLine(ribbons[0][1], green);
+			*/
 		}
+
+/*
+		const red = new BABYLON.Color4(1, 0, 0);
+		const green = new BABYLON.Color4(0, 1, 0);
+		const blue = new BABYLON.Color4(0, 0, 1);
+
+		const drawAxes = function(u) {
+			const options = {
+				points: [ new BABYLON.Vector3(u.x, u.y, u.z), new BABYLON.Vector3(u.x, u.y, u.z) ],
+				colors: [ red, red ]
+			}
+			options.points[1].x += 1;
+			BABYLON.MeshBuilder.CreateLines("lines", options);
+			options.colors = [ green, green ];
+			options.points[1].x -= 1;
+			options.points[1].y += 1;
+			BABYLON.MeshBuilder.CreateLines("lines", options);
+			options.colors = [ blue, blue ];
+			options.points[1].y -= 1;
+			options.points[1].z += 1;
+			BABYLON.MeshBuilder.CreateLines("lines", options);
+		}
+
+		const drawBigAxes = function(u) {
+			const options = {
+				points: [ new BABYLON.Vector3(-50, 0, 0), new BABYLON.Vector3(50, 0, 0) ],
+			}
+			BABYLON.MeshBuilder.CreateDashedLines("lines", options).color = red;
+			options.points = [ new BABYLON.Vector3(0, -50, 0), new BABYLON.Vector3(0, 50, 0) ];
+			BABYLON.MeshBuilder.CreateDashedLines("lines", options).color = green;
+			options.points = [ new BABYLON.Vector3(0, 0, -50), new BABYLON.Vector3(0, 0, 50) ];
+			BABYLON.MeshBuilder.CreateDashedLines("lines", options).color = blue;
+		}
+
+		const drawLine = function(points, color) {
+			const options = {
+				colors: [],
+				points: points,
+			}
+			for (let i = 0; i < points.length; i++) { options.colors.push(green); }
+			BABYLON.MeshBuilder.CreateLines("lines", options);
+		}
+*/
 
 		window.initFunction = async function() {
 
