@@ -614,88 +614,88 @@
 
 		const t5radius = 4;
 		const t5weight = t5radius * circleWeight;
-		const t5rightHeight = 2;
+		const t5Height = [0, 2, 4];
 		const t5center = { x:0, y:0, z:0 };
 		const t5runout = 1;
 		
 		const t5ep0L = {
 			center: {
-				x: t5center.x - t5runout,
-				y: 0,
-				z: t5center.z + t5radius
+				x: t5center.x + t5radius,
+				y: t5center.y + t5Height[0],
+				z: t5center.z - t5runout,
 			},
-			forward: posX,
+			forward: posZ,
 		};
 		
 		const t5ep1L = {
 			center: {
-				x: t5center.x,
-				y: 0,
-				z: t5center.z + t5radius
+				x: t5ep0L.center.x,
+				y: t5ep0L.center.y,
+				z: t5ep0L.center.z + t5runout,
 			},
-			forward: posX,
+			forward: posZ,
 			forwardWeight: t5weight,
 		}
 		
 		const t5ep2L = {
 			backwardWeight: t5weight,
 			center: {
-				x: t5center.x + t5radius,
-				y: 0,
-				z: t5center.z,
+				x: t5ep1L.center.x - t5radius,
+				y: t5ep0L.center.y,
+				z: t5ep1L.center.z + t5radius,
 			},
-			forward: negZ,
+			forward: negX,
 			forwardWeight: t5weight,
 		}
 		
 		const t5ep3L = {
 			backwardWeight: t5weight,
 			center: {
-				x: t5center.x,
-				y: 0,
-				z: t5center.z - t5radius,
+				x: t5ep2L.center.x - t5radius,
+				y: t5ep0L.center.y,
+				z: t5ep2L.center.z - t5radius,
 			},
-			forward: negX,
+			forward: negZ,
 		}
 		
 		const t5ep0R = {
 			center: {
-				x: t5center.x - t5runout,
-				y: t5rightHeight,
-				z: t5center.z - t5radius
+				x: t5center.x - t5radius,
+				y: t5center.y + t5Height[1],
+				z: t5center.z - t5runout,
 			},
-			forward: posX,
+			forward: posZ,
 		};
 		
 		const t5ep1R = {
 			center: {
-				x: t5center.x,
-				y: t5rightHeight,
-				z: t5center.z - t5radius
+				x: t5ep0R.center.x,
+				y: t5ep0R.center.y,
+				z: t5ep0R.center.z + t5runout,
 			},
-			forward: posX,
+			forward: posZ,
 			forwardWeight: t5weight,
 		}
 		
 		const t5ep2R = {
 			backwardWeight: t5weight,
 			center: {
-				x: t5center.x + t5radius,
-				y: t5rightHeight,
-				z: t5center.z,
+				x: t5ep1R.center.x + t5radius,
+				y: t5ep0R.center.y,
+				z: t5ep1R.center.z + t5radius,
 			},
-			forward: posZ,
+			forward: posX,
 			forwardWeight: t5weight,
 		}
 		
 		const t5ep3R = {
 			backwardWeight: t5weight,
 			center: {
-				x: t5center.x,
-				y: t5rightHeight,
-				z: t5center.z + t5radius,
+				x: t5ep2R.center.x + t5radius,
+				y: t5ep0R.center.y,
+				z: t5ep2R.center.z - t5radius,
 			},
-			forward: negX,
+			forward: negZ,
 		}
 		
 		const t5runoutStraight = {
@@ -719,11 +719,11 @@
 		
 		const t5aep0L = {
 			center: {
-				x: t5center.x - t5runout,
-				y: t5rightHeight,
-				z: t5center.z + t5radius
+				x: t5ep0L.center.x,
+				y: t5center.y + t5Height[1],
+				z: t5ep0L.center.z,
 			},
-			forward: posX,
+			forward: t5ep0L.forward,
 		};
 		
 		const t5acurveL = {
@@ -731,21 +731,21 @@
 			endsAt: {
 				center: {
 					x: t5ep3L.center.x,
-					y: t5rightHeight,
+					y: t5aep0L.center.y,
 					z: t5ep3L.center.z,
 				},
-				forward: posX,
+				forward: t5ep3L.forward,
 			},
 			rotate: 'left',
 		};
 		
 		const t5aep0R = {
 			center: {
-				x: t5center.x - t5runout,
-				y: 2 * t5rightHeight,
-				z: t5center.z - t5radius
+				x: t5ep0R.center.x,
+				y: t5center.y + t5Height[2],
+				z: t5ep0R.center.z,
 			},
-			forward: posX,
+			forward: t5ep0R.forward,
 		};
 		
 		const t5acurveR = {
@@ -753,10 +753,10 @@
 			endsAt: {
 				center: {
 					x: t5ep3R.center.x,
-					y: 2 * t5rightHeight,
+					y: t5aep0R.center.y,
 					z: t5ep3R.center.z,
 				},
-				forward: posX,
+				forward: t5ep3R.forward,
 			},
 			rotate: 'right',
 		};
