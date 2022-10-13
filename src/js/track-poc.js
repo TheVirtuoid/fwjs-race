@@ -1,6 +1,3 @@
-//==============================================================================
-// HELPER ROUTINES
-
 const defaultSettings = {
 	precision: .01,
 	trackBank: 0,
@@ -410,32 +407,32 @@ const bezier = {
 }
 
 const pointParser = {
-	parse: function(builders, points, rawPoint, masterSettings, nameStr) {
+	parse: function(builders, points, rawPoint, masterSettings, name) {
 
 		// The raw point cannot have a 'precision' element
 		if (is.defined(rawPoint.precision)) {
-			throw new TypeError(`${nameStr} cannot define precision`);
+			throw new TypeError(`${name} cannot define precision`);
 		}
 
 		// Create the point with its settings and name
-		const segmentPoint = mergeSettings.merge(masterSettings, rawPoint, nameStr);
-		segmentPoint.name = nameStr;
+		const segmentPoint = mergeSettings.merge(masterSettings, rawPoint, name);
+		segmentPoint.name = name;
 
 		// The raw point must have a center object with x, y, and z numeric
 		// elements
-		segmentPoint.center = validate.vector3(rawPoint, 'center', nameStr);
+		segmentPoint.center = validate.vector3(rawPoint, 'center', name);
 
 		// If the raw point has a 'forward' vector, validate that. Otherwise
 		// use the vector (1, 0, 0)
 		if (rawPoint.forward == null) {
 			segmentPoint.forward = vector.right;
 		} else {
-			segmentPoint.forward = validate.vector3(rawPoint, 'forward', nameStr);
+			segmentPoint.forward = validate.vector3(rawPoint, 'forward', name);
 		}
 
 		// Get the weights
-		segmentPoint.forwardWeight = validate.weight(rawPoint, 'forwardWeight', nameStr);
-		segmentPoint.backwardWeight = validate.weight(rawPoint, 'backwardWeight', nameStr);
+		segmentPoint.forwardWeight = validate.weight(rawPoint, 'forwardWeight', name);
+		segmentPoint.backwardWeight = validate.weight(rawPoint, 'backwardWeight', name);
 
 		// And we are done!
 		points.push(segmentPoint);
@@ -494,8 +491,8 @@ const spiralParser = {
 
 	--------------------------------------------------------------------------*/
 
-	parse: function(builders, points, rawSpiral, masterSettings, nameStr) {
-		const specs = this._getSpecs(points, rawSpiral, masterSettings, nameStr);
+	parse: function(builders, points, rawSpiral, masterSettings, name) {
+		const specs = this._getSpecs(points, rawSpiral, masterSettings, name);
 		this._generate(builders, points, specs, masterSettings);
 	},
 
@@ -513,44 +510,19 @@ const spiralParser = {
 	Note that if the spiral starts a segment, the entry point implicitly
 	supplies the entry angle, altitude, and radius.
 
-	'center' (required)
-		This either 'left', 'right', or 'up' and, along with either
-		'radius' or 'startRadius', defines the center of rotation that
-		is the appropriate radius times the entry point's left, right,
-		or up direction vector.
-	'endDepth' (required)
-		The relative depth of the exit point. This must be a number. This
-		requires 'endAngle' as well.
-	'endAngle' (required)
-		The angle of the exit point.
-	'endRadius'
-		If specified, sets the radius of the spiral at the exit point.
-		This also requires 'startRadius' to be set and renders 'radius'
-		illegal.
-	'endsAt'
-		If specified, sets the exit point of the
-		[endDepth, endAngle, endRadius illegal, radius ignored]
-	'forwardWeight'
-		If specified, applies to the exit point. Note that this does not
-		affect the spiral's shape but the shape of the following section.
-	'overrideFirstWeight'
-		If not specified or is true, resets the entry point's forward weight
-		to the weight used by the circular Bezier algorithm. This is illegal
-		if the spiral starts the segment.
-	'radius'
-		If specified, determines the radius of the spiral at both the entry
-		and exit points. In this case, the 'startRadius' and 'endRadius'
-		settings are illegal.
-		If not specified, both 'startRadius' and 'endRadius' are required.
-	'startRadius'
-		If specified, sets the radius of the spiral at the entry point.
-		This also requires 'endRadius' to be set and renders 'radius'
-		illegal.
-	'startsAt'
-		This is required if the spiral starts the track segment. This sets
-		the entry point of the spiral in such a case. This is illegal if
-		the spiral does not start the segment.
-	'turns'
+	'endsAt' (required)
+		If specified, sets the exit point of the spiral. This object
+		must define the 'x', 'y', and 'z' coordinate values of the
+		vector and a 'forward' vector. A 'forwardWeight' is optional.
+	'rotate' (required)
+		This is either 'left', 'right', or 'up' and determines how the
+		spiral rotates relative to the entry point.
+	'startsAt' (required if the spiral starts the track segment)
+		This sets the entry point of the spiral. This is illegal if the
+		spiral does not start the segment. This object must define
+		the 'x', 'y', and 'z' coordinate values of the vector and
+		a 'forward' vector.
+	'turns' (optional)
 		If specified, this positive integer sets the number of complete
 		rotations in the spiral.
 
@@ -558,59 +530,33 @@ const spiralParser = {
 
 	_circleWeight: 0.5519150244935105707435627,
 
-	_getSpecs: function(points, rawSpiral, masterSettings, nameStr) {
+	_getSpecs: function(points, rawSpiral, masterSettings, name) {
 
 		// Create the base spiral specification
-		const spiralSpecs = mergeSettings.merge(masterSettings, rawSpiral, nameStr);
+		const settings = mergeSettings.merge(masterSettings, rawSpiral, name);
 
 		// Get either the entry point or the overrideFirstWeight option
 		if (points.length === 0) {
 			if (is.defined(rawSpiral.overrideFirstWeight)) {
-				throw new RangeError(`${nameStr}.overrideFirstWeight cannot be specified for a spiral that starts a segment`);
+				throw new RangeError(`${name}.overrideFirstWeight cannot be specified for a spiral that starts a segment`);
 			}
-			spiralSpecs.startsAt = getStartsAt(masterSettings, rawSpiral, nameStr);
+			settings.startsAt = getStartsAt(masterSettings, rawSpiral, name);
 		} else {
 			if (is.defined(rawSpiral.startsAt)) {
-				throw new RangeError(`${nameStr}.startsAt cannot be specified for a spiral that does not start a segment`);
+				throw new RangeError(`${name}.startsAt cannot be specified for a spiral that does not start a segment`);
 			}
-			spiralSpecs.overrideFirstWeight = validate.boolean(rawSpiral, 'overrideFirstWeight', nameStr, true);
-			spiralSpecs.startsAt = points[points.length - 1];
+			settings.overrideFirstWeight = validate.boolean(rawSpiral, 'overrideFirstWeight', name, true);
+			settings.startsAt = points[points.length - 1];
 		}
 
 		// Get the number of turns
-		// *** This satisfies (e) ***
-		const turns = validate.nonNegativeInteger(rawSpiral, 'turns', nameStr, 0);
+		const turns = validate.nonNegativeInteger(rawSpiral, 'turns', name, 0);
 
-		// Get the center specification
-		// *** This partially satisfies (a) ***
-		const center = validate.string(rawSpiral, 'center', nameStr);
-		if (center === 'left') {
-			throw 'Not implemented, need to set toCenter and spiralSpecs.rotationAxis';
-		} else if (center === 'right') {
-			throw 'Not implemented, need to set toCenter and spiralSpecs.rotationAxis';
-		} else if (center === 'up') {
-			throw 'Not implemented, need to set toCenter and spiralSpecs.rotationAxis';
-		} else {
-			throw new RangeError(`${nameStr}.center must be either 'left', 'right', or 'up'.`);
+		// Get the rotation
+		const rotate = validate.string(rawSpiral, 'rotate', name);
+		if (rotate !== 'left' && rotate !== 'right' && rotate !== 'up') {
+			throw new RangeError(`${name}.rotate must be either 'left', 'right', or 'up'.`);
 		}
-
-		// Get the entry radius
-		// *** This either completely or partially satisfies (d)
-		let startRadius, endRadius;
-		if (is.defined(rawSpiral.radius)) {
-			validate.undefined(rawSpiral, 'startRadius', nameStr, 'radius');
-			validate.undefined(rawSpiral, 'endRadius', nameStr, 'radius');
-			startRadius = validate.positiveNumber(rawSpiral, 'radius', nameStr);
-			endRadius = startRadius;
-		} else if (is.defined(rawSpiral.startRadius)) {
-			startRadius = validate.positiveNumber(rawSpiral, 'radius', nameStr);
-		} else {
-			throw new TypeError(`${nameStr} must specify either 'radius' or 'startRadius'`);
-		}
-
-		// Set the rotation center
-		// *** This finishes the satisfaction of (a) ***
-		sprialSpecs.rotationCenter = vector.add(spiralSpecs.startsAt.center, spiralSpecs.startRadius, toCenter);
 
 		// Now that we have the rotation plane, we can compute the starting
 		// altitude and angle
@@ -630,12 +576,12 @@ const spiralParser = {
 		}
 
 		// Set the interpolation functions
-		spiralSpecs.altitude = setInterpolation(startAltitude, endAltitude);
-		spiralSpecs.angle = setInterpolation(startAngle, endAngle + 360 * turns);
-		spiralSpecs.radius = this.setInterpolation(startRadius, endRadius);
+		settings.altitude = setInterpolation(startAltitude, endAltitude);
+		settings.angle = setInterpolation(startAngle, endAngle + 360 * turns);
+		settings.radius = this.setInterpolation(startRadius, endRadius);
 
 		// Return the specifications
-		return spiralSpecs;
+		return settings;
 	},
 
 	_setInterpolation: function(t0, t1) {
@@ -691,33 +637,33 @@ const spiralParser = {
 
 	--------------------------------------------------------------------------*/
 
-	_generate: function(builders, points, spiralSpecs, masterSettings) {
+	_generate: function(builders, points, settings, masterSettings) {
 
 		// Insert the entry point if this is the first point of the segment.
 		// Otherwise patch its forwardWeight if required.
 		if (points.length === 0) {
-			points.push(spiralSpecs.startsAt);
-		} else if (spiralSpecs.overrideFirstWeight) {
-			points[points.length - 1].forwardWeight = spiralSpecs.entryRadius * circleWeight;
+			points.push(settings.startsAt);
+		} else if (settings.overrideFirstWeight) {
+			points[points.length - 1].forwardWeight = settings.entryRadius * circleWeight;
 		}
 
 		// Add the 90° sections
-		for (let angle = 0; angle < spiralSpecs.sweep; angle += 90) {
-			this.generateSection(builders, points, angle, spiralSpecs);
+		for (let angle = 0; angle < settings.sweep; angle += 90) {
+			this.generateSection(builders, points, angle, settings);
 		}
 
 		// Patch the forward weight of the last point
-		points[points.length - 1].forwardWeight = spiralSpecs.forwardWeight;
+		points[points.length - 1].forwardWeight = settings.forwardWeight;
 	},
 
-	_generateSection: function(builders, points, angle, spiralSpecs) {
+	_generateSection: function(builders, points, angle, settings) {
 		throw "Not implemented";
 	},
 }
 
 const straightParser = {
 
-	parse: function(builders, points, rawStraight, masterSettings, nameStr) {
+	parse: function(builders, points, rawStraight, masterSettings, name) {
 
 		// All straight sections have either (a) a length or (b) an ending vertex.
 		// If a length is specified, the ending vertex is the starting vertex plus
@@ -745,17 +691,17 @@ const straightParser = {
 		const usesLength = is.defined(rawStraight.length);
 		const usesEndsAt = is.defined(rawStraight.endsAt);
 		if (!usesLength && !usesEndsAt) {
-			throw new TypeError(`${nameStr} must define 'length' or 'endsAt'`);
+			throw new TypeError(`${name} must define 'length' or 'endsAt'`);
 		}
 		if (usesLength && usesEndsAt) {
-			throw new TypeError(`${nameStr} cannot define both 'length' and 'endsAt'`);
+			throw new TypeError(`${name} cannot define both 'length' and 'endsAt'`);
 		}
 
 		// Create the end point with its settings and name
-		const endPoint = mergeSettings.merge(masterSettings, rawStraight, nameStr);
-		endPoint.name = nameStr;
+		const endPoint = mergeSettings.merge(masterSettings, rawStraight, name);
+		endPoint.name = name;
 		if (usesEndsAt) {
-			endPoint.center = validate.vector3(rawStraight, 'endsAt', nameStr);
+			endPoint.center = validate.vector3(rawStraight, 'endsAt', name);
 		}
 
 		// Get the starting vertex
@@ -764,19 +710,21 @@ const straightParser = {
 		if (!generateStart) {
 			startPoint = points[points.length - 1];
 		} else {
-			startPoint = sectionParser.getStartsAt(masterSettings, rawStraight, nameStr);
-			startPoint.forwardWeight = validate.weight(rawStraight, 'startingWeight', nameStr);
+			startPoint = mergeSettings.merge(masterSettings, rawStraight, name);
+			startPoint.name = name + '*';
+			startPoint.center = validate.vector3(rawStraight, 'startsAt', name);
+			startPoint.forwardWeight = validate.weight(rawStraight, 'startingWeight', name);
 			if (usesEndsAt) {
 				endPoint.forward = vector.normalize(vector.difference(startPoint.center, endPoint.center));
 				startPoint.forward = endPoint.forward;
 			} else {
-				startPoint.forward = validate.vector3(rawStraight, 'forward', nameStr);;
+				startPoint.forward = validate.vector3(rawStraight, 'forward', name);;
 			}
 		}
 
 		// Compute the end point's center and forward
 		if (usesLength) {
-			const length = validate.positiveNumber(rawStraight, 'length', nameStr);
+			const length = validate.positiveNumber(rawStraight, 'length', name);
 			endPoint.center = vector.add(startPoint.center, length, startPoint.forward);
 			endPoint.forward = startPoint.forward;
 		} else if (!generateStart) {
@@ -784,8 +732,8 @@ const straightParser = {
 		}
 
 		// Get the weights
-		endPoint.forwardWeight = validate.weight(rawStraight, 'forwardWeight', nameStr);
-		endPoint.backwardWeight = validate.weight(rawStraight, 'backwardWeight', nameStr);
+		endPoint.forwardWeight = validate.weight(rawStraight, 'forwardWeight', name);
+		endPoint.backwardWeight = validate.weight(rawStraight, 'backwardWeight', name);
 
 		// And we are done!
 		if (generateStart) points.push(startPoint);
@@ -796,27 +744,20 @@ const straightParser = {
 
 const sectionParser = {
 
-	getStartsAt: function(masterSettings, rawSection, nameStr) {
-		const startPoint = mergeSettings.merge(masterSettings, rawSection, nameStr);
-		startPoint.name = nameStr + '*';
-		startPoint.center = validate.vector3(rawSection, 'startsAt', nameStr);
-		return startPoint;
-	},
-
-	parse: function(builders, points, rawPoint, masterSettings, nameStr) {
+	parse: function(builders, points, rawPoint, masterSettings, name) {
 
 		// The raw point must be an object
-		validate.object(rawPoint, nameStr);
+		validate.object(rawPoint, name);
 
 		// Check the type
 		const sectionType = is.defined(rawPoint.type) ? rawPoint.type : 'point';
 		const sectionParser = this._parsers[sectionType];
 		if (!is.defined(sectionParser)) {
-			throw new TypeError(`${nameStr}.type of '${sectionType}' is not recognized`);
+			throw new TypeError(`${name}.type of '${sectionType}' is not recognized`);
 		}
 
 		// Parse the section
-		sectionParser.parse(builders, points, rawPoint, masterSettings, nameStr);
+		sectionParser.parse(builders, points, rawPoint, masterSettings, name);
 	},
 
 	_parsers: {
@@ -836,27 +777,27 @@ function executeBuilder(builder, ribbon, sp0, sp1, vectorFactory) {
 	return bezier.build(ribbon, sp0, sp1, vectorFactory, builder.precision);
 }
 
-function buildSegment(segment, vectorFactory, masterSettings, isClosed, nameStr) {
+function buildSegment(segment, vectorFactory, masterSettings, isClosed, name) {
 
 	// Segment must be an object
-	validate.object(segment, nameStr);
+	validate.object(segment, name);
 
 	// Create settings
-	const settings = mergeSettings.merge(masterSettings, segment, nameStr);
+	const settings = mergeSettings.merge(masterSettings, segment, name);
 
 	// Make sure that 'points' is an array with at least one element
-	validate.sizedArray(segment, 'points', nameStr, 1);
+	validate.sizedArray(segment, 'points', name, 1);
 
 	// Reform the points array into two arrays of n section builders and
 	// n+1 segment points
 	const builders = [];
 	const points = [];
 	for (let i = 0; i < segment.points.length; i++) {
-		sectionParser.parse(builders, points, segment.points[i], settings, `${nameStr}.points[${i}]`);
+		sectionParser.parse(builders, points, segment.points[i], settings, `${name}.points[${i}]`);
 	}
 
 	// Ensure we have at least one builder and two segment points
-	validate.sizedArray(points, '', nameStr, 2);
+	validate.sizedArray(points, '', name, 2);
 
 	// Loop through the builders, creating curves between them
 	const ribbon = ribbonMgr.create();

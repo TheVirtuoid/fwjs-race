@@ -717,17 +717,6 @@
 		//----------------------------------------------------------------------
 		// Track 5a, track 5 using spiral
 		
-		const t5acurveL = {
-			type: 'spiral',
-			axis: negY,
-			center: t5center,
-			endsAt: {
-				x: t5ep3L.center.x,
-				y: t5rightHeight,
-				z: t5ep3L.center.z,
-			},
-		};
-		
 		const t5aep0L = {
 			center: {
 				x: t5center.x - t5runout,
@@ -735,6 +724,16 @@
 				z: t5center.z + t5radius
 			},
 			forward: posX,
+		};
+		
+		const t5acurveL = {
+			type: 'spiral',
+			endsAt: {
+				x: t5ep3L.center.x,
+				y: t5rightHeight,
+				z: t5ep3L.center.z,
+			},
+			rotate: 'left',
 		};
 		
 		const t5aep0R = {
@@ -748,13 +747,12 @@
 		
 		const t5acurveR = {
 			type: 'spiral',
-			axis: negY,
-			center: t5center,
 			endsAt: {
 				x: t5ep3R.center.x,
 				y: 2 * t5rightHeight,
 				z: t5ep3R.center.z,
 			},
+			rotate: 'right',
 		};
 		
 		tracks.track5a = {
