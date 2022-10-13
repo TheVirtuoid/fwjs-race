@@ -272,246 +272,178 @@ const vector = {
 	zero: { x:0, y:0, z:0 },
 };
 
-//==============================================================================
-// RIBBON MANAGEMENT
+const ribbonMgr = {
 
-// A ribbon is an array of four arrays of vectors representing the [0] left wall
-// top, [1] left road edge, [2] right road edge, and [3] right wall top.
+	// A ribbon is an array of four arrays of vectors representing the [0] left
+	// wall top, [1] left road edge, [2] right road edge, and [3] right wall
+	// top.
 
-function addRibbonSlice(ribbon, bp, vectorFactory) {
-	const left = vector.cross(bp.forward, bp.down);
-	const wall = vector.multiply(-bp.wallHeight, bp.down);
-	const edgeDistance = bp.trackWidth / 2;
-	const leftEdge = vector.add(bp.center, edgeDistance, left);
-	const rightEdge = vector.add(bp.center, -edgeDistance, left);
-	ribbon[0].push(vectorFactory(vector.add(leftEdge, 1, wall)));
-	ribbon[1].push(vectorFactory(leftEdge));
-	ribbon[2].push(vectorFactory(rightEdge));
-	ribbon[3].push(vectorFactory(vector.add(rightEdge, 1, wall)));
+	add: function(ribbon, bp, vectorFactory) {
+		const left = vector.cross(bp.forward, bp.down);
+		const wall = vector.multiply(-bp.wallHeight, bp.down);
+		const edgeDistance = bp.trackWidth / 2;
+		const leftEdge = vector.add(bp.center, edgeDistance, left);
+		const rightEdge = vector.add(bp.center, -edgeDistance, left);
+		ribbon[0].push(vectorFactory(vector.add(leftEdge, 1, wall)));
+		ribbon[1].push(vectorFactory(leftEdge));
+		ribbon[2].push(vectorFactory(rightEdge));
+		ribbon[3].push(vectorFactory(vector.add(rightEdge, 1, wall)));
+	},
+
+	create: function() {
+		return [ [], [], [], [] ];
+	},
 }
 
-function createRibbon() {
-	return [ [], [], [], [] ];
+const bezier = {
+	
+	build: function(ribbon, sp0, sp1, vectorFactory, precision) {
+
+		// Compute the Bezier cubic curve points
+		const curve = {
+			points: [
+				sp0.center,
+				vector.add(sp0.center, sp0.forwardWeight, sp0.forward),
+				vector.add(sp1.center, -sp1.backwardWeight, sp1.forward),
+				sp1.center,
+			],
+			trackBanks: [ bezier._getDown(sp0), bezier._getDown(sp1) ],
+			trackWidths: [ sp0.trackWidth, sp1.trackWidth ],
+			wallHeights: [ sp0.wallHeight, sp1.wallHeight ],
+		}
+
+		// Fill out the curve
+		const bpt0 = bezier._getPoint(curve, 0);
+		const bpt1 = bezier._getPoint(curve, 1);
+		bezier._interpolate(ribbon, curve, 0, 1, bpt0, bpt1, vectorFactory, precision);
+
+		// Return the points array
+		return bpt1;
+	},
+
+	_getDown: function(sp) {
+
+		// We are done if we already have a vector
+		if (is.vector3(sp.trackBank)) return sp.trackBank;
+
+		// Compute the true 'down' vector. This must be orthogonal to the forward vector.
+		// Remove any component of the down vector inline with the forward vector.
+		let down = vector.down;
+		const dot = vector.dot(sp.forward, down);
+		if (Math.abs(dot) > .0001)  {
+			down = vector.normalize(vector.add(down, -dot, sp.forward));
+		}
+
+		// Rotate the down vector if there is banking
+		if (Math.abs(sp.trackBank) > .0001) {
+			down = vector.rotate(sp.forward, down, sp.trackBank);
+		}
+
+		return vector.normalize(down);
+	},
+
+	_getPoint: function(curve, t) {
+		const olt = 1 - t;	// one less t
+
+		// Compute the point at t
+		// v(t) = (1-t)^3*p0 + 3*(1-t)^2*t*p1 + 3*(1-t)*t^2*p2 + t^3*p3
+		let coeffs = [olt * olt * olt, 3 * olt * olt * t, 3 * olt * t * t, t * t * t];
+		const center = vector.sum(coeffs, curve.points);
+
+		// Compute the forward vector with is the tangent at t
+		// v'(t) = 3*(1-t)^2*(p1 - p0) + 6*(1-t)*t*(p2-p1) + 3*t^2*(p3-p2).
+		// Note that we normalize this to get a unit vector.
+		coeffs = [3 * olt *olt, 6 * olt * t, 3 * t * t];
+		const deltaPoints = [
+			vector.add(curve.points[1], -1, curve.points[0]),
+			vector.add(curve.points[2], -1, curve.points[1]),
+			vector.add(curve.points[3], -1, curve.points[2]),
+		];
+		const forward = vector.normalize(vector.sum(coeffs, deltaPoints));
+
+		// Compute the track width and wall height through linear interpolation
+		const trackWidth = olt * curve.trackWidths[0] + t * curve.trackWidths[1];
+		const wallHeight = olt * curve.wallHeights[0] + t * curve.wallHeights[1];
+
+		// Interpolate the down vector
+		const down = vector.normalize(vector.interpolate(curve.trackBanks[0], curve.trackBanks[1], t));
+
+		return {
+			center: center,				// center line position at t
+			down: down,					// Down vector at t
+			forward: forward,			// Forward vector at t
+			trackWidth: trackWidth,
+			wallHeight: wallHeight,
+		};
+	},
+
+	// Generate the Bezier cubic curve between t0 and t1
+	_interpolate: function(ribbon, curve, t0, t1, bpt0, bpt1, vectorFactory, precision) {
+
+		// NOTE: A cubic Bezier curve generates points, or slices in our case,
+		// p0, ..., pn where p0 is the point at t0 and pn is the point at t1.
+		// However, for consecutive curves c and d, the last point of c is the
+		// same as the first point of d. To avoid duplication of points in the
+		// ribbon, this routine only adds points p0, ..., pn-1. Note that same
+		// holds for contiguous sections of a curve.
+
+		// Calculate the linear and curve midpoints of the current subsection
+		const midtime = (t0 + t1) / 2;
+		const lmp = vector.midpoint(bpt0.center, bpt1.center);	// Linear midpoint
+		const bmp = this._getPoint(curve, midtime);				// Bezier midpoint
+
+		// TODO: This precision test is insufficient. It is possible for the curve to pass
+		// through the linear midpoint but the tangent at the midpoint be different (e.g.,
+		// an 'S' curve passing through the midpoint).
+
+		// If the linear midpoint is close enough to the curve midpoint, add bmp0
+		// to the  ribbon. Otherwise recursively add the sections of the curve
+		// (t0, midtime) and (midtime, t1). Note that the latter eventually adds
+		// the midpoint calcuated here.
+		if (vector.distance(lmp, bmp.center) <= precision) {
+			ribbonMgr.add(ribbon, bpt0, vectorFactory);
+		} else {
+			this._interpolate(ribbon, curve, t0, midtime, bpt0, bmp, vectorFactory, precision);
+			this._interpolate(ribbon, curve, midtime, t1, bmp, bpt1, vectorFactory, precision);
+		}
+	},
 }
 
-//==============================================================================
-// BEZIER CURVE BUILDER
+const pointParser = {
+	parse: function(builders, points, rawPoint, masterSettings, nameStr) {
 
-function buildCurve(ribbon, sp0, sp1, vectorFactory, precision) {
+		// The raw point cannot have a 'precision' element
+		if (is.defined(rawPoint.precision)) {
+			throw new TypeError(`${nameStr} cannot define precision`);
+		}
 
-	// Compute the Bezier cubic curve points
-	const curve = {
-		points: [
-			sp0.center,
-			vector.add(sp0.center, sp0.forwardWeight, sp0.forward),
-			vector.add(sp1.center, -sp1.backwardWeight, sp1.forward),
-			sp1.center,
-		],
-		trackBanks: [ getSegmentPointDownVector(sp0), getSegmentPointDownVector(sp1) ],
-		trackWidths: [ sp0.trackWidth, sp1.trackWidth ],
-		wallHeights: [ sp0.wallHeight, sp1.wallHeight ],
-	}
+		// Create the point with its settings and name
+		const segmentPoint = mergeSettings.merge(masterSettings, rawPoint, nameStr);
+		segmentPoint.name = nameStr;
 
-	// Fill out the curve
-	const bpt0 = getBezierPoint(curve, 0);
-	const bpt1 = getBezierPoint(curve, 1);
-	interpolateCurve(ribbon, curve, 0, 1, bpt0, bpt1, vectorFactory, precision);
+		// The raw point must have a center object with x, y, and z numeric
+		// elements
+		segmentPoint.center = validate.vector3(rawPoint, 'center', nameStr);
 
-	// Return the points array
-	return bpt1;
+		// If the raw point has a 'forward' vector, validate that. Otherwise
+		// use the vector (1, 0, 0)
+		if (rawPoint.forward == null) {
+			segmentPoint.forward = vector.right;
+		} else {
+			segmentPoint.forward = validate.vector3(rawPoint, 'forward', nameStr);
+		}
+
+		// Get the weights
+		segmentPoint.forwardWeight = validate.weight(rawPoint, 'forwardWeight', nameStr);
+		segmentPoint.backwardWeight = validate.weight(rawPoint, 'backwardWeight', nameStr);
+
+		// And we are done!
+		points.push(segmentPoint);
+		if (points.length > 1) builders.push(createBuilder(masterSettings));
+	},
 }
 
-function getBezierPoint(curve, t) {
-	const olt = 1 - t;	// one less t
-
-	// Compute the point at t
-	// v(t) = (1-t)^3*p0 + 3*(1-t)^2*t*p1 + 3*(1-t)*t^2*p2 + t^3*p3
-	let coeffs = [olt * olt * olt, 3 * olt * olt * t, 3 * olt * t * t, t * t * t];
-	const center = vector.sum(coeffs, curve.points);
-
-	// Compute the forward vector with is the tangent at t
-	// v'(t) = 3*(1-t)^2*(p1 - p0) + 6*(1-t)*t*(p2-p1) + 3*t^2*(p3-p2).
-	// Note that we normalize this to get a unit vector.
-	coeffs = [3 * olt *olt, 6 * olt * t, 3 * t * t];
-	const deltaPoints = [
-		vector.add(curve.points[1], -1, curve.points[0]),
-		vector.add(curve.points[2], -1, curve.points[1]),
-		vector.add(curve.points[3], -1, curve.points[2]),
-	];
-	const forward = vector.normalize(vector.sum(coeffs, deltaPoints));
-
-	// Compute the track width and wall height through linear interpolation
-	const trackWidth = olt * curve.trackWidths[0] + t * curve.trackWidths[1];
-	const wallHeight = olt * curve.wallHeights[0] + t * curve.wallHeights[1];
-
-	// Interpolate the down vector
-	const down = vector.normalize(vector.interpolate(curve.trackBanks[0], curve.trackBanks[1], t));
-
-	return {
-		center: center,				// center line position at t
-		down: down,					// Down vector at t
-		forward: forward,			// Forward vector at t
-		trackWidth: trackWidth,
-		wallHeight: wallHeight,
-	};
-}
-
-function getSegmentPointDownVector(sp) {
-
-	// We are done if we already have a vector
-	if (is.vector3(sp.trackBank)) return sp.trackBank;
-
-	// Compute the true 'down' vector. This must be orthogonal to the forward vector.
-	// Remove any component of the down vector inline with the forward vector.
-	let down = vector.down;
-	const dot = vector.dot(sp.forward, down);
-	if (Math.abs(dot) > .0001)  {
-		down = vector.normalize(vector.add(down, -dot, sp.forward));
-	}
-
-	// Rotate the down vector if there is banking
-	if (Math.abs(sp.trackBank) > .0001) {
-		down = vector.rotate(sp.forward, down, sp.trackBank);
-	}
-
-	return vector.normalize(down);
-}
-
-// Generate the Bezier cubic curve between t0 and t1
-function interpolateCurve(ribbon, curve, t0, t1, bpt0, bpt1, vectorFactory, precision) {
-
-	// NOTE: A cubic Bezier curve generates points, or slices in our case,
-	// p0, ..., pn where p0 is the point at t0 and pn is the point at t1.
-	// However, for consecutive curves c and d, the last point of c is the
-	// same as the first point of d. To avoid duplication of points in the
-	// ribbon, this routine only adds points p0, ..., pn-1. Note that same
-	// holds for contiguous sections of a curve.
-
-	// Calculate the linear and curve midpoints of the current subsection
-	const midtime = (t0 + t1) / 2;
-	const lmp = vector.midpoint(bpt0.center, bpt1.center);	// Linear midpoint
-	const bmp = getBezierPoint(curve, midtime);				// Bezier midpoint
-
-	// TODO: This precision test is insufficient. It is possible for the curve to pass
-	// through the linear midpoint but the tangent at the midpoint be different (e.g.,
-	// an 'S' curve passing through the midpoint).
-
-	// If the linear midpoint is close enough to the curve midpoint, add bmp0
-	// to the  ribbon. Otherwise recursively add the sections of the curve
-	// (t0, midtime) and (midtime, t1). Note that the latter eventually adds
-	// the midpoint calcuated here.
-	if (vector.distance(lmp, bmp.center) <= precision) {
-		addRibbonSlice(ribbon, bpt0, vectorFactory);
-	} else {
-		interpolateCurve(ribbon, curve, t0, midtime, bpt0, bmp, vectorFactory, precision);
-		interpolateCurve(ribbon, curve, midtime, t1, bmp, bpt1, vectorFactory, precision);
-	}
-}
-
-//==============================================================================
-// SEGMENT BUILDER
-
-function buildSegment(segment, vectorFactory, masterSettings, isClosed, nameStr) {
-
-	// Segment must be an object
-	validate.object(segment, nameStr);
-
-	// Create settings
-	const settings = mergeSettings.merge(masterSettings, segment, nameStr);
-
-	// Make sure that 'points' is an array with at least one element
-	validate.sizedArray(segment, 'points', nameStr, 1);
-
-	// Reform the points array into two arrays of n section builders and
-	// n+1 segment points
-	const builders = [];
-	const points = [];
-	for (let i = 0; i < segment.points.length; i++) {
-		parseSection(builders, points, segment.points[i], settings, `${nameStr}.points[${i}]`);
-	}
-
-	// Ensure we have at least one builder and two segment points
-	validate.sizedArray(points, '', nameStr, 2);
-
-	// Loop through the builders, creating curves between them
-	const ribbon = createRibbon();
-	let lastPoint = null;
-	for (let i = 0; i < builders.length; i++) {
-		lastPoint = executeBuilder(builders[i], ribbon, points[i], points[i+1], vectorFactory);
-	}
-
-	// If this is not a closed segment, add the last point to the ribbon
-	if (!isClosed) {
-		addRibbonSlice(ribbon, lastPoint, vectorFactory, settings);
-	}
-
-	return ribbon;
-}
-
-const sectionParsers = {
-	point: parsePoint,
-	spiral: parseSpiral,
-	straight: parseStraight,
-};
-
-function parseSection(builders, points, rawPoint, masterSettings, nameStr) {
-
-	// The raw point must be an object
-	validate.object(rawPoint, nameStr);
-
-	// Check the type
-	const sectionType = is.defined(rawPoint.type) ? rawPoint.type : 'point';
-	const sectionParser = sectionParsers[sectionType];
-	if (!is.defined(sectionParser)) {
-		throw new TypeError(`${nameStr}.type of '${sectionType}' is not recognized`);
-	}
-
-	// Parse the section
-	sectionParser(builders, points, rawPoint, masterSettings, nameStr);
-}
-
-function parsePoint(builders, points, rawPoint, masterSettings, nameStr) {
-
-	// The raw point cannot have a 'precision' element
-	if (is.defined(rawPoint.precision)) {
-		throw new TypeError(`${nameStr} cannot define precision`);
-	}
-
-	// Create the point with its settings and name
-	const segmentPoint = mergeSettings.merge(masterSettings, rawPoint, nameStr);
-	segmentPoint.name = nameStr;
-
-	// The raw point must have a center object with x, y, and z numeric
-	// elements
-	segmentPoint.center = validate.vector3(rawPoint, 'center', nameStr);
-
-	// If the raw point has a 'forward' vector, validate that. Otherwise
-	// use the vector (1, 0, 0)
-	if (rawPoint.forward == null) {
-		segmentPoint.forward = vector.right;
-	} else {
-		segmentPoint.forward = validate.vector3(rawPoint, 'forward', nameStr);
-	}
-
-	// Get the weights
-	segmentPoint.forwardWeight = validate.weight(rawPoint, 'forwardWeight', nameStr);
-	segmentPoint.backwardWeight = validate.weight(rawPoint, 'backwardWeight', nameStr);
-
-	// And we are done!
-	points.push(segmentPoint);
-	if (points.length > 1) builders.push(createBuilder(buildCurve, masterSettings));
-}
-
-function getStartsAt(masterSettings, rawSection, nameStr) {
-	const startPoint = mergeSettings.merge(masterSettings, rawSection, nameStr);
-	startPoint.name = nameStr + '*';
-	startPoint.center = validate.vector3(rawSection, 'startsAt', nameStr);
-	return startPoint;
-}
-
-const spiral = {
-
-	circleWeight: 0.5519150244935105707435627,
+const spiralParser = {
 
 	/*--------------------------------------------------------------------------
 	THEORETICAL FOUNDATION
@@ -624,13 +556,14 @@ const spiral = {
 
 	--------------------------------------------------------------------------*/
 
-	getSpecs: function(points, rawSpiral, masterSettings, nameStr) {
+	_circleWeight: 0.5519150244935105707435627,
+
+	_getSpecs: function(points, rawSpiral, masterSettings, nameStr) {
 
 		// Create the base spiral specification
 		const spiralSpecs = mergeSettings.merge(masterSettings, rawSpiral, nameStr);
 
 		// Get either the entry point or the overrideFirstWeight option
-		// *** This satisfies (f) ***
 		if (points.length === 0) {
 			if (is.defined(rawSpiral.overrideFirstWeight)) {
 				throw new RangeError(`${nameStr}.overrideFirstWeight cannot be specified for a spiral that starts a segment`);
@@ -705,7 +638,7 @@ const spiral = {
 		return spiralSpecs;
 	},
 
-	setInterpolation: function(t0, t1) {
+	_setInterpolation: function(t0, t1) {
 		const delta = t1 - t0;
 		return Math.abs(delta) < .001 ?
 			(t) => { return t0; } :
@@ -758,7 +691,7 @@ const spiral = {
 
 	--------------------------------------------------------------------------*/
 
-	generate: function(builders, points, spiralSpecs, masterSettings) {
+	_generate: function(builders, points, spiralSpecs, masterSettings) {
 
 		// Insert the entry point if this is the first point of the segment.
 		// Otherwise patch its forwardWeight if required.
@@ -777,104 +710,168 @@ const spiral = {
 		points[points.length - 1].forwardWeight = spiralSpecs.forwardWeight;
 	},
 
-	generateSection: function(builders, points, angle, spiralSpecs) {
+	_generateSection: function(builders, points, angle, spiralSpecs) {
 		throw "Not implemented";
 	},
 }
 
-function parseSpiral(builders, points, rawStraight, masterSettings, nameStr) {
-	spiral.parse(builders, points, rawStraight, masterSettings, nameStr);
-}
+const straightParser = {
 
-function parseStraight(builders, points, rawStraight, masterSettings, nameStr) {
+	parse: function(builders, points, rawStraight, masterSettings, nameStr) {
 
-	// All straight sections have either (a) a length or (b) an ending vertex.
-	// If a length is specified, the ending vertex is the starting vertex plus
-	// length times the forward direction at the starting vertex.
+		// All straight sections have either (a) a length or (b) an ending vertex.
+		// If a length is specified, the ending vertex is the starting vertex plus
+		// length times the forward direction at the starting vertex.
 
-	// A straight section starting a segment must have a starting vertex. If
-	// it has a length, it must also have a forward direction.
+		// A straight section starting a segment must have a starting vertex. If
+		// it has a length, it must also have a forward direction.
 
-	// Any interior straight section uses the last segment point as its starting
-	// vertex. Hence it cannot specify a starting vertex or forward direction at
-	// the start of the straight section.
+		// Any interior straight section uses the last segment point as its starting
+		// vertex. Hence it cannot specify a starting vertex or forward direction at
+		// the start of the straight section.
 
-	// The ending segment point is the ending vertex with a forward direction
-	// of the ending vertex less the starting vertex, normalized. The straight
-	// section's 'forwardWeight' and 'backwardWeight' are applied to this segment
-	// point.
+		// The ending segment point is the ending vertex with a forward direction
+		// of the ending vertex less the starting vertex, normalized. The straight
+		// section's 'forwardWeight' and 'backwardWeight' are applied to this segment
+		// point.
 
-	// NOTE: It is possible that the starting point's forward direction is
-	// different from the ending point's forward direction.
+		// NOTE: It is possible that the starting point's forward direction is
+		// different from the ending point's forward direction.
 
-	// If the section starts the segment and needs to control the starting vertex'same
-	// forward weight, use the 'startingWeight' setting for the straight.
+		// If the section starts the segment and needs to control the starting vertex'same
+		// forward weight, use the 'startingWeight' setting for the straight.
 
-	// Check that the ending vertex or length is specified.
-	const usesLength = is.defined(rawStraight.length);
-	const usesEndsAt = is.defined(rawStraight.endsAt);
-	if (!usesLength && !usesEndsAt) {
-		throw new TypeError(`${nameStr} must define 'length' or 'endsAt'`);
-	}
-	if (usesLength && usesEndsAt) {
-		throw new TypeError(`${nameStr} cannot define both 'length' and 'endsAt'`);
-	}
-
-	// Create the end point with its settings and name
-	const endPoint = mergeSettings.merge(masterSettings, rawStraight, nameStr);
-	endPoint.name = nameStr;
-	if (usesEndsAt) {
-		endPoint.center = validate.vector3(rawStraight, 'endsAt', nameStr);
-	}
-
-	// Get the starting vertex
-	let startPoint;
-	const generateStart = points.length === 0;
-	if (!generateStart) {
-		startPoint = points[points.length - 1];
-	} else {
-		startPoint = getStartsAt(masterSettings, rawStraight, nameStr);
-		startPoint.forwardWeight = validate.weight(rawStraight, 'startingWeight', nameStr);
-		if (usesEndsAt) {
-			endPoint.forward = vector.normalize(vector.difference(startPoint.center, endPoint.center));
-			startPoint.forward = endPoint.forward;
-		} else {
-			startPoint.forward = validate.vector3(rawStraight, 'forward', nameStr);;
+		// Check that the ending vertex or length is specified.
+		const usesLength = is.defined(rawStraight.length);
+		const usesEndsAt = is.defined(rawStraight.endsAt);
+		if (!usesLength && !usesEndsAt) {
+			throw new TypeError(`${nameStr} must define 'length' or 'endsAt'`);
 		}
+		if (usesLength && usesEndsAt) {
+			throw new TypeError(`${nameStr} cannot define both 'length' and 'endsAt'`);
+		}
+
+		// Create the end point with its settings and name
+		const endPoint = mergeSettings.merge(masterSettings, rawStraight, nameStr);
+		endPoint.name = nameStr;
+		if (usesEndsAt) {
+			endPoint.center = validate.vector3(rawStraight, 'endsAt', nameStr);
+		}
+
+		// Get the starting vertex
+		let startPoint;
+		const generateStart = points.length === 0;
+		if (!generateStart) {
+			startPoint = points[points.length - 1];
+		} else {
+			startPoint = sectionParser.getStartsAt(masterSettings, rawStraight, nameStr);
+			startPoint.forwardWeight = validate.weight(rawStraight, 'startingWeight', nameStr);
+			if (usesEndsAt) {
+				endPoint.forward = vector.normalize(vector.difference(startPoint.center, endPoint.center));
+				startPoint.forward = endPoint.forward;
+			} else {
+				startPoint.forward = validate.vector3(rawStraight, 'forward', nameStr);;
+			}
+		}
+
+		// Compute the end point's center and forward
+		if (usesLength) {
+			const length = validate.positiveNumber(rawStraight, 'length', nameStr);
+			endPoint.center = vector.add(startPoint.center, length, startPoint.forward);
+			endPoint.forward = startPoint.forward;
+		} else if (!generateStart) {
+			endPoint.forward = vector.normalize(vector.difference(startPoint.center, endPoint.center));
+		}
+
+		// Get the weights
+		endPoint.forwardWeight = validate.weight(rawStraight, 'forwardWeight', nameStr);
+		endPoint.backwardWeight = validate.weight(rawStraight, 'backwardWeight', nameStr);
+
+		// And we are done!
+		if (generateStart) points.push(startPoint);
+		points.push(endPoint);
+		builders.push(createBuilder(masterSettings));
 	}
-
-	// Compute the end point's center and forward
-	if (usesLength) {
-		const length = validate.positiveNumber(rawStraight, 'length', nameStr);
-		endPoint.center = vector.add(startPoint.center, length, startPoint.forward);
-		endPoint.forward = startPoint.forward;
-	} else if (!generateStart) {
-		endPoint.forward = vector.normalize(vector.difference(startPoint.center, endPoint.center));
-	}
-
-	// Get the weights
-	endPoint.forwardWeight = validate.weight(rawStraight, 'forwardWeight', nameStr);
-	endPoint.backwardWeight = validate.weight(rawStraight, 'backwardWeight', nameStr);
-
-	// And we are done!
-	if (generateStart) points.push(startPoint);
-	points.push(endPoint);
-	builders.push(createBuilder(buildCurve, masterSettings));
 }
 
-function createBuilder(builder, settings) {
+const sectionParser = {
+
+	getStartsAt: function(masterSettings, rawSection, nameStr) {
+		const startPoint = mergeSettings.merge(masterSettings, rawSection, nameStr);
+		startPoint.name = nameStr + '*';
+		startPoint.center = validate.vector3(rawSection, 'startsAt', nameStr);
+		return startPoint;
+	},
+
+	parse: function(builders, points, rawPoint, masterSettings, nameStr) {
+
+		// The raw point must be an object
+		validate.object(rawPoint, nameStr);
+
+		// Check the type
+		const sectionType = is.defined(rawPoint.type) ? rawPoint.type : 'point';
+		const sectionParser = this._parsers[sectionType];
+		if (!is.defined(sectionParser)) {
+			throw new TypeError(`${nameStr}.type of '${sectionType}' is not recognized`);
+		}
+
+		// Parse the section
+		sectionParser.parse(builders, points, rawPoint, masterSettings, nameStr);
+	},
+
+	_parsers: {
+		point: pointParser,
+		spiral: spiralParser,
+		straight: straightParser,
+	},
+}
+
+function createBuilder(settings) {
 	return {
-		builder: builder,
 		precision: settings.precision
 	}
 }
 
 function executeBuilder(builder, ribbon, sp0, sp1, vectorFactory) {
-	return builder.builder(ribbon, sp0, sp1, vectorFactory, builder.precision);
+	return bezier.build(ribbon, sp0, sp1, vectorFactory, builder.precision);
 }
 
-//==============================================================================
-// TRACK BUILDER
+function buildSegment(segment, vectorFactory, masterSettings, isClosed, nameStr) {
+
+	// Segment must be an object
+	validate.object(segment, nameStr);
+
+	// Create settings
+	const settings = mergeSettings.merge(masterSettings, segment, nameStr);
+
+	// Make sure that 'points' is an array with at least one element
+	validate.sizedArray(segment, 'points', nameStr, 1);
+
+	// Reform the points array into two arrays of n section builders and
+	// n+1 segment points
+	const builders = [];
+	const points = [];
+	for (let i = 0; i < segment.points.length; i++) {
+		sectionParser.parse(builders, points, segment.points[i], settings, `${nameStr}.points[${i}]`);
+	}
+
+	// Ensure we have at least one builder and two segment points
+	validate.sizedArray(points, '', nameStr, 2);
+
+	// Loop through the builders, creating curves between them
+	const ribbon = ribbonMgr.create();
+	let lastPoint = null;
+	for (let i = 0; i < builders.length; i++) {
+		lastPoint = executeBuilder(builders[i], ribbon, points[i], points[i+1], vectorFactory);
+	}
+
+	// If this is not a closed segment, add the last point to the ribbon
+	if (!isClosed) {
+		ribbonMgr.add(ribbon, lastPoint, vectorFactory, settings);
+	}
+
+	return ribbon;
+}
 
 function buildTrack(track, vectorFactory, masterSettings) {
 
