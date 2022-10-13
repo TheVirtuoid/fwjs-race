@@ -717,7 +717,7 @@
 		//----------------------------------------------------------------------
 		// Track 5a, track 5 using spiral
 		
-		const t5acurveH = {
+		const t5acurveL = {
 			type: 'spiral',
 			axis: negY,
 			center: t5center,
@@ -728,14 +728,7 @@
 			},
 		};
 		
-		const t5acurveR = {
-			type: 'spiral',
-			axis: negY,
-			center: t5center,
-			endsAt: t5ep3R.center,
-		};
-		
-		const t5ep0H = {
+		const t5aep0L = {
 			center: {
 				x: t5center.x - t5runout,
 				y: t5rightHeight,
@@ -744,36 +737,25 @@
 			forward: posX,
 		};
 		
-		const t5ep1H = {
+		const t5aep0R = {
 			center: {
-				x: t5center.x,
-				y: t5rightHeight,
-				z: t5center.z + t5radius
+				x: t5center.x - t5runout,
+				y: 2 * t5rightHeight,
+				z: t5center.z - t5radius
 			},
 			forward: posX,
-			forwardWeight: t5weight,
-		}
+		};
 		
-		const t5ep2H = {
-			backwardWeight: t5weight,
-			center: {
-				x: t5center.x + t5radius,
-				y: t5rightHeight,
-				z: t5center.z,
+		const t5acurveR = {
+			type: 'spiral',
+			axis: negY,
+			center: t5center,
+			endsAt: {
+				x: t5ep3R.center.x,
+				y: 2 * t5rightHeight,
+				z: t5ep3R.center.z,
 			},
-			forward: negZ,
-			forwardWeight: t5weight,
-		}
-		
-		const t5ep3H = {
-			backwardWeight: t5weight,
-			center: {
-				x: t5center.x,
-				y: t5rightHeight,
-				z: t5center.z - t5radius,
-			},
-			forward: negX,
-		}
+		};
 		
 		tracks.track5a = {
 			segments: [
@@ -781,7 +763,10 @@
 					points: [ t5ep0L, t5ep1L, t5ep2L, t5ep3L, t5runoutStraight ],
 				},
 				{
-					points: [ t5ep0H, t5runoutStraight, t5acurveH, t5runoutStraight ],
+					points: [ t5aep0L, t5runoutStraight, t5acurveL, t5runoutStraight ],
+				},
+				{
+					points: [ t5aep0R, t5runoutStraight, t5acurveR, t5runoutStraight ],
 				},
 			]
 		};
@@ -859,6 +844,15 @@
 				trackMesh.physicsImpostor = new BABYLON.PhysicsImpostor(trackMesh, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0 }, scene);
 				trackMeshes.push(trackMesh);
 			}
+		}
+
+		const drawLine = function(points, color) {
+			const options = {
+				colors: [],
+				points: points,
+			}
+			for (let i = 0; i < points.length; i++) { options.colors.push(green); }
+			BABYLON.MeshBuilder.CreateLines("lines", options);
 		}
 
 		window.initFunction = async function() {

@@ -495,8 +495,8 @@ const spiralParser = {
 	--------------------------------------------------------------------------*/
 
 	parse: function(builders, points, rawSpiral, masterSettings, nameStr) {
-		const specs = this.getSpecs(points, rawSpiral, masterSettings, nameStr);
-		this.generate(builders, points, specs, masterSettings);
+		const specs = this._getSpecs(points, rawSpiral, masterSettings, nameStr);
+		this._generate(builders, points, specs, masterSettings);
 	},
 
 	/*--------------------------------------------------------------------------
