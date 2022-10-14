@@ -1,10 +1,3 @@
-const defaultSettings = {
-	debug: false,
-	precision: .01,
-	trackBank: 0,
-	trackWidth: 1,
-	wallHeight: .5,
-};
 
 const is = {
 	array: function(value) {
@@ -140,10 +133,17 @@ const validate = {
 	},
 }
 
-const mergeSettings = {
-	merge: function(masterSettings, overrideSettings, name) {
-		const mergedSettings = {...masterSettings};
-		for (let vs of this._valid) {
+const merge = {
+	default: {
+		debug: false,
+		precision: .01,
+		trackBank: 0,
+		trackWidth: 1,
+		wallHeight: .5,
+	},
+	settings: function(parentSettings, overrideSettings, name) {
+		const mergedSettings = {...parentSettings};
+		for (let vs of this._validSettings) {
 			if (is.defined(overrideSettings[vs.key])) {
 				mergedSettings[vs.key] = vs.validator ?
 					vs.validator(overrideSettings, vs.key, name) :
@@ -152,8 +152,7 @@ const mergeSettings = {
 		}
 		return mergedSettings;
 	},
-
-	_valid: [
+	_validSettings: [
 		{ key: 'debug' },
 		{ key: 'precision', validator: validate.positiveNumber },
 		{ key: 'trackBank', validator: validate.trackBank, },
@@ -326,7 +325,7 @@ const plane = {
 		const t = vector.dot(a.normal, b2a) / numerator;
 		return this._createLine(vector.add(b.origin, t, ldir), direction);
 	},
-	getPolar: function(plane, radius, degrees, altitude, declination) {
+	getPolar: function(plane, radius, degrees, altitude, declination, debug) {
 		if (!is.defined(plane.xAxis)) this._setDefaultAxes(plane);
 
 		const theta = degrees * trig.degreesToRadians;
@@ -336,10 +335,10 @@ const plane = {
 		const radial = vector.add(vector.multiply(cos, plane.xAxis), sin, plane.yAxis);
 		const point = vector.add(vector.add(plane.origin, radius, radial), altitude, plane.normal);
 		let forward = vector.add(vector.multiply(-sin, plane.xAxis), cos, plane.yAxis);
-		console.log('getPolor: declination %f, forward %o', declination, forward);
+		if (debug) console.log('getPolor: declination %f, forward %o', declination, forward);
 		if (Math.abs(declination) > 0.01) {
 			forward = vector.rotate(radial, forward, declination);
-			console.log('getPolor: after forward %o', forward);
+			if (debug) console.log('getPolor: after forward %o', forward);
 		}
 
 		return {
@@ -526,13 +525,13 @@ const bezier = {
 
 const pointParser = {
 
-	parse: function(builders, points, rawPoint, masterSettings, name) {
-		const point = this.validate(rawPoint, masterSettings, name);
+	parse: function(builders, points, rawPoint, parentSettings, name) {
+		const point = this.validate(rawPoint, parentSettings, name);
 		points.push(point);
-		if (points.length > 1) builders.push(createBuilder(masterSettings));
+		if (points.length > 1) builders.push(createBuilder(parentSettings));
 	},
 
-	validate: function(rawPoint, masterSettings, name) {
+	validate: function(rawPoint, parentSettings, name) {
 
 		// The raw point cannot have a 'precision' element
 		if (is.defined(rawPoint.precision)) {
@@ -540,7 +539,7 @@ const pointParser = {
 		}
 
 		// Create the point with its settings and name
-		const point = mergeSettings.merge(masterSettings, rawPoint, name);
+		const point = merge.settings(parentSettings, rawPoint, name);
 		point.name = name;
 
 		// The raw point must have a center object with x, y, and z numeric
@@ -609,9 +608,9 @@ const spiralParser = {
 
 	--------------------------------------------------------------------------*/
 
-	parse: function(builders, points, rawSpiral, masterSettings, name) {
-		const specs = this._getSpecs(points, rawSpiral, masterSettings, name);
-		this._generate(builders, points, specs, rawSpiral, masterSettings, name);
+	parse: function(builders, points, rawSpiral, parentSettings, name) {
+		const specs = this._getSpecs(points, rawSpiral, parentSettings, name);
+		this._generate(builders, points, specs, rawSpiral, parentSettings, name);
 	},
 
 	_circleWeight: 0.5519150244935105707435627,
@@ -648,10 +647,10 @@ const spiralParser = {
 
 	--------------------------------------------------------------------------*/
 
-	_getSpecs: function(points, rawSpiral, masterSettings, name) {
+	_getSpecs: function(points, rawSpiral, parentSettings, name) {
 
 		// Create the settings and base spiral specification
-		const settings = mergeSettings.merge(masterSettings, rawSpiral, name);
+		const settings = merge.settings(parentSettings, rawSpiral, name);
 		const specs = {};
 
 		// Get either the entry point or the overrideFirstWeight option
@@ -688,7 +687,9 @@ const spiralParser = {
 		const { sweep, invertTangent, startAngle, endAngle } = this._getSweep(specs, rotate, turns, entry, exit);
 		const deltaAltitude = exit.altitude - entry.altitude;
 		const declination = Math.abs(deltaAltitude) < .001 ? 0 : (Math.atan2(deltaAltitude, sweep) * trig.radiansToDegrees);
-		console.log('_getSpecs: deltaAltitude %f, sweep %f, declination %f', deltaAltitude, sweep, declination);
+		if (settings.debug) {
+			console.log('_getSpecs: deltaAltitude %f, sweep %f, declination %f', deltaAltitude, sweep, declination);
+		}
 		specs.declination = invertTangent ? (180 - declination) : declination;
 		specs.sweep = sweep;
 
@@ -833,7 +834,7 @@ const spiralParser = {
 
 	--------------------------------------------------------------------------*/
 
-	_generate: function(builders, points, specs, rawSpiral, masterSettings, name) {
+	_generate: function(builders, points, specs, rawSpiral, parentSettings, name) {
 
 		// Insert the entry point if this is the first point of the segment.
 		// Otherwise patch its forwardWeight if required.
@@ -842,27 +843,28 @@ const spiralParser = {
 
 		// Add the 90° sections
 		for (let angle = 90; angle < specs.sweep; angle += 90) {
-			this._addPoint(builders, points, angle / specs.sweep, specs, rawSpiral, masterSettings, name);
+			this._addPoint(builders, points, angle / specs.sweep, specs, rawSpiral, parentSettings, name);
 		}
 
 		// Add the last point
 		points.push(specs.endsAt);
 		points[points.length - 1].backwardWeight = specs.radius(1) * this._circleWeight;
-		builders.push(createBuilder(masterSettings));
+		builders.push(createBuilder(parentSettings));
 	},
 
-	_addPoint: function(builders, points, t, specs, rawSpiral, masterSettings, name) {
+	_addPoint: function(builders, points, t, specs, rawSpiral, parentSettings, name) {
 
-		console.log('_addPoint: t %f, specs %o', t, specs);
+		const debug = rawSpiral.debug || parentSettings.debug;
+		if (debug) console.log('_addPoint: t %f, specs %o', t, specs);
 		const altitude = specs.altitude(t);
 		const angle = specs.angle(t);
 		const radius = specs.radius(t);
 		const declination = specs.declination;
 
-		const polar = plane.getPolar(specs.rotationPlane, radius, angle, altitude, declination);
+		const polar = plane.getPolar(specs.rotationPlane, radius, angle, altitude, declination, debug);
 
 		const pointName = `${name}@${angle}`;
-		const point = mergeSettings.merge(masterSettings, rawSpiral, pointName);
+		const point = merge.settings(parentSettings, rawSpiral, pointName);
 		point.backwardWeight = radius * this._circleWeight;
 		point.center = polar.point;
 		point.forward = polar.forward;
@@ -870,13 +872,13 @@ const spiralParser = {
 		point.name = pointName;
 
 		points.push(point);
-		builders.push(createBuilder(masterSettings));
+		builders.push(createBuilder(parentSettings));
 	},
 }
 
 const straightParser = {
 
-	parse: function(builders, points, rawStraight, masterSettings, name) {
+	parse: function(builders, points, rawStraight, parentSettings, name) {
 
 		// All straight sections have either (a) a length or (b) an ending vertex.
 		// If a length is specified, the ending vertex is the starting vertex plus
@@ -911,7 +913,7 @@ const straightParser = {
 		}
 
 		// Create the end point with its settings and name
-		const endPoint = mergeSettings.merge(masterSettings, rawStraight, name);
+		const endPoint = merge.settings(parentSettings, rawStraight, name);
 		endPoint.name = name;
 		if (usesEndsAt) {
 			endPoint.center = validate.vector3(rawStraight, 'endsAt', name);
@@ -923,7 +925,7 @@ const straightParser = {
 		if (!generateStart) {
 			startPoint = points[points.length - 1];
 		} else {
-			startPoint = mergeSettings.merge(masterSettings, rawStraight, name);
+			startPoint = merge.settings(parentSettings, rawStraight, name);
 			startPoint.name = name + '*';
 			startPoint.center = validate.vector3(rawStraight, 'startsAt', name);
 			startPoint.forwardWeight = validate.weight(rawStraight, 'startingWeight', name);
@@ -951,13 +953,13 @@ const straightParser = {
 		// And we are done!
 		if (generateStart) points.push(startPoint);
 		points.push(endPoint);
-		builders.push(createBuilder(masterSettings));
+		builders.push(createBuilder(parentSettings));
 	}
 }
 
 const sectionParser = {
 
-	parse: function(builders, points, rawPoint, masterSettings, name) {
+	parse: function(builders, points, rawPoint, parentSettings, name) {
 
 		// The raw point must be an object
 		validate.object(rawPoint, name);
@@ -970,7 +972,7 @@ const sectionParser = {
 		}
 
 		// Parse the section
-		sectionParser.parse(builders, points, rawPoint, masterSettings, name);
+		sectionParser.parse(builders, points, rawPoint, parentSettings, name);
 	},
 
 	_parsers: {
@@ -996,7 +998,7 @@ function buildSegment(segment, vectorFactory, parentSettings, isClosed, name) {
 	validate.object(segment, name);
 
 	// Create settings
-	const settings = mergeSettings.merge(parentSettings, segment, name);
+	const settings = merge.settings(parentSettings, segment, name);
 
 	// Make sure that 'points' is an array with at least one element
 	validate.sizedArray(segment, 'points', name, 1);
@@ -1033,7 +1035,7 @@ function buildSegment(segment, vectorFactory, parentSettings, isClosed, name) {
 function buildTrack(track, vectorFactory, parentSettings) {
 
 	// Create settings
-	const settings = mergeSettings.merge(parentSettings, track, 'track');
+	const settings = merge.settings(parentSettings, track, 'track');
 
 	// Make sure that 'segments' is an array with at least one element
 	validate.sizedArray(track, 'segments', 'track', 1);
@@ -1078,7 +1080,7 @@ const TrackPOC = {
 		}
 
 		// Create a settings block. This also validates the settings.
-		const settings = mergeSettings.merge(defaultSettings, appSettings, 'appSettings');
+		const settings = merge.settings(merge.default, appSettings, 'appSettings');
 
 		// Build the ribbons
 		return buildTrack(objSpecs, vectorFactory, settings);
