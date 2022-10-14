@@ -731,6 +731,12 @@ const spiralParser = {
 		specs.angle = this._getInterpolation(startAngle, endAngle);
 		specs.radius = this._getInterpolation(entry.radius, exit.radius);
 
+		// Set the trackBank multiplier
+		specs.trackBank = settings.trackBank;
+		if (rotate === 'left') specs.trackBankMultiplier = 1;
+		else if (rotate === 'right') specs.trackBankMultiplier = -1;
+		else throw '_getSpecs: trackBankMultiplier not implemented';
+
 		// Return the specifications
 		return specs;
 	},
@@ -872,7 +878,9 @@ const spiralParser = {
 		// Insert the entry point if this is the first point of the segment.
 		// Otherwise patch its forwardWeight if required.
 		if (points.length === 0) points.push(specs.startsAt);
-		points[points.length - 1].forwardWeight = specs.radius(0) * circleWeight;
+		let p = points[points.length - 1];
+		p.forwardWeight = specs.radius(0) * this._circleWeight;
+		p.trackBank = this._processInterpolationArray(specs.trackBank, 0, specs.trackBankMultiplier);
 
 		// Add the 90° sections
 		for (let angle = 90; angle < specs.sweep; angle += 90) {
@@ -880,8 +888,9 @@ const spiralParser = {
 		}
 
 		// Add the last point
+		specs.endsAt.backwardWeight = specs.radius(1) * this._circleWeight;
+		specs.endsAt.trackBank = this._processInterpolationArray(specs.trackBank, 1, specs.trackBankMultiplier);
 		points.push(specs.endsAt);
-		points[points.length - 1].backwardWeight = specs.radius(1) * this._circleWeight;
 		builders.push(createBuilder(parentSettings));
 	},
 
@@ -903,9 +912,23 @@ const spiralParser = {
 		point.forward = polar.forward;
 		point.forwardWeight = point.backwardWeight;
 		point.name = pointName;
+		point.trackBank = this._processInterpolationArray(specs.trackBank, t, specs.trackBankMultiplier);
 
 		points.push(point);
 		builders.push(createBuilder(parentSettings));
+	},
+
+	_processInterpolationArray: function(value, t, multiplier) {
+		if (is.vector3(value)) return value;
+		if (is.number(value)) return multiplier * value;
+		if (t <= 0) return multiplier * value[0].v;
+		if (t >= 1) return multiplier * value[value.length - 1].v;
+		for (let i = 1; i < value.length; i++) {
+			if (t >= value[i-1].t && t <= value[i].t) {
+				return multiplier * (value[i-1].v * (1 - t) + value[i].v * t);
+			}
+		}
+		throw '_processInterpolationArray: Something went wrong';
 	},
 }
 
