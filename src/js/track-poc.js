@@ -381,7 +381,6 @@ const plane = {
 				vector.dot(vector.down, plane.normal));
 			throw '_setDefaultAxes: not implemented';
 		}
-		console.log('_setDefaultAxes: normal %o, x axis %o, y axis %o', plane.normal, plane.xAxis, plane.yAxis);
 	},
 	_toVertex: function(plane, vertex) {
 		return vector.add(vertex, -1, plane.origin);
@@ -684,15 +683,12 @@ const spiralParser = {
 		// altitudes, and radii
 		const entry = this._getAltAngleRadius(specs, 'startsAt');
 		const exit = this._getAltAngleRadius(specs, 'endsAt');
-		console.log('_getSpecs: entry %o, exit %o', entry, exit);
 
 		// Set the sweep and declination
 		const { sweep, invertTangent, startAngle, endAngle } = this._getSweep(specs, rotate, turns, entry, exit);
 		const deltaAltitude = exit.altitude - entry.altitude;
-		const declination = 0;
-		//const declination = Math.abs(deltaAltitude) < .001 ? 0 : (Math.atan2(deltaAltitude, sweep) * trig.radiansToDegrees);
+		const declination = Math.abs(deltaAltitude) < .001 ? 0 : (Math.atan2(deltaAltitude, sweep) * trig.radiansToDegrees);
 		console.log('_getSpecs: deltaAltitude %f, sweep %f, declination %f', deltaAltitude, sweep, declination);
-		//specs.declination = invertTangent ? (180 - declination) : declination;
 		specs.declination = invertTangent ? (180 - declination) : declination;
 		specs.sweep = sweep;
 
@@ -733,13 +729,11 @@ const spiralParser = {
 		// Get the entry and exit planes
 		const entryPlane = plane.create(specs.startsAt.center, specs.startsAt.forward);
 		const exitPlane = plane.create(specs.endsAt.center, specs.endsAt.forward);
-		console.log('_getRotationPlane: entry %o, exit %o', entryPlane, exitPlane);
 
 		// From the condition of the entry and exit planes, plus any
 		// supporting specifications, determine the rotation center and axis
 		let rotCenter, rotAxis;
 		if (plane.isSame(entryPlane, exitPlane)) {
-			console.log('_getRotationPlane: a');
 			if (is.defined(rawSpiral.center)) {
 				throw '_getRotationPlane: not implemented, user-specified center for identical entry and exit planes';
 			} else {
@@ -747,7 +741,6 @@ const spiralParser = {
 				rotAxis = this._getRotationAxis(specs, rotate);
 			}
 		} else if (plane.isParallel(entryPlane, exitPlane)) {
-			console.log('_getRotationPlane: b');
 			//const center = validate.vector3(rawSpiral, 'center', name);
 			//if (rotate === 'left') {
 			//	throw '_getRotationPlane: make sure centernot implemented, parallel entry and exit planes';
@@ -756,8 +749,6 @@ const spiralParser = {
 			//}
 			throw '_getRotationPlane: not implemented, parallel entry and exit planes';
 		} else {
-			console.log('_getRotationPlane: c');
-
 			// 'center' is illegal
 			validate.undefined(rawSpiral, 'center', name);
 
@@ -769,7 +760,6 @@ const spiralParser = {
 		}
 
 		// Return the rotation plane
-		console.log('_getRotationPlane: origin %o, normal %o', rotCenter, rotAxis);
 		return plane.create(rotCenter, rotAxis);
 	},
 
