@@ -52,7 +52,7 @@
 			<option value="track1b">Track 1b (track 1a with alternate straight)</option>
 			<option value="track2">Track 2 (ramp with jump and left curve)</option>
 			<option value="track2a">Track 2a (track 2 with 45&#176; bank)</option>
-			<!--option value="track2b">Track 2b (track 2 using spiral)</option-->
+			<option value="track2b">Track 2b (track 2 using spiral)</option>
 			<option value="track3">Track 3 (ramp with jump and right curve)</option>
 			<option value="track3a">Track 3a (track 3 with 45&#176; bank)</option>
 			<option value="track4">Track 4 (loop)</option>
@@ -415,17 +415,8 @@
 		};
 		const t2bspiral = {
 			type: 'spiral',
-			axis: posY,
-			center: {
-				x: t2bep5.center.x,
-				y: t2bep5.center.y,
-				z: t2bep5.center.z - jrRadius,
-			},
-			endsAt: {
-				x: t2bep5.center.x - jrRadius,
-				y: t2bep5.center.y - 3 * jrDescent / 4,
-				z: t2bep5.center.z - jrRadius,
-			},
+			endsAt: t2ep8,
+			rotate: 'left',
 		};
 		const t2bep9 = {	// Runout
 			type: 'straight',
@@ -617,7 +608,7 @@
 		const t5Height = [0, 2, 4];
 		const t5center = { x:0, y:0, z:0 };
 		const t5runout = 1;
-		
+
 		const t5ep0L = {
 			center: {
 				x: t5center.x + t5radius,
@@ -626,7 +617,7 @@
 			},
 			forward: posZ,
 		};
-		
+
 		const t5ep1L = {
 			center: {
 				x: t5ep0L.center.x,
@@ -636,7 +627,7 @@
 			forward: posZ,
 			forwardWeight: t5weight,
 		}
-		
+
 		const t5ep2L = {
 			backwardWeight: t5weight,
 			center: {
@@ -647,7 +638,7 @@
 			forward: negX,
 			forwardWeight: t5weight,
 		}
-		
+
 		const t5ep3L = {
 			backwardWeight: t5weight,
 			center: {
@@ -657,7 +648,7 @@
 			},
 			forward: negZ,
 		}
-		
+
 		const t5ep0R = {
 			center: {
 				x: t5center.x - t5radius,
@@ -666,7 +657,7 @@
 			},
 			forward: posZ,
 		};
-		
+
 		const t5ep1R = {
 			center: {
 				x: t5ep0R.center.x,
@@ -676,7 +667,7 @@
 			forward: posZ,
 			forwardWeight: t5weight,
 		}
-		
+
 		const t5ep2R = {
 			backwardWeight: t5weight,
 			center: {
@@ -687,7 +678,7 @@
 			forward: posX,
 			forwardWeight: t5weight,
 		}
-		
+
 		const t5ep3R = {
 			backwardWeight: t5weight,
 			center: {
@@ -697,12 +688,12 @@
 			},
 			forward: negZ,
 		}
-		
+
 		const t5runoutStraight = {
 			type: 'straight',
 			length: t5runout,
 		}
-		
+
 		tracks.track5 = {
 			segments: [
 				{
@@ -716,7 +707,7 @@
 
 		//----------------------------------------------------------------------
 		// Track 5a, track 5 using spiral
-		
+
 		const t5aep0L = {
 			center: {
 				x: t5ep0L.center.x,
@@ -725,7 +716,7 @@
 			},
 			forward: t5ep0L.forward,
 		};
-		
+
 		const t5acurveL = {
 			type: 'spiral',
 			endsAt: {
@@ -738,7 +729,7 @@
 			},
 			rotate: 'left',
 		};
-		
+
 		const t5aep0R = {
 			center: {
 				x: t5ep0R.center.x,
@@ -747,7 +738,7 @@
 			},
 			forward: t5ep0R.forward,
 		};
-		
+
 		const t5acurveR = {
 			type: 'spiral',
 			endsAt: {
@@ -760,7 +751,7 @@
 			},
 			rotate: 'right',
 		};
-		
+
 		tracks.track5a = {
 			segments: [
 				{
@@ -848,15 +839,6 @@
 				trackMesh.physicsImpostor = new BABYLON.PhysicsImpostor(trackMesh, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0 }, scene);
 				trackMeshes.push(trackMesh);
 			}
-		}
-
-		const drawLine = function(points, color) {
-			const options = {
-				colors: [],
-				points: points,
-			}
-			for (let i = 0; i < points.length; i++) { options.colors.push(green); }
-			BABYLON.MeshBuilder.CreateLines("lines", options);
 		}
 
 		window.initFunction = async function() {

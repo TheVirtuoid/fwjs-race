@@ -1,4 +1,5 @@
 const defaultSettings = {
+	debug: false,
 	precision: .01,
 	trackBank: 0,
 	trackWidth: 1,
@@ -144,13 +145,16 @@ const mergeSettings = {
 		const mergedSettings = {...masterSettings};
 		for (let vs of this._valid) {
 			if (is.defined(overrideSettings[vs.key])) {
-				mergedSettings[vs.key] = vs.validator(overrideSettings, vs.key, name);
+				mergedSettings[vs.key] = vs.validator ?
+					vs.validator(overrideSettings, vs.key, name) :
+					overrideSettings[vs.key];
 			}
 		}
 		return mergedSettings;
 	},
 
 	_valid: [
+		{ key: 'debug' },
 		{ key: 'precision', validator: validate.positiveNumber },
 		{ key: 'trackBank', validator: validate.trackBank, },
 		{ key: 'trackWidth', validator: validate.positiveNumber },
@@ -182,6 +186,7 @@ const trig = {
 }
 
 const vector = {
+	_defaultTolerance: 0.0001,
 	add: function(u, k, v) {
 		return {
 			x: u.x + k * v.x,
@@ -277,7 +282,7 @@ const plane = {
 		};
 	},
 	getAltitude: function(plane, vertex) {
-		return vector.dot(plane.normal, vertex);
+		return vector.dot(plane.normal, this._toVertex(plane, vertex));
 	},
 	getAngle: function(plane, vertex) {
 		if (!is.defined(plane.xAxis)) this._setDefaultAxes(plane);
@@ -286,6 +291,39 @@ const plane = {
 		const y = vector.dot(plane.yAxis, toVertex);
 		return trig.clampDegrees(Math.atan2(y, x) * trig.radiansToDegrees);
 	},
+	getIntersection: function(a, b) {
+
+		// NOTE: Technically this returns a line in the form of
+		// a point p on the line and a direction d of the line.
+		// This conveniently can be interpreted as describing a
+		// plane with origin p and normal d. We abuse this
+		// by describing the line as an object with members
+		// 'origin' and 'normal', identical to the plane notation.
+
+		// Get the line direction. Normalize should throw an error if the
+		// planes are parallel
+		const direction = vector.normalize(vector.cross(a.normal, b.normal));
+
+		// TODO: Figure out why this works
+		// see https://forum.unity.com/threads/how-to-find-line-of-intersecting-planes.109458/
+
+		// Next is to calculate a point on the line to fix it's position.
+		// This is done by finding a vector from the plane2 [b] location,
+		// moving parallel to it's plane, and intersecting plane1. To
+		// prevent rounding errors, this vector also has to be perpendicular
+		// to lineDirection [ldir]. To get this vector, calculate the cross
+		// product of the normal of plane2 [b] and the lineDirection [ldir].
+		const ldir = vector.cross(b.normal, direction);
+
+		const numerator = vector.dot(a.normal, ldir);
+
+		// Prevent divide by zero.
+		if (Math.abs(numerator) < .0001) return this._createLine(vector.zero, direction);
+
+		const b2a = vector.add(a.origin, -1, b.origin);
+		const t = vector.dot(a.normal, b2a) / numerator;
+		return this._createLine(vector.add(b.origin, t, ldir), direction);
+	},
 	getPolar: function(plane, radius, degrees, altitude) {
 		if (!is.defined(plane.xAxis)) this._setDefaultAxes(plane);
 
@@ -293,17 +331,16 @@ const plane = {
 		const cos = trig.clampAt0And1(Math.cos(theta));
 		const sin = trig.clampAt0And1(Math.sin(theta));
 
-		let point = vector.add(vector.add(vector.zero, radius * cos, plane.xAxis), radius * sin, plane.yAxis);
+		let point = vector.add(vector.add(plane.origin, radius * cos, plane.xAxis), radius * sin, plane.yAxis);
 		if (is.defined(altitude)) point = vector.add(point, altitude, plane.normal);
 
 		return {
 			point: point,
-			forward: vector.add(vector.add(vector.zero, -sin, plane.xAxis), cos, plane.yAxis),
+			forward: vector.add(vector.multiply(-sin, plane.xAxis), cos, plane.yAxis),
 		}
 	},
 	getRadius: function(plane, vertex) {
-		const toVertex = this._toVertex(plane, vertex);
-		return vector.length(vector.add(toVertex, -this.getAltitude(plane, toVertex), plane.normal));
+		return vector.length(vector.add(this._toVertex(plane, vertex), -this.getAltitude(plane, vertex), plane.normal));
 	},
 	isParallel: function(a, b, tolerance) {
 		if (!is.defined(tolerance)) tolerance = this._defaultTolerance;
@@ -318,6 +355,9 @@ const plane = {
 	},
 	_toVertex: function(plane, vertex) {
 		return vector.add(vertex, -1, plane.origin);
+	},
+	_createLine: function(p, d) {
+		return this.create(p, d);
 	},
 	_setDefaultAxes: function(plane) {
 		if (vector.dot(vector.up, plane.normal) > this._defaultTolerance) {
@@ -689,7 +729,12 @@ const spiralParser = {
 		} else {
 			// 'center' is illegal
 			validate.undefined(rawSpiral, 'center', name);
-			throw '_getRotationPlane: not implemented, intersecting entry and exit planes';
+
+			// Get intersection of the planes, a line, and use this as
+			// the rotation center and axis
+			const line = plane.getIntersection(entryPlane, exitPlane);
+			rotCenter = line.origin;
+			rotAxis = line.normal;
 		}
 
 		// Return the rotation plane
@@ -922,13 +967,13 @@ function executeBuilder(builder, ribbon, sp0, sp1, vectorFactory) {
 	return bezier.build(ribbon, sp0, sp1, vectorFactory, builder.precision);
 }
 
-function buildSegment(segment, vectorFactory, masterSettings, isClosed, name) {
+function buildSegment(segment, vectorFactory, parentSettings, isClosed, name) {
 
 	// Segment must be an object
 	validate.object(segment, name);
 
 	// Create settings
-	const settings = mergeSettings.merge(masterSettings, segment, name);
+	const settings = mergeSettings.merge(parentSettings, segment, name);
 
 	// Make sure that 'points' is an array with at least one element
 	validate.sizedArray(segment, 'points', name, 1);
@@ -940,7 +985,7 @@ function buildSegment(segment, vectorFactory, masterSettings, isClosed, name) {
 	for (let i = 0; i < segment.points.length; i++) {
 		sectionParser.parse(builders, points, segment.points[i], settings, `${name}.points[${i}]`);
 	}
-	if (segment.debug || masterSettings.debug) {
+	if (settings.debug) {
 		for (let i = 0; i < points.length; i++) console.log('buildSegment: %o', points[i]);
 	}
 
@@ -962,10 +1007,10 @@ function buildSegment(segment, vectorFactory, masterSettings, isClosed, name) {
 	return ribbon;
 }
 
-function buildTrack(track, vectorFactory, masterSettings) {
+function buildTrack(track, vectorFactory, parentSettings) {
 
 	// Create settings
-	const settings = mergeSettings.merge(masterSettings, track, 'track');
+	const settings = mergeSettings.merge(parentSettings, track, 'track');
 
 	// Make sure that 'segments' is an array with at least one element
 	validate.sizedArray(track, 'segments', 'track', 1);
