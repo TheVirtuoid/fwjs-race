@@ -135,7 +135,6 @@ const validate = {
 
 const merge = {
 	default: {
-		debug: false,
 		precision: .01,
 		trackBank: 0,
 		trackWidth: 1,
