@@ -324,19 +324,23 @@ const plane = {
 		const t = vector.dot(a.normal, b2a) / numerator;
 		return this._createLine(vector.add(b.origin, t, ldir), direction);
 	},
-	getPolar: function(plane, radius, degrees, altitude) {
+	getPolar: function(plane, radius, degrees, altitude, declination) {
 		if (!is.defined(plane.xAxis)) this._setDefaultAxes(plane);
 
 		const theta = degrees * trig.degreesToRadians;
 		const cos = trig.clampAt0And1(Math.cos(theta));
 		const sin = trig.clampAt0And1(Math.sin(theta));
 
-		let point = vector.add(vector.add(plane.origin, radius * cos, plane.xAxis), radius * sin, plane.yAxis);
-		if (is.defined(altitude)) point = vector.add(point, altitude, plane.normal);
+		const radial = vector.add(vector.multiply(cos, plane.xAxis), sin, plane.yAxis);
+		const point = vector.add(vector.add(plane.origin, radius, radial), altitude, plane.normal);
+		let forward = vector.add(vector.multiply(-sin, plane.xAxis), cos, plane.yAxis);
+		if (Math.abs(declination) > 0) {
+			forward = vector.rotate(radial, forward, declination);
+		}
 
 		return {
 			point: point,
-			forward: vector.add(vector.multiply(-sin, plane.xAxis), cos, plane.yAxis),
+			forward: forward,
 		}
 	},
 	getRadius: function(plane, vertex) {
@@ -834,9 +838,9 @@ const spiralParser = {
 		const altitude = specs.altitude(t);
 		const angle = specs.angle(t);
 		const radius = specs.radius(t);
+		const declination = specs.invertTangent ? 180 : 0;
 
-		const polar = plane.getPolar(specs.rotationPlane, radius, angle, altitude);
-		if (specs.invertTangent) polar.forward = vector.multiply(-1, polar.forward);
+		const polar = plane.getPolar(specs.rotationPlane, radius, angle, altitude, declination);
 
 		const pointName = `${name}@${angle}`;
 		const point = mergeSettings.merge(masterSettings, rawSpiral, pointName);
