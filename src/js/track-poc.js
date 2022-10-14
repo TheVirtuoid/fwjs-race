@@ -96,13 +96,9 @@ const validate = {
 	trackBank: function(object, memberName, objectName) {
 		const value = object[memberName];
 		if (is.vector3(value)) return value;
-		if (is.number(value)) {
-			let v = value % 360;
-			if (v > 180) v -= 360;
-			if (v <= -180) v += 360;
-			return v;
-		}
-		throw new TypeError(`${objectName}.${memberName} must be a number or 3D vector`);
+		if (is.number(value)) return trig.normalizeAngle(value);
+		if (is.array(value)) return validate._interpolationArray(object, memberName, objectName);
+		throw new TypeError(`${objectName}.${memberName} must be a number, 3D vector, or interpolation array`);
 	},
 
 	undefined: function(object, memberName, objectName, excludingMemberName) {
@@ -126,6 +122,38 @@ const validate = {
 
 	_getValue: function(object, memberName) {
 		return memberName.length === 0 ? object : object[memberName];
+	},
+
+	_interpolationArray: function(object, memberName, objectName) {
+		const value = object[memberName];
+		const name = objectName + '.' + memberName;
+		if (!is.array(value) || value.length < 2) {
+			throw new RangeError(name + ' must be an array with at least 2 elements');
+		}
+		const result = [];
+		let lastT;
+		for (let i = 0; i < value.length; i++) {
+			const tvPair = value[i];
+			if (!is.object(tvPair) || !is.number(tvPair.t) || !is.number(tvPair.v)) {
+				throw new RangeError(`${name}[${i}] must be an object with 't' and 'v' number members`);
+			}
+			const t = tvPair.t;
+			if (i === 0) {
+				if (t !== 0) {
+					throw new RangeError(name + '[0].t must be 0');
+				}
+			} else if (lastT >= t) {
+				throw new RangeError(`${name}[${i-1}].t (${lastT})must be less than ${name}[${i}].t (${t})`);
+			} else if (t > 1) {
+				throw new RangeError(`${name}[${i}].t cannot be greater than 1`);
+			}
+			lastT = t;
+			result.push({...tvPair});
+		}
+		if (lastT !== 1) {
+			throw new RangeError(`${name}[${value.length - 1}].t must be 1`);
+		}
+		return result;
 	},
 
 	_resolveName: function(objectName, memberName) {
@@ -180,6 +208,12 @@ const trig = {
 		return d;
 	},
 	degreesToRadians: Math.PI / 180,
+	normalizeAngle: function(angle) {
+		let v = angle % 360;
+		if (v > 180) v -= 360;
+		if (v <= -180) v += 360;
+		return v;
+	},
 	radiansToDegrees: 180 / Math.PI,
 }
 
