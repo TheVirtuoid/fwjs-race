@@ -53,6 +53,7 @@
 			<option value="track2">Track 2 (ramp with jump and left curve)</option>
 			<option value="track2a">Track 2a (track 2 with 45&#176; bank)</option>
 			<option value="track2b">Track 2b (track 2 using spiral)</option>
+			<option value="track2c">Track 2c (track 2b with 23&#176; bank)</option>
 			<option value="track3">Track 3 (ramp with jump and right curve)</option>
 			<option value="track3a">Track 3a (track 3 with 45&#176; bank)</option>
 			<option value="track3b">Track 3b (track 3 using spiral)</option>
@@ -433,7 +434,34 @@
 		};
 
 		tracks.track2b = {
+			//debug: true,
 			segments: [ jrs1, t2bs2 ]
+		};
+
+		//----------------------------------------------------------------------
+		// Track 2c, track 2b with 23 degree bank
+
+		const t2cspiral = {
+			type: 'spiral',
+			endsAt: {
+				center: t2ep8.center,
+				forward: t2ep8.forward,
+			},
+			rotate: 'left',
+			trackBank: [
+				{ t:0, v:10 },
+				{ t:1/3, v:23 },
+				{ t:2/3, v:23 },
+				{ t:0, v:10 },
+			],
+		};
+
+		const t2cs2 = {
+			points: [ jrep4, t2bep5, t2cspiral, t2brunout ]
+		};
+
+		tracks.track2c = {
+			segments: [ jrs1, t2cs2 ]
 		};
 
 		//----------------------------------------------------------------------
@@ -547,7 +575,7 @@
 			points: [ jrep4, t3bep5, t3bspiral, t3brunout ]
 		};
 		tracks.track3b = {
-			debug: true,
+			//debug: true,
 			segments: [ jrs1, t3bs2 ]
 		};
 
@@ -561,6 +589,7 @@
 				forward: t3ep8.forward,
 			},
 			rotate: 'right',
+			trackBank: t2cspiral.trackBank,
 		};
 		const t3cs2 = {
 			points: [ jrep4, t3bep5, t3cspiral, t3brunout ]
