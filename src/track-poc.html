@@ -55,6 +55,7 @@
 			<option value="track2b">Track 2b (track 2 using spiral)</option>
 			<option value="track3">Track 3 (ramp with jump and right curve)</option>
 			<option value="track3a">Track 3a (track 3 with 45&#176; bank)</option>
+			<option value="track3b">Track 3b (track 3 using spiral)</option>
 			<option value="track4">Track 4 (loop)</option>
 			<option value="track5">Track 5 (flat 180&#176; turns)</option>
 			<option value="track5a">Track 5a (track 5 using spiral)</option>
@@ -415,16 +416,19 @@
 		};
 		const t2bspiral = {
 			type: 'spiral',
-			endsAt: t2ep8,
+			endsAt: {
+				center: t2ep8.center,
+				forward: t2ep8.forward,
+			},
 			rotate: 'left',
 		};
-		const t2bep9 = {	// Runout
+		const t2brunout = {	// Runout
 			type: 'straight',
 			length: 2 * jrRadius,
 		};
 
 		const t2bs2 = {
-			points: [ jrep4, t2bep5, t2bspiral, t2bep9 ]
+			points: [ jrep4, t2bep5, t2bspiral, t2brunout ]
 		};
 
 		tracks.track2b = {
@@ -517,6 +521,32 @@
 
 		tracks.track3a = {
 			segments: [ jrs1, t3as2 ]
+		};
+
+		//----------------------------------------------------------------------
+		// Track 3b, track 3 with spiral
+
+		const t3bep5 = {	// Start of curve
+			center: jrv5,
+			forward: jrt5,
+		};
+		const t3bspiral = {
+			type: 'spiral',
+			endsAt: {
+				center: t3ep8.center,
+				forward: t3ep8.forward,
+			},
+			rotate: 'right',
+		};
+		const t3brunout = {
+			type: 'straight',
+			length: 2 * jrRadius,
+		};
+		const t3bs2 = {
+			points: [ jrep4, t3bep5, t3bspiral, t3brunout ]
+		};
+		tracks.track3b = {
+			segments: [ jrs1, t3bs2 ]
 		};
 
 		//----------------------------------------------------------------------

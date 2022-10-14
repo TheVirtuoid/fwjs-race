@@ -224,6 +224,7 @@ const vector = {
 		}
 	},
 	forward: { x:0, y:0, z:1 },
+	left: { x:-1, y:0, z:0 },
 	length: function(u) {
 		return Math.sqrt(u.x * u.x + u.y * u.y + u.z * u.z);
 	},
@@ -273,7 +274,7 @@ const plane = {
 	_defaultTolerance: 0.95,
 	contains: function(plane, vertex, tolerance) {
 		if (!is.defined(tolerance)) tolerance = this._defaultTolerance;
-		return this.getAltitude(plane, vertex) < (1 - tolerance);
+		return this._getAltitude(plane, vertex) < (1 - tolerance);
 	},
 	create: function(origin, normal) {
 		return {
@@ -282,7 +283,8 @@ const plane = {
 		};
 	},
 	getAltitude: function(plane, vertex) {
-		return vector.dot(plane.normal, this._toVertex(plane, vertex));
+		if (!is.defined(plane.xAxis)) this._setDefaultAxes(plane);
+		return this._getAltitude(plane, vertex);
 	},
 	getAngle: function(plane, vertex) {
 		if (!is.defined(plane.xAxis)) this._setDefaultAxes(plane);
@@ -334,8 +336,10 @@ const plane = {
 		const radial = vector.add(vector.multiply(cos, plane.xAxis), sin, plane.yAxis);
 		const point = vector.add(vector.add(plane.origin, radius, radial), altitude, plane.normal);
 		let forward = vector.add(vector.multiply(-sin, plane.xAxis), cos, plane.yAxis);
-		if (Math.abs(declination) > 0) {
+		console.log('getPolor: declination %f, forward %o', declination, forward);
+		if (Math.abs(declination) > 0.01) {
 			forward = vector.rotate(radial, forward, declination);
+			console.log('getPolor: after forward %o', forward);
 		}
 
 		return {
@@ -344,7 +348,8 @@ const plane = {
 		}
 	},
 	getRadius: function(plane, vertex) {
-		return vector.length(vector.add(this._toVertex(plane, vertex), -this.getAltitude(plane, vertex), plane.normal));
+		const altitude = this.getAltitude(plane, vertex);
+		return vector.length(vector.add(this._toVertex(plane, vertex), -altitude, plane.normal));
 	},
 	isParallel: function(a, b, tolerance) {
 		if (!is.defined(tolerance)) tolerance = this._defaultTolerance;
@@ -357,19 +362,30 @@ const plane = {
 		plane.xAxis = vector.normalize(vector.add(xAxis, -vector.dot(xAxis, plane.normal), plane.normal));
 		plane.yAxis = vector.cross(plane.xAxis, plane.normal);
 	},
-	_toVertex: function(plane, vertex) {
-		return vector.add(vertex, -1, plane.origin);
-	},
 	_createLine: function(p, d) {
 		return this.create(p, d);
+	},
+	_getAltitude: function(plane, vertex) {
+		return vector.dot(plane.normal, this._toVertex(plane, vertex));
 	},
 	_setDefaultAxes: function(plane) {
 		if (vector.dot(vector.up, plane.normal) > this._defaultTolerance) {
 			this.setAxes(plane, vector.right);
+		} else if (vector.dot(vector.down, plane.normal) > this._defaultTolerance) {
+			plane.normal = vector.multiply(-1, plane.normal);
+			this.setAxes(plane, vector.right);
 		} else {
+			console.log('_setDefaultAxes: normal %o, dot up %f, dot down %f',
+				plane.normal,
+				vector.dot(vector.up, plane.normal),
+				vector.dot(vector.down, plane.normal));
 			throw '_setDefaultAxes: not implemented';
 		}
-	}
+		console.log('_setDefaultAxes: normal %o, x axis %o, y axis %o', plane.normal, plane.xAxis, plane.yAxis);
+	},
+	_toVertex: function(plane, vertex) {
+		return vector.add(vertex, -1, plane.origin);
+	},
 }
 
 const ribbonMgr = {
@@ -668,11 +684,17 @@ const spiralParser = {
 		// altitudes, and radii
 		const entry = this._getAltAngleRadius(specs, 'startsAt');
 		const exit = this._getAltAngleRadius(specs, 'endsAt');
+		console.log('_getSpecs: entry %o, exit %o', entry, exit);
 
-		// Set the sweep
+		// Set the sweep and declination
 		const { sweep, invertTangent, startAngle, endAngle } = this._getSweep(specs, rotate, turns, entry, exit);
+		const deltaAltitude = exit.altitude - entry.altitude;
+		const declination = 0;
+		//const declination = Math.abs(deltaAltitude) < .001 ? 0 : (Math.atan2(deltaAltitude, sweep) * trig.radiansToDegrees);
+		console.log('_getSpecs: deltaAltitude %f, sweep %f, declination %f', deltaAltitude, sweep, declination);
+		//specs.declination = invertTangent ? (180 - declination) : declination;
+		specs.declination = invertTangent ? (180 - declination) : declination;
 		specs.sweep = sweep;
-		specs.invertTangent = invertTangent;
 
 		// Set the interpolation functions
 		specs.altitude = this._getInterpolation(entry.altitude, exit.altitude);
@@ -711,11 +733,13 @@ const spiralParser = {
 		// Get the entry and exit planes
 		const entryPlane = plane.create(specs.startsAt.center, specs.startsAt.forward);
 		const exitPlane = plane.create(specs.endsAt.center, specs.endsAt.forward);
+		console.log('_getRotationPlane: entry %o, exit %o', entryPlane, exitPlane);
 
 		// From the condition of the entry and exit planes, plus any
 		// supporting specifications, determine the rotation center and axis
 		let rotCenter, rotAxis;
 		if (plane.isSame(entryPlane, exitPlane)) {
+			console.log('_getRotationPlane: a');
 			if (is.defined(rawSpiral.center)) {
 				throw '_getRotationPlane: not implemented, user-specified center for identical entry and exit planes';
 			} else {
@@ -723,6 +747,7 @@ const spiralParser = {
 				rotAxis = this._getRotationAxis(specs, rotate);
 			}
 		} else if (plane.isParallel(entryPlane, exitPlane)) {
+			console.log('_getRotationPlane: b');
 			//const center = validate.vector3(rawSpiral, 'center', name);
 			//if (rotate === 'left') {
 			//	throw '_getRotationPlane: make sure centernot implemented, parallel entry and exit planes';
@@ -731,6 +756,8 @@ const spiralParser = {
 			//}
 			throw '_getRotationPlane: not implemented, parallel entry and exit planes';
 		} else {
+			console.log('_getRotationPlane: c');
+
 			// 'center' is illegal
 			validate.undefined(rawSpiral, 'center', name);
 
@@ -742,6 +769,7 @@ const spiralParser = {
 		}
 
 		// Return the rotation plane
+		console.log('_getRotationPlane: origin %o, normal %o', rotCenter, rotAxis);
 		return plane.create(rotCenter, rotAxis);
 	},
 
@@ -835,10 +863,11 @@ const spiralParser = {
 
 	_addPoint: function(builders, points, t, specs, rawSpiral, masterSettings, name) {
 
+		console.log('_addPoint: t %f, specs %o', t, specs);
 		const altitude = specs.altitude(t);
 		const angle = specs.angle(t);
 		const radius = specs.radius(t);
-		const declination = specs.invertTangent ? 180 : 0;
+		const declination = specs.declination;
 
 		const polar = plane.getPolar(specs.rotationPlane, radius, angle, altitude, declination);
 
