@@ -76,9 +76,11 @@
 
 		//======================================================================
 		// TRACK SELECTION
+
 		const trackSelector = document.getElementById("tracks");
 		const familySelector = document.getElementById("trackFamilies");
 		const memberSelector = document.getElementById("trackMembers");
+
 		trackSelector.addEventListener("change", () => {
 			createMesh();
 		});
@@ -92,9 +94,6 @@
 		//======================================================================
 		// TRACK DEFINITIONS
 
-		const tracks = {};
-		const options = {};
-
 		const posX = new BABYLON.Vector3.Right;
 		const negX = new BABYLON.Vector3.Left;
 		const posY = new BABYLON.Vector3.Up;
@@ -103,47 +102,65 @@
 		const negZ = new BABYLON.Vector3.Backward;
 		const zero = { x:0, y:0, z:0 };
 
-		const registerTrack = function(track) {
+		const tracks = {
+			options: {},
+			register: function(track) {
 
-			// Check for proper definitions
-			if (!track.family && !track.member) throw "Must define either 'family' or 'sibling'"
-			if (!track.member) throw "Must define 'member'";
+				// Perform late initialization
+				if (track.init) track.init();
 
-			// Perform late initialization
-			if (track.init) track.init();
+				// Get the family
+				if (!track.family && !track.sibling) throw "A track must define either 'family' or 'sibling'";
+				if (track.sibling && !track.sibling.family) throw `A 'sibling' track, here '${track.sibling}', must define 'family'`;
+				const family = track.family ? track.family : track.sibling.family;
+				const familyKey = this._removeSpaces(family);
 
-			// TODO: Get rid of name/desc and use family/member instead
-			const key = track.name.replace(/\s/g, '');
-			const desc = track.desc.length > 0 ?
-				(track.name + ' (' + track.desc + ')') :
-				track.name;
+				// Get the member
+				if (track.sibling && !track.member) throw "A track defining 'sibling' must also define 'member'";
+				if (track.sibling && track.member && track.member === this._originalMember) {
+					throw `A track defining 'sibling' cannot have 'member' set to '${this._originalMember}'`;
+				}
+				const member = track.member ? track.member : this._originalMember;
+				const memberKey = familyKey + this._removeSpaces(member);
 
-			// Old track selector
-			const tsOption = document.createElement("option");
-			tsOption.setAttribute('value', key);
-			tsOption.innerHTML = desc;
-			trackSelector.appendChild(tsOption);
+				// TODO: Get rid of name/desc and use family/member instead
+				const key = this._removeSpaces(track.name);
+				const desc = track.desc.length > 0 ?
+					(track.name + ' (' + track.desc + ')') :
+					track.name;
 
-			// Add family if necessary
-			const family = track.family ? track.family : track.sibling.family;
-			if (track.family) {
-				const fsOption = document.createElement("option");
-				fsOption.setAttribute('value', family);
-				fsOption.innerHTML = family;
-				familySelector.appendChild(fsOption);
-			}
+				// Old track selector
+				const tsOption = document.createElement("option");
+				tsOption.setAttribute('value', key);
+				tsOption.innerHTML = desc;
+				trackSelector.appendChild(tsOption);
 
-			// Add to member selector
-			const msOption = document.createElement("option");
-			msOption.setAttribute('value', key);
-			msOption.setAttribute('family', family);
-			msOption.innerHTML = track.member;
-			memberSelector.appendChild(msOption);
+				// Add family if necessary
+				if (!this._families[familyKey]) {
+					this._families[familyKey] = [];
+					const fsOption = document.createElement("option");
+					fsOption.setAttribute('value', familyKey);
+					fsOption.innerHTML = family;
+					familySelector.appendChild(fsOption);
+				}
 
-			// Add the track to the tracks and options arrays
-			tracks[key] = track.track;
-			if (track.options) options[key] = track.options;
-		}
+				// Add to member selector
+				const msOption = document.createElement("option");
+				msOption.setAttribute('value', key);
+				msOption.setAttribute('family', family);
+				msOption.innerHTML = track.member;
+				memberSelector.appendChild(msOption);
+
+				// Add the track to the tracks and options arrays
+				this.tracks[key] = track.track;
+				if (track.options) this.options[key] = track.options;
+			},
+			tracks: {},
+
+			_families: {},
+			_originalMember: 'Original',
+			_removeSpaces: function(value) { return value.replace(/\s/g, ''); },
+		};
 
 		// See https://spencermortensen.com/articles/bezier-circle/
 		// If we want a closer approximation, we would need to break the
@@ -175,7 +192,7 @@
 				this.track.segments = [ { points: this.points } ];
 			}
 		}
-		registerTrack(track0);
+		tracks.register(track0);
 
 		const track0a = {
 			sibling: track0,
@@ -197,7 +214,7 @@
 				this.track.segments = [ { points: this.points } ];
 			}
 		}
-		registerTrack(track0a);
+		tracks.register(track0a);
 
 		const launch = {
 			points: [
@@ -243,7 +260,8 @@
 			points: [ launch.start, launchStraight1, t1ep3, t1ep4 ]
 		};
 
-		tracks.track1 = {
+		tracks.tracks.track1 = {
+			family: "Simple slope",
 			segments: [ t1s1 ]
 		};
 
@@ -265,7 +283,7 @@
 			points: [ launch.start, launch.straight, t1aep3, t1aep4 ]
 		};
 
-		tracks.track1a = {
+		tracks.tracks.track1a = {
 			segments: [ t1as1 ]
 		};
 
@@ -294,7 +312,7 @@
 			points: [ launchStraight4, t1bep3, t1bep4 ]
 		};
 
-		tracks.track1b = {
+		tracks.tracks.track1b = {
 			segments: [ t1bs1 ]
 		};
 
@@ -381,7 +399,7 @@
 			points: [ jrep4, t2ep5, t2ep6, t2ep7, t2ep8, t2ep9 ]
 		};
 
-		tracks.track2 = {
+		tracks.tracks.track2 = {
 			segments: [ jrs1, t2s2 ]
 		};
 
@@ -419,7 +437,7 @@
 			points: [ jrep4, t2aep5, t2aep6, t2aep7, t2aep8, t2ep9 ]
 		};
 
-		tracks.track2a = {
+		tracks.tracks.track2a = {
 			segments: [ jrs1, t2as2 ]
 		};
 
@@ -447,7 +465,7 @@
 			points: [ jrep4, t2bep5, t2bspiral, t2brunout ]
 		};
 
-		tracks.track2b = {
+		tracks.tracks.track2b = {
 			//debug: true,
 			segments: [ jrs1, t2bs2 ]
 		};
@@ -474,7 +492,7 @@
 			points: [ jrep4, t2bep5, t2cspiral, t2brunout ]
 		};
 
-		tracks.track2c = {
+		tracks.tracks.track2c = {
 			segments: [ jrs1, t2cs2 ]
 		};
 
@@ -524,7 +542,7 @@
 			points: [ jrep4, t3ep5, t3ep6, t3ep7, t3ep8, t3ep9 ]
 		};
 
-		tracks.track3 = {
+		tracks.tracks.track3 = {
 			segments: [ jrs1, t3s2 ]
 		};
 
@@ -562,7 +580,7 @@
 			points: [ jrep4, t3aep5, t3aep6, t3aep7, t3aep8, t3ep9 ]
 		};
 
-		tracks.track3a = {
+		tracks.tracks.track3a = {
 			segments: [ jrs1, t3as2 ]
 		};
 
@@ -588,7 +606,7 @@
 		const t3bs2 = {
 			points: [ jrep4, t3bep5, t3bspiral, t3brunout ]
 		};
-		tracks.track3b = {
+		tracks.tracks.track3b = {
 			//debug: true,
 			segments: [ jrs1, t3bs2 ]
 		};
@@ -608,7 +626,7 @@
 		const t3cs2 = {
 			points: [ jrep4, t3bep5, t3cspiral, t3brunout ]
 		};
-		tracks.track3c = {
+		tracks.tracks.track3c = {
 			segments: [ jrs1, t3cs2 ]
 		};
 
@@ -694,7 +712,7 @@
 			points: [ launch.start, lep2, t4ep3, t4ep4, t4ep5, t4ep6, t4ep7, t4ep8, t4ep9 ]
 		};
 
-		tracks.track4 = {
+		tracks.tracks.track4 = {
 			segments: [ t4s1 ]
 		};
 
@@ -792,7 +810,7 @@
 			length: t5runout,
 		}
 
-		tracks.track5 = {
+		tracks.tracks.track5 = {
 			segments: [
 				{
 					points: [ t5ep0L, t5ep1L, t5ep2L, t5ep3L, t5runoutStraight ],
@@ -850,7 +868,7 @@
 			rotate: 'right',
 		};
 
-		tracks.track5a = {
+		tracks.tracks.track5a = {
 			segments: [
 				{
 					points: [ t5ep0L, t5ep1L, t5ep2L, t5ep3L, t5runoutStraight ],
@@ -863,6 +881,8 @@
 				},
 			]
 		};
+
+		// Sort the family and members lists
 
 		//======================================================================
 		// BABYLON IMPLEMENTATION
@@ -921,8 +941,8 @@
 			trackMeshes.length = 0;
 
 			const key = !selector ? trackSelector.value : selector.value;
-			const track = tracks[key];
-			const settings = options[key] ? options[key] : {};
+			const track = tracks.tracks[key];
+			const settings = tracks.options[key] ? tracks.options[key] : {};
 
 			const ribbons = TrackPOC.build(track, (u) => { return new BABYLON.Vector3(u.x, u.y, u.z); }, settings);
 			for (let i = 0; i < ribbons.length; i++) {
@@ -980,7 +1000,7 @@
 			ball = BABYLON.MeshBuilder.CreateSphere("ball", { diameter: ballDiameter }, scene);
 			ball.physicsImpostor = new BABYLON.PhysicsImpostor(ball, BABYLON.PhysicsImpostor.SphereImpostor, {mass: ballWeight}, scene);
 
-			const track = tracks[trackSelector.value];
+			const track = tracks.tracks[trackSelector.value];
 			const segment = track.segments[0];
 			const p0 = segment.points[0].center;
 			const p1 = segment.points[1].center;
