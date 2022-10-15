@@ -223,7 +223,7 @@
 		});
 
 		//----------------------------------------------------------------------
-		// Common launch point
+		// Common launch and jump points
 
 		const launch = {
 			points: [
@@ -246,6 +246,45 @@
 			}
 		}
 		launch.init();
+
+		const jump = {
+			descent: 1,
+			radius: 2,
+			launchSegment: {
+				points: [
+					launch.straight,
+					{
+						center: { x:.5, y:1, z:0 },
+						forward: negX,
+						backwardWeight: 4,
+					},
+				],
+			},
+
+			_catchDrop: .1,
+			_gap: 1,
+
+			init: function() {
+				const launchEnd = this.launchSegment.points[this.launchSegment.points.length - 1];
+				this.catchStart = {
+					center: {
+						x: launchEnd.center.x - this._gap,
+						y: launchEnd.center.y - this._catchDrop,
+						z: launchEnd.center.z,
+					},
+					forward: negX,
+				}
+				this.catchEnd = {
+					center: {
+						x: this.catchStart.center.x - this.radius + this._gap / 2,
+						y: this.catchStart.center.y - this.descent / 4,
+						z: this.catchStart.center.z
+					},
+					forward: negX,
+				}
+			},
+		}
+		jump.init();
 
 		//----------------------------------------------------------------------
 		// Simple slope
@@ -334,37 +373,6 @@
 		//----------------------------------------------------------------------
 		// Common jump ramp points
 
-		const jrGap = 1;
-		const jrRadius = 2;
-		const jrCatchDrop = .1;
-		const jrDescent = 1;
-
-		const jrep3 = {
-			center: { x:.5, y:1, z:0 },
-			forward: negX,
-			backwardWeight: 4,
-		};
-
-		const jrep4 = {	// Start of catch
-			center: {
-				x: jrep3.center.x - jrGap,
-				y: jrep3.center.y - jrCatchDrop,
-				z: jrep3.center.z,
-			},
-			forward: negX,
-		};
-
-		const jrv5 = {
-			x: jrep4.center.x - jrRadius + jrGap / 2,
-			y: jrep4.center.y - jrDescent / 4,
-			z: jrep4.center.z
-		};
-		const jrt5 = negX;
-
-		const jrs1 = {
-			points: [ launch.straight, jrep3 ]
-		};
-
 		//----------------------------------------------------------------------
 		// Track 2, slope into a jump with a turn left looping underneath the jump
 
@@ -372,50 +380,50 @@
 		// we specify the tangent to have no y component.
 
 		const t2ep5 = {	// Start of curve
-			center: jrv5,
-			forward: jrt5,
-			forwardWeight: circleWeight * jrRadius,
+			center: jump.catchEnd.center,
+			forward: jump.catchEnd.forward,
+			forwardWeight: circleWeight * jump.radius,
 		};
 		const t2ep6 = {	// Top of curve
-			backwardWeight: circleWeight * jrRadius,
+			backwardWeight: circleWeight * jump.radius,
 			center: {
-				x: t2ep5.center.x - jrRadius,
-				y: t2ep5.center.y - jrDescent / 4,
-				z: t2ep5.center.z - jrRadius,
+				x: t2ep5.center.x - jump.radius,
+				y: t2ep5.center.y - jump.descent / 4,
+				z: t2ep5.center.z - jump.radius,
 			},
 			forward: negZ,
-			forwardWeight: circleWeight * jrRadius,
+			forwardWeight: circleWeight * jump.radius,
 		};
 		const t2ep7 = {	// Left extent of curve
-			backwardWeight: circleWeight * jrRadius,
+			backwardWeight: circleWeight * jump.radius,
 			center: {
-				x: t2ep6.center.x + jrRadius,
-				y: t2ep6.center.y - jrDescent / 4,
-				z: t2ep6.center.z - jrRadius
+				x: t2ep6.center.x + jump.radius,
+				y: t2ep6.center.y - jump.descent / 4,
+				z: t2ep6.center.z - jump.radius
 			},
 			forward: posX,
-			forwardWeight: circleWeight * jrRadius,
+			forwardWeight: circleWeight * jump.radius,
 		};
 		const t2ep8 = {	// End of curve
-			backwardWeight: circleWeight * jrRadius,
+			backwardWeight: circleWeight * jump.radius,
 			center: {
-				x: t2ep7.center.x + jrRadius,
-				y: t2ep7.center.y - jrDescent / 4,
-				z: t2ep7.center.z + jrRadius
+				x: t2ep7.center.x + jump.radius,
+				y: t2ep7.center.y - jump.descent / 4,
+				z: t2ep7.center.z + jump.radius
 			},
 			forward: posZ,
 		};
 		const t2ep9 = {	// Runout
 			type: 'straight',
-			length: 2 * jrRadius,
+			length: 2 * jump.radius,
 		};
 
 		const t2s2 = {
-			points: [ jrep4, t2ep5, t2ep6, t2ep7, t2ep8, t2ep9 ]
+			points: [ jump.catchStart, t2ep5, t2ep6, t2ep7, t2ep8, t2ep9 ]
 		};
 
 		tracks._tracks.track2 = {
-			segments: [ jrs1, t2s2 ]
+			segments: [ jump.launchSegment, t2s2 ]
 		};
 
 		//----------------------------------------------------------------------
@@ -449,19 +457,19 @@
 		};
 
 		const t2as2 = {
-			points: [ jrep4, t2aep5, t2aep6, t2aep7, t2aep8, t2ep9 ]
+			points: [ jump.catchStart, t2aep5, t2aep6, t2aep7, t2aep8, t2ep9 ]
 		};
 
 		tracks._tracks.track2a = {
-			segments: [ jrs1, t2as2 ]
+			segments: [ jump.launchSegment, t2as2 ]
 		};
 
 		//----------------------------------------------------------------------
 		// Track 2b, track 2 but using a spiral section
 
 		const t2bep5 = {	// Start of curve
-			center: jrv5,
-			forward: jrt5,
+			center: jump.catchEnd.center,
+			forward: jump.catchEnd.forward,
 		};
 		const t2bspiral = {
 			type: 'spiral',
@@ -473,16 +481,16 @@
 		};
 		const t2brunout = {	// Runout
 			type: 'straight',
-			length: 2 * jrRadius,
+			length: 2 * jump.radius,
 		};
 
 		const t2bs2 = {
-			points: [ jrep4, t2bep5, t2bspiral, t2brunout ]
+			points: [ jump.catchStart, t2bep5, t2bspiral, t2brunout ]
 		};
 
 		tracks._tracks.track2b = {
 			//debug: true,
-			segments: [ jrs1, t2bs2 ]
+			segments: [ jump.launchSegment, t2bs2 ]
 		};
 
 		//----------------------------------------------------------------------
@@ -504,61 +512,61 @@
 		};
 
 		const t2cs2 = {
-			points: [ jrep4, t2bep5, t2cspiral, t2brunout ]
+			points: [ jump.catchStart, t2bep5, t2cspiral, t2brunout ]
 		};
 
 		tracks._tracks.track2c = {
-			segments: [ jrs1, t2cs2 ]
+			segments: [ jump.launchSegment, t2cs2 ]
 		};
 
 		//----------------------------------------------------------------------
 		// Track 3, slope into a jump with a turn right looping underneath the jump
 
 		const t3ep5 = {	// Start of curve
-			center: jrv5,
-			forward: jrt5,
-			forwardWeight: circleWeight * jrRadius,
+			center: jump.catchEnd.center,
+			forward: jump.catchEnd.forward,
+			forwardWeight: circleWeight * jump.radius,
 		};
 		const t3ep6 = {	// Top of curve
-			backwardWeight: circleWeight * jrRadius,
+			backwardWeight: circleWeight * jump.radius,
 			center: {
-				x: t3ep5.center.x - jrRadius,
-				y: t3ep5.center.y - jrDescent / 4,
-				z: t3ep5.center.z + jrRadius,
+				x: t3ep5.center.x - jump.radius,
+				y: t3ep5.center.y - jump.descent / 4,
+				z: t3ep5.center.z + jump.radius,
 			},
 			forward: posZ,
-			forwardWeight: circleWeight * jrRadius,
+			forwardWeight: circleWeight * jump.radius,
 		};
 		const t3ep7 = {	// Right extent of curve
-			backwardWeight: circleWeight * jrRadius,
+			backwardWeight: circleWeight * jump.radius,
 			center: {
-				x: t3ep6.center.x + jrRadius,
-				y: t3ep6.center.y - jrDescent / 4,
-				z: t3ep6.center.z + jrRadius
+				x: t3ep6.center.x + jump.radius,
+				y: t3ep6.center.y - jump.descent / 4,
+				z: t3ep6.center.z + jump.radius
 			},
 			forward: posX,
-			forwardWeight: circleWeight * jrRadius,
+			forwardWeight: circleWeight * jump.radius,
 		};
 		const t3ep8 = {	// End of curve
-			backwardWeight: circleWeight * jrRadius,
+			backwardWeight: circleWeight * jump.radius,
 			center: {
-				x: t3ep7.center.x + jrRadius,
-				y: t3ep7.center.y - jrDescent / 4,
-				z: t3ep7.center.z - jrRadius
+				x: t3ep7.center.x + jump.radius,
+				y: t3ep7.center.y - jump.descent / 4,
+				z: t3ep7.center.z - jump.radius
 			},
 			forward: negZ,
 		};
 		const t3ep9 = {	// Runout
 			type: 'straight',
-			length: 2 * jrRadius,
+			length: 2 * jump.radius,
 		};
 
 		const t3s2 = {
-			points: [ jrep4, t3ep5, t3ep6, t3ep7, t3ep8, t3ep9 ]
+			points: [ jump.catchStart, t3ep5, t3ep6, t3ep7, t3ep8, t3ep9 ]
 		};
 
 		tracks._tracks.track3 = {
-			segments: [ jrs1, t3s2 ]
+			segments: [ jump.launchSegment, t3s2 ]
 		};
 
 		//----------------------------------------------------------------------
@@ -592,19 +600,19 @@
 		};
 
 		const t3as2 = {
-			points: [ jrep4, t3aep5, t3aep6, t3aep7, t3aep8, t3ep9 ]
+			points: [ jump.catchStart, t3aep5, t3aep6, t3aep7, t3aep8, t3ep9 ]
 		};
 
 		tracks._tracks.track3a = {
-			segments: [ jrs1, t3as2 ]
+			segments: [ jump.launchSegment, t3as2 ]
 		};
 
 		//----------------------------------------------------------------------
 		// Track 3b, track 3 with spiral
 
 		const t3bep5 = {	// Start of curve
-			center: jrv5,
-			forward: jrt5,
+			center: jump.catchEnd.center,
+			forward: jump.catchEnd.forward,
 		};
 		const t3bspiral = {
 			type: 'spiral',
@@ -616,14 +624,14 @@
 		};
 		const t3brunout = {
 			type: 'straight',
-			length: 2 * jrRadius,
+			length: 2 * jump.radius,
 		};
 		const t3bs2 = {
-			points: [ jrep4, t3bep5, t3bspiral, t3brunout ]
+			points: [ jump.catchStart, t3bep5, t3bspiral, t3brunout ]
 		};
 		tracks._tracks.track3b = {
 			//debug: true,
-			segments: [ jrs1, t3bs2 ]
+			segments: [ jump.launchSegment, t3bs2 ]
 		};
 
 		//----------------------------------------------------------------------
@@ -639,10 +647,10 @@
 			trackBank: t2cspiral.trackBank,
 		};
 		const t3cs2 = {
-			points: [ jrep4, t3bep5, t3cspiral, t3brunout ]
+			points: [ jump.catchStart, t3bep5, t3cspiral, t3brunout ]
 		};
 		tracks._tracks.track3c = {
-			segments: [ jrs1, t3cs2 ]
+			segments: [ jump.launchSegment, t3cs2 ]
 		};
 
 		//----------------------------------------------------------------------
