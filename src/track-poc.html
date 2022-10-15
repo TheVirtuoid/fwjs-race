@@ -45,10 +45,6 @@
 	<div>
 		<label for="tracks">Choose a track:</label>
 		<select name="tracks" id="tracks">
-			<option value="track2">Track 2 (ramp with jump and left curve)</option>
-			<option value="track2a">Track 2a (track 2 with 45&#176; bank)</option>
-			<option value="track2b">Track 2b (track 2 using spiral)</option>
-			<option value="track2c">Track 2c (track 2b with 23&#176; bank)</option>
 			<option value="track3">Track 3 (ramp with jump and right curve)</option>
 			<option value="track3a">Track 3a (track 3 with 45&#176; bank)</option>
 			<option value="track3b">Track 3b (track 3 using spiral)</option>
@@ -249,7 +245,6 @@
 
 		const jump = {
 			descent: 1,
-			radius: 2,
 			launchSegment: {
 				points: [
 					launch.straight,
@@ -260,6 +255,7 @@
 					},
 				],
 			},
+			radius: 2,
 
 			_catchDrop: .1,
 			_gap: 1,
@@ -282,9 +278,21 @@
 					},
 					forward: negX,
 				}
+				this.runout = {
+					type: 'straight',
+					length: 2 * this.radius,
+				}
 			},
 		}
 		jump.init();
+
+		const parametricBank = [
+			{ t:0, v:10 },
+			{ t:1/3, v:23 },
+			{ t:2/3, v:23 },
+			{ t:1, v:10 },
+		]
+
 
 		//----------------------------------------------------------------------
 		// Simple slope
@@ -371,153 +379,146 @@
 		});
 
 		//----------------------------------------------------------------------
-		// Common jump ramp points
+		// Left turn ramp
 
-		//----------------------------------------------------------------------
-		// Track 2, slope into a jump with a turn left looping underneath the jump
+		const track2 = {
+			family: "Left turn ramp",
 
-		// NOTE: This may need some adjustments on the curve to avoid bumps where
-		// we specify the tangent to have no y component.
-
-		const t2ep5 = {	// Start of curve
-			center: jump.catchEnd.center,
-			forward: jump.catchEnd.forward,
-			forwardWeight: circleWeight * jump.radius,
-		};
-		const t2ep6 = {	// Top of curve
-			backwardWeight: circleWeight * jump.radius,
-			center: {
-				x: t2ep5.center.x - jump.radius,
-				y: t2ep5.center.y - jump.descent / 4,
-				z: t2ep5.center.z - jump.radius,
+			curveEnd: {
+				backwardWeight: circleWeight * jump.radius,
+				forward: posZ,
 			},
-			forward: negZ,
-			forwardWeight: circleWeight * jump.radius,
-		};
-		const t2ep7 = {	// Left extent of curve
-			backwardWeight: circleWeight * jump.radius,
-			center: {
-				x: t2ep6.center.x + jump.radius,
-				y: t2ep6.center.y - jump.descent / 4,
-				z: t2ep6.center.z - jump.radius
+			curveLeft: {
+				backwardWeight: circleWeight * jump.radius,
+				forward: posX,
+				forwardWeight: circleWeight * jump.radius,
 			},
-			forward: posX,
-			forwardWeight: circleWeight * jump.radius,
-		};
-		const t2ep8 = {	// End of curve
-			backwardWeight: circleWeight * jump.radius,
-			center: {
-				x: t2ep7.center.x + jump.radius,
-				y: t2ep7.center.y - jump.descent / 4,
-				z: t2ep7.center.z + jump.radius
+			curveStart: {
+				center: jump.catchEnd.center,
+				forward: jump.catchEnd.forward,
+				forwardWeight: circleWeight * jump.radius,
 			},
-			forward: posZ,
-		};
-		const t2ep9 = {	// Runout
-			type: 'straight',
-			length: 2 * jump.radius,
-		};
-
-		const t2s2 = {
-			points: [ jump.catchStart, t2ep5, t2ep6, t2ep7, t2ep8, t2ep9 ]
-		};
-
-		tracks._tracks.track2 = {
-			segments: [ jump.launchSegment, t2s2 ]
-		};
-
-		//----------------------------------------------------------------------
-		// Track 2a, track 2 with bank
-
-		const t2aep5 = {	// Start of curve
-			center: t2ep5.center,
-			forward: t2ep5.forward,
-			forwardWeight: t2ep5.forwardWeight,
-			trackBank: 10,
-		};
-		const t2aep6 = {	// Top of curve
-			backwardWeight: t2ep6.backwardWeight,
-			center: t2ep6.center,
-			forward: t2ep6.forward,
-			forwardWeight: t2ep6.forwardWeight,
-			trackBank: 45,
-		};
-		const t2aep7 = {	// Left extent of curve
-			backwardWeight: t2ep7.backwardWeight,
-			center: t2ep7.center,
-			forward: t2ep7.forward,
-			forwardWeight: t2ep7.forwardWeight,
-			trackBank: 45,
-		};
-		const t2aep8 = {	// End of curve
-			backwardWeight: t2ep8.backwardWeight,
-			center: t2ep8.center,
-			forward: t2ep8.forward,
-			trackBank: 10,
-		};
-
-		const t2as2 = {
-			points: [ jump.catchStart, t2aep5, t2aep6, t2aep7, t2aep8, t2ep9 ]
-		};
-
-		tracks._tracks.track2a = {
-			segments: [ jump.launchSegment, t2as2 ]
-		};
-
-		//----------------------------------------------------------------------
-		// Track 2b, track 2 but using a spiral section
-
-		const t2bep5 = {	// Start of curve
-			center: jump.catchEnd.center,
-			forward: jump.catchEnd.forward,
-		};
-		const t2bspiral = {
-			type: 'spiral',
-			endsAt: {
-				center: t2ep8.center,
-				forward: t2ep8.forward,
+			curveTop: {
+				backwardWeight: circleWeight * jump.radius,
+				forward: negZ,
+				forwardWeight: circleWeight * jump.radius,
 			},
-			rotate: 'left',
-		};
-		const t2brunout = {	// Runout
-			type: 'straight',
-			length: 2 * jump.radius,
-		};
 
-		const t2bs2 = {
-			points: [ jump.catchStart, t2bep5, t2bspiral, t2brunout ]
-		};
-
-		tracks._tracks.track2b = {
-			//debug: true,
-			segments: [ jump.launchSegment, t2bs2 ]
-		};
-
-		//----------------------------------------------------------------------
-		// Track 2c, track 2b with 23 degree bank
-
-		const t2cspiral = {
-			type: 'spiral',
-			endsAt: {
-				center: t2ep8.center,
-				forward: t2ep8.forward,
+			init: function() {
+				this.curveTop.center = {
+					x: this.curveStart.center.x - jump.radius,
+					y: this.curveStart.center.y - jump.descent / 4,
+					z: this.curveStart.center.z - jump.radius,
+				}
+				this.curveLeft.center = {
+					x: this.curveTop.center.x + jump.radius,
+					y: this.curveTop.center.y - jump.descent / 4,
+					z: this.curveTop.center.z - jump.radius
+				}
+				this.curveEnd.center = {
+					x: this.curveLeft.center.x + jump.radius,
+					y: this.curveLeft.center.y - jump.descent / 4,
+					z: this.curveLeft.center.z + jump.radius
+				}
+				this.track = {
+					segments: [
+						jump.launchSegment,
+						{
+							points: [
+								jump.catchStart,
+								track2.curveStart,
+								track2.curveTop,
+								track2.curveLeft,
+								track2.curveEnd,
+								jump.runout,
+							],
+						},
+					],
+				}
 			},
-			rotate: 'left',
-			trackBank: [
-				{ t:0, v:10 },
-				{ t:1/3, v:23 },
-				{ t:2/3, v:23 },
-				{ t:1, v:10 },
-			],
-		};
-
-		const t2cs2 = {
-			points: [ jump.catchStart, t2bep5, t2cspiral, t2brunout ]
-		};
-
-		tracks._tracks.track2c = {
-			segments: [ jump.launchSegment, t2cs2 ]
-		};
+		}
+		tracks.register(track2);
+		tracks.register({
+			sibling: track2,
+			member: "45&#176; bank",
+			track: {
+				segments: [ jump.launchSegment, {
+					points: [
+						jump.catchStart,
+						{
+							center: track2.curveStart.center,
+							forward: track2.curveStart.forward,
+							forwardWeight: track2.curveStart.forwardWeight,
+							trackBank: 10,
+						},
+						{
+							backwardWeight: track2.curveTop.backwardWeight,
+							center: track2.curveTop.center,
+							forward: track2.curveTop.forward,
+							forwardWeight: track2.curveTop.forwardWeight,
+							trackBank: 45,
+						},
+						{
+							backwardWeight: track2.curveLeft.backwardWeight,
+							center: track2.curveLeft.center,
+							forward: track2.curveLeft.forward,
+							forwardWeight: track2.curveLeft.forwardWeight,
+							trackBank: 45,
+						},
+						{
+							backwardWeight: track2.curveEnd.backwardWeight,
+							center: track2.curveEnd.center,
+							forward: track2.curveEnd.forward,
+							trackBank: 10,
+						},
+						jump.runout
+					],
+				}],
+			},
+		});
+		tracks.register({
+			sibling: track2,
+			member: "Using spiral",
+			track: {
+				segments: [ jump.launchSegment, {
+					points: [
+						jump.catchStart,
+						jump.catchEnd,
+						{
+							type: 'spiral',
+							endsAt: {
+								center: track2.curveEnd.center,
+								forward: track2.curveEnd.forward,
+							},
+							rotate: 'left',
+						},
+						jump.runout
+					],
+				}],
+			},
+		});
+		tracks.register({
+			sibling: track2,
+			member: "Using spiral with 23&#176; bank",
+			track: {
+				segments: [ jump.launchSegment, {
+					points: [
+						jump.catchStart,
+						jump.catchEnd,
+						{
+							type: 'spiral',
+							endsAt: {
+								center: track2.curveEnd.center,
+								forward: track2.curveEnd.forward,
+							},
+							rotate: 'left',
+							trackBank: parametricBank,
+						},
+						jump.runout
+					],
+				}],
+			},
+		});
 
 		//----------------------------------------------------------------------
 		// Track 3, slope into a jump with a turn right looping underneath the jump
@@ -622,12 +623,8 @@
 			},
 			rotate: 'right',
 		};
-		const t3brunout = {
-			type: 'straight',
-			length: 2 * jump.radius,
-		};
 		const t3bs2 = {
-			points: [ jump.catchStart, t3bep5, t3bspiral, t3brunout ]
+			points: [ jump.catchStart, t3bep5, t3bspiral, jump.runout ]
 		};
 		tracks._tracks.track3b = {
 			//debug: true,
@@ -644,10 +641,10 @@
 				forward: t3ep8.forward,
 			},
 			rotate: 'right',
-			trackBank: t2cspiral.trackBank,
+			trackBank: parametricBank,
 		};
 		const t3cs2 = {
-			points: [ jump.catchStart, t3bep5, t3cspiral, t3brunout ]
+			points: [ jump.catchStart, t3bep5, t3cspiral, jump.runout ]
 		};
 		tracks._tracks.track3c = {
 			segments: [ jump.launchSegment, t3cs2 ]
