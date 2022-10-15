@@ -45,7 +45,6 @@
 	<div>
 		<label for="tracks">Choose a track:</label>
 		<select name="tracks" id="tracks">
-			<option value="track4">Track 4 (loop)</option>
 			<option value="track5">Track 5 (flat 180&#176; turns)</option>
 			<option value="track5a">Track 5a (track 5 using spiral)</option>
 			<option value="track6a">Track 6a (left helix, no center)</option>
@@ -218,24 +217,27 @@
 		// Common launch and jump points
 
 		const launch = {
-			points: [
-				{ x:10 , y:5, z:0 },
-				{ x:9, y:4.9, z:0 },
-			],
+			start: {
+				center: { x:10 , y:5, z:0 }
+			},
+			end: {
+				center: { x:9, y:4.9, z:0 },
+			},
 
 			init: function() {
-				this.forward = { x:-1, y:-0.1, z:0 };
-				this.start = {
-					center: launch.points[0],
-					forward: launch.forward,
+				this.start.forward = {
+					x: this.end.center.x - this.start.center.x,
+					y: this.end.center.y - this.start.center.y,
+					z: this.end.center.z - this.start.center.z,
 				};
+				this.end.forward = this.start.forward;
 				this.straight = {
 					type: 'straight',
-					endsAt: launch.points[1],
-					startsAt: launch.points[0],
+					endsAt: this.end.center,
+					startsAt: this.start.center,
 					forwardWeight: 1.1
 				};
-			}
+			},
 		}
 		launch.init();
 
@@ -310,11 +312,7 @@
 						{
 							points: [
 								launch.start,
-								{
-									type: 'straight',
-									endsAt: launch.points[1],
-									forwardWeight: 1.1
-								},
+								launch.end,
 								this.runoutStart,
 								this.runoutStraight,
 							],
@@ -358,8 +356,8 @@
 						points: [
 							{
 								type: 'straight',
-								startsAt: launch.points[0],
-								forward: launch.forward,
+								startsAt: launch.end.center,
+								forward: launch.end.forward,
 								length: 1.004987562112089,
 								forwardWeight: 1.1
 							},
@@ -651,90 +649,88 @@
 		});
 
 		//----------------------------------------------------------------------
-		// Track 4, slope into a loop
+		// Loop
 
-		// See https://spencermortensen.com/articles/bezier-circle/
-		// If we want a closer approximation, we would need to break the
-		// convention that backward = -forward and allow backward to be
-		// forward rotated 180 degrees around down.
+		tracks.register({
+			family: "Loop",
 
-		const t4loopRadius = 3;
-		const t4loopOffset = .4;
-		const t4loopWeight = circleWeight * t4loopRadius;
+			_offset: .4,
+			_radius: 3,
 
-		const t4ep3 = {	// End of slope, start of flat
-			center: zero,
-			forward: negX,
-			backwardWeight: 4,
-		};
-		const t4ep4 = {	// Entry into loop
-			center: {
-				x: t4ep3.center.x - t4loopRadius,
-				y: t4ep3.center.y,
-				z: t4ep3.center.z
-			},
-			forward: negX,
-			forwardWeight: t4loopWeight,
-		};
-		const t4ep5 = {	// First quarter of loop
-			backwardWeight: t4loopWeight,
-			center: {
-				x: t4ep4.center.x - t4loopRadius,
-				y: t4ep4.center.y + t4loopRadius,
-				z: t4ep4.center.z + t4loopOffset
-			},
-			forward: posY,	// This should have a small z-component
-			forwardWeight: t4loopWeight,
-			trackBank: negX,
-		};
-		const t4ep6 = {	// Top of loop
-			backwardWeight: t4loopWeight,
-			center: {
-				x: t4ep5.center.x + t4loopRadius,
-				y: t4ep5.center.y + t4loopRadius,
-				z: t4ep5.center.z + t4loopOffset
-			},
-			forward: posX,	// This should have a small z-component
-			forwardWeight: t4loopWeight,
-			trackBank: posY,
-		};
-		const t4ep7 = {	// Last quarter of loop
-			backwardWeight: t4loopWeight,
-			center: {
-				x: t4ep6.center.x + t4loopRadius,
-				y: t4ep6.center.y - t4loopRadius,
-				z: t4ep6.center.z + t4loopOffset
-			},
-			forward: negY,	// This should have a small z-component
-			forwardWeight: t4loopWeight,
-			trackBank: posX,
-		};
-		const t4ep8 = {	// Exit of loop
-			backwardWeight: t4loopWeight,
-			center: {
-				x: t4ep7.center.x - t4loopRadius,
-				y: t4ep7.center.y - t4loopRadius,
-				z: t4ep7.center.z + t4loopOffset
-			},
-			forward: negX,
-		};
-		const t4ep9 = {	// Runout
-			type: 'straight',
-			length: 2 * t4loopRadius,
-		};
-		const lep2 = {	// End of starting ramp, start of runout
-			center: launch.points[1],
-			forward: launch.forward,
-			forwardWeight: 1.1,
-		};
+			init: function() {
+				const weight = circleWeight * this._radius;
 
-		const t4s1 = {
-			points: [ launch.start, lep2, t4ep3, t4ep4, t4ep5, t4ep6, t4ep7, t4ep8, t4ep9 ]
-		};
+				this.track = { segments: [ { points: [
+					launch.start,
+					launch.end,
+				]}]};
+				let p = this._pushPoint({	// End of slope, start of flat
+					center: zero,
+					forward: negX,
+					backwardWeight: 4,
+				});
+				p = this._pushPoint({		// Entry into loop
+					center: {
+						x: p.center.x - this._radius,
+						y: p.center.y,
+						z: p.center.z
+					},
+					forward: negX,
+					forwardWeight: weight,
+				});
+				p = this._pushPoint({		// First quarter of loop
+					backwardWeight: weight,
+					center: {
+						x: p.center.x - this._radius,
+						y: p.center.y + this._radius,
+						z: p.center.z + this._offset,
+					},
+					forward: posY,
+					forwardWeight: weight,
+					trackBank: negX,
+				});
+				p = this._pushPoint({		// Top of loop
+					backwardWeight: weight,
+					center: {
+						x: p.center.x + this._radius,
+						y: p.center.y + this._radius,
+						z: p.center.z + this._offset
+					},
+					forward: posX,
+					forwardWeight: weight,
+					trackBank: posY,
+				});
+				p = this._pushPoint({		// Last quarter of loop
+					backwardWeight: weight,
+					center: {
+						x: p.center.x + this._radius,
+						y: p.center.y - this._radius,
+						z: p.center.z + this._offset
+					},
+					forward: negY,
+					forwardWeight: weight,
+					trackBank: posX,
+				});
+				p = this._pushPoint({		// Exit of loop
+					backwardWeight: weight,
+					center: {
+						x: p.center.x - this._radius,
+						y: p.center.y - this._radius,
+						z: p.center.z + this._offset
+					},
+					forward: negX,
+				});
+				this._pushPoint({			// Runout
+					type: 'straight',
+					length: 2 * this._radius,
+				});
+			},
 
-		tracks._tracks.track4 = {
-			segments: [ t4s1 ]
-		};
+			_pushPoint: function(p) {
+				this.track.segments[0].points.push(p);
+				return p;
+			},
+		});
 
 		//----------------------------------------------------------------------
 		// Track 5, flat 180 degree turns
