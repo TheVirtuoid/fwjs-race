@@ -45,8 +45,6 @@
 	<div>
 		<label for="tracks">Choose a track:</label>
 		<select name="tracks" id="tracks">
-			<option value="track1a">Track 1a (track 1 with variable track width)</option>
-			<option value="track1b">Track 1b (track 1a with alternate straight)</option>
 			<option value="track2">Track 2 (ramp with jump and left curve)</option>
 			<option value="track2a">Track 2a (track 2 with 45&#176; bank)</option>
 			<option value="track2b">Track 2b (track 2 using spiral)</option>
@@ -109,8 +107,10 @@
 					option.style.display = familyKey === key ? "block" : "none";
 				}
 			},
-			options: {},
 			register: function(track) {
+
+				// Invoke function if not an object
+				if (typeof(track) === 'function') track = track();
 
 				// Perform late initialization
 				if (track.init) track.init();
@@ -139,7 +139,11 @@
 
 				// Add family if necessary
 				if (!this._families[familyKey]) {
+					// This possibly leads to multiple member lists to avoid
+					// altering the 'display' style in onFamilyChanged
 					this._families[familyKey] = [];
+
+					// Add the family to the family list
 					const fsOption = document.createElement("option");
 					fsOption.setAttribute('value', familyKey);
 					fsOption.innerHTML = family;
@@ -154,14 +158,15 @@
 				memberSelector.appendChild(msOption);
 
 				// Add the track to the tracks and options arrays
-				this.tracks[key] = track.track;
-				if (track.options) this.options[key] = track.options;
+				this._tracks[key] = track.track;
+				if (track.options) this._options[key] = track.options;
 			},
-			tracks: {},
 
 			_families: {},
+			_options: {},
 			_originalMember: 'Original',
 			_removeSpaces: function(value) { return value.replace(/\s/g, ''); },
+			_tracks: {},
 		};
 
 		// See https://spencermortensen.com/articles/bezier-circle/
@@ -169,6 +174,9 @@
 		// convention that backward = -forward and allow backward to be
 		// forward rotated 180 degrees around down.
 		const circleWeight = 0.5519150244935105707435627;
+
+		//----------------------------------------------------------------------
+		// Closed ovals
 
 		const track0 = {
 			family: 'Closed oval',
@@ -192,26 +200,30 @@
 			}
 		}
 		tracks.register(track0);
-
-		const track0a = {
+		tracks.register({
 			sibling: track0,
 			member: 'Variable wall height',
-			points: [
-				track0.points[0],
-				{ center: track0.points[1].center, forward: track0.points[1].forward, wallHeight: .6 },
-				{ center: track0.points[2].center, forward: track0.points[2].forward, wallHeight: .7 },
-				{ center: track0.points[3].center, forward: track0.points[3].forward, wallHeight: .6 },
-				track0.points[4],
-				track0.points[5],
-				track0.points[6],
-			],
-			track: { closed: true },
 			options: track0.options,
-			init: function() {
-				this.track.segments = [ { points: this.points } ];
-			}
-		}
-		tracks.register(track0a);
+			track: {
+				closed: true,
+				segments: [
+					{
+						points: [
+							track0.points[0],
+							{ center: track0.points[1].center, forward: track0.points[1].forward, wallHeight: .6 },
+							{ center: track0.points[2].center, forward: track0.points[2].forward, wallHeight: .7 },
+							{ center: track0.points[3].center, forward: track0.points[3].forward, wallHeight: .6 },
+							track0.points[4],
+							track0.points[5],
+							track0.points[6],
+						],
+					},
+				],
+			},
+		});
+
+		//----------------------------------------------------------------------
+		// Common launch point
 
 		const launch = {
 			points: [
@@ -236,7 +248,7 @@
 		launch.init();
 
 		//----------------------------------------------------------------------
-		// Track 1, a simple slope
+		// Simple slope
 
 		const track1 = {
 			family: "Simple slope",
@@ -249,60 +261,75 @@
 				type: 'straight',
 				length: 2,
 			},
-			track: {
-			},
 
 			init: function() {
-				const points = [
-					launch.start,
-					{
-						type: 'straight',
-						endsAt: launch.points[1],
-						forwardWeight: 1.1
-					},
-					this.runoutStart,
-					this.runoutStraight,
-				];
-				this.track = { segments: [ points ] };
+				this.track = {
+					segments: [
+						{
+							points: [
+								launch.start,
+								{
+									type: 'straight',
+									endsAt: launch.points[1],
+									forwardWeight: 1.1
+								},
+								this.runoutStart,
+								this.runoutStraight,
+							],
+						}
+					],
+				};
 			}
 		}
 		tracks.register(track1);
 
-		//----------------------------------------------------------------------
-		// Track 1a, track 1 with variable track width
+		const track1a = {
+			sibling: track1,
+			member: 'Variable track width',
+			runoutStraight: {
+				type: 'straight',
+				length: track1.runoutStraight.length,
+				trackWidth: 2,
+			},
 
-		const t1aep4 = {	// End of runout flat
-			type: 'straight',
-			length: track1.runoutStraight.length,
-			trackWidth: 2,
-		};
+			init: function() {
+				this.track = {
+					segments: [
+						{
+							points: [
+								launch.start,
+								launch.straight,
+								track1.runoutStart,
+								this.runoutStraight,
+							],
+						},
+					],
+				}
+			},
+		}
+		tracks.register(track1a);
 
-		const t1as1 = {
-			points: [ launch.start, launch.straight, track1.runoutStart, t1aep4 ]
-		};
-
-		tracks.tracks.track1a = {
-			segments: [ t1as1 ]
-		};
-
-		//----------------------------------------------------------------------
-		// Track 1b, track 1a with alternate straight
-
-		const launchStraight4 = {
-			type: 'straight',
-			startsAt: launch.points[0],
-			forward: launch.forward,
-			length: 1.004987562112089,
-			forwardWeight: 1.1
-		};
-
-		const t1bs1 = {
-			points: [ launchStraight4, track1.runoutStart, t1aep4 ]
-		};
-
-		tracks.tracks.track1b = {
-			segments: [ t1bs1 ]
-		};
+		tracks.register({
+			sibling: track1,
+			member: "Alternate straight",
+			track: {
+				segments: [
+					{
+						points: [
+							{
+								type: 'straight',
+								startsAt: launch.points[0],
+								forward: launch.forward,
+								length: 1.004987562112089,
+								forwardWeight: 1.1
+							},
+							track1.runoutStart,
+							track1a.runoutStraight,
+						],
+					},
+				],
+			},
+		});
 
 		//----------------------------------------------------------------------
 		// Common jump ramp points
@@ -387,7 +414,7 @@
 			points: [ jrep4, t2ep5, t2ep6, t2ep7, t2ep8, t2ep9 ]
 		};
 
-		tracks.tracks.track2 = {
+		tracks._tracks.track2 = {
 			segments: [ jrs1, t2s2 ]
 		};
 
@@ -425,7 +452,7 @@
 			points: [ jrep4, t2aep5, t2aep6, t2aep7, t2aep8, t2ep9 ]
 		};
 
-		tracks.tracks.track2a = {
+		tracks._tracks.track2a = {
 			segments: [ jrs1, t2as2 ]
 		};
 
@@ -453,7 +480,7 @@
 			points: [ jrep4, t2bep5, t2bspiral, t2brunout ]
 		};
 
-		tracks.tracks.track2b = {
+		tracks._tracks.track2b = {
 			//debug: true,
 			segments: [ jrs1, t2bs2 ]
 		};
@@ -480,7 +507,7 @@
 			points: [ jrep4, t2bep5, t2cspiral, t2brunout ]
 		};
 
-		tracks.tracks.track2c = {
+		tracks._tracks.track2c = {
 			segments: [ jrs1, t2cs2 ]
 		};
 
@@ -530,7 +557,7 @@
 			points: [ jrep4, t3ep5, t3ep6, t3ep7, t3ep8, t3ep9 ]
 		};
 
-		tracks.tracks.track3 = {
+		tracks._tracks.track3 = {
 			segments: [ jrs1, t3s2 ]
 		};
 
@@ -568,7 +595,7 @@
 			points: [ jrep4, t3aep5, t3aep6, t3aep7, t3aep8, t3ep9 ]
 		};
 
-		tracks.tracks.track3a = {
+		tracks._tracks.track3a = {
 			segments: [ jrs1, t3as2 ]
 		};
 
@@ -594,7 +621,7 @@
 		const t3bs2 = {
 			points: [ jrep4, t3bep5, t3bspiral, t3brunout ]
 		};
-		tracks.tracks.track3b = {
+		tracks._tracks.track3b = {
 			//debug: true,
 			segments: [ jrs1, t3bs2 ]
 		};
@@ -614,7 +641,7 @@
 		const t3cs2 = {
 			points: [ jrep4, t3bep5, t3cspiral, t3brunout ]
 		};
-		tracks.tracks.track3c = {
+		tracks._tracks.track3c = {
 			segments: [ jrs1, t3cs2 ]
 		};
 
@@ -700,7 +727,7 @@
 			points: [ launch.start, lep2, t4ep3, t4ep4, t4ep5, t4ep6, t4ep7, t4ep8, t4ep9 ]
 		};
 
-		tracks.tracks.track4 = {
+		tracks._tracks.track4 = {
 			segments: [ t4s1 ]
 		};
 
@@ -798,7 +825,7 @@
 			length: t5runout,
 		}
 
-		tracks.tracks.track5 = {
+		tracks._tracks.track5 = {
 			segments: [
 				{
 					points: [ t5ep0L, t5ep1L, t5ep2L, t5ep3L, t5runoutStraight ],
@@ -856,7 +883,7 @@
 			rotate: 'right',
 		};
 
-		tracks.tracks.track5a = {
+		tracks._tracks.track5a = {
 			segments: [
 				{
 					points: [ t5ep0L, t5ep1L, t5ep2L, t5ep3L, t5runoutStraight ],
@@ -929,8 +956,8 @@
 			trackMeshes.length = 0;
 
 			const key = !selector ? trackSelector.value : selector.value;
-			const track = tracks.tracks[key];
-			const settings = tracks.options[key] ? tracks.options[key] : {};
+			const track = tracks._tracks[key];
+			const settings = tracks._options[key] ? tracks._options[key] : {};
 
 			const ribbons = TrackPOC.build(track, (u) => { return new BABYLON.Vector3(u.x, u.y, u.z); }, settings);
 			for (let i = 0; i < ribbons.length; i++) {
@@ -989,7 +1016,7 @@
 			ball = BABYLON.MeshBuilder.CreateSphere("ball", { diameter: ballDiameter }, scene);
 			ball.physicsImpostor = new BABYLON.PhysicsImpostor(ball, BABYLON.PhysicsImpostor.SphereImpostor, {mass: ballWeight}, scene);
 
-			const track = tracks.tracks[trackSelector.value];
+			const track = tracks._tracks[trackSelector.value];
 			const segment = track.segments[0];
 			const p0 = segment.points[0].center;
 			const p1 = segment.points[1].center;
