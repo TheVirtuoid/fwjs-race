@@ -64,6 +64,8 @@
 			<option value="track6c">Track 6c (right helix, no center)</option>
 			<option value="track6d">Track 6d (right helix, center)</option>
 		</select>
+		<select id="trackFamilies"></select>
+		<select id="trackMembers"></select>
 		<button type="button" id="go">GO!</button>
 	</div>
 	<div>
@@ -75,8 +77,16 @@
 		//======================================================================
 		// TRACK SELECTION
 		const trackSelector = document.getElementById("tracks");
+		const familySelector = document.getElementById("trackFamilies");
+		const memberSelector = document.getElementById("trackMembers");
 		trackSelector.addEventListener("change", () => {
 			createMesh();
+		});
+		familySelector.addEventListener("change", () => {
+
+		});
+		memberSelector.addEventListener("change", () => {
+			createMesh(memberSelector);
 		});
 
 		//======================================================================
@@ -93,31 +103,46 @@
 		const negZ = new BABYLON.Vector3.Backward;
 		const zero = { x:0, y:0, z:0 };
 
-		// HACK: This is presumably needed because we cannot define 'segments'
-		// by referring to this.points within the track definition
-		const addTrackSegment = function(track, segment) {
-			if (!track.track) track.track = { segments: [] };
-			else if (!track.track.segments) track.track.segments = [];
-			if (segment.constructor.toString().indexOf('Array') > -1) {
-				segment = { points: segment };
-			}
-			track.track.segments.push(segment);
-		}
-
 		const registerTrack = function(track) {
+
+			// Check for proper definitions
+			if (!track.family && !track.member) throw "Must define either 'family' or 'sibling'"
+			if (!track.member) throw "Must define 'member'";
+
+			// Perform late initialization
+			if (track.init) track.init();
+
+			// TODO: Get rid of name/desc and use family/member instead
 			const key = track.name.replace(/\s/g, '');
 			const desc = track.desc.length > 0 ?
 				(track.name + ' (' + track.desc + ')') :
 				track.name;
 
+			// Old track selector
+			const tsOption = document.createElement("option");
+			tsOption.setAttribute('value', key);
+			tsOption.innerHTML = desc;
+			trackSelector.appendChild(tsOption);
+
+			// Add family if necessary
+			const family = track.family ? track.family : track.sibling.family;
+			if (track.family) {
+				const fsOption = document.createElement("option");
+				fsOption.setAttribute('value', family);
+				fsOption.innerHTML = family;
+				familySelector.appendChild(fsOption);
+			}
+
+			// Add to member selector
+			const msOption = document.createElement("option");
+			msOption.setAttribute('value', key);
+			msOption.setAttribute('family', family);
+			msOption.innerHTML = track.member;
+			memberSelector.appendChild(msOption);
+
+			// Add the track to the tracks and options arrays
 			tracks[key] = track.track;
 			if (track.options) options[key] = track.options;
-
-			const option = document.createElement("option");
-			option.setAttribute('value', key);
-			option.innerHTML = desc;
-
-			trackSelector.appendChild(option);
 		}
 
 		// See https://spencermortensen.com/articles/bezier-circle/
@@ -127,6 +152,8 @@
 		const circleWeight = 0.5519150244935105707435627;
 
 		const track0 = {
+			family: 'Closed oval',
+			member: 'Original',
 			name: 'Track 0',
 			desc: 'closed oval',
 			points: [
@@ -144,11 +171,15 @@
 				forwardWeight: 0.5,
 				trackWidth: 0.5,
 			},
+			init: function() {
+				this.track.segments = [ { points: this.points } ];
+			}
 		}
-		addTrackSegment(track0, track0.points);
 		registerTrack(track0);
 
 		const track0a = {
+			sibling: track0,
+			member: 'Variable wall height',
 			name: track0.name + 'a',
 			desc: track0.name + ' with variable wall height',
 			points: [
@@ -162,49 +193,33 @@
 			],
 			track: { closed: true },
 			options: track0.options,
+			init: function() {
+				this.track.segments = [ { points: this.points } ];
+			}
 		}
-		addTrackSegment(track0a, track0a.points);
 		registerTrack(track0a);
 
-		//----------------------------------------------------------------------
-		// Common launch points
+		const launch = {
+			points: [
+				{ x:10 , y:5, z:0 },
+				{ x:9, y:4.9, z:0 },
+			],
 
-		const lv1 = { x:10 , y:5, z:0 };
-		const lv2 = { x:9, y:4.9, z:0 };
-		const lt1_2 = TrackPOC.vector.direction(lv1, lv2);
-		const lep1 = {	// Start of starting ramp
-			center: lv1,
-			forward: lt1_2,
-		};
-		const lep2 = {	// End of starting ramp, start of runout
-			center: lv2,
-			forward: lt1_2,
-			forwardWeight: 1.1,
-		};
-		const launchStraight1 = {
-			type: 'straight',
-			endsAt: lv2,
-			forwardWeight: 1.1
-		};
-		const launchStraight2 = {
-			type: 'straight',
-			endsAt: lv2,
-			startsAt: lv1,
-			forwardWeight: 1.1
-		};
-		// Straight with just length demonstrated elsewhere
-		//const launchStraight3 = {
-		//	type: 'straight',
-		//	length: 1.004987562112089,
-		//	forwardWeight: 1.1
-		//};
-		const launchStraight4 = {
-			type: 'straight',
-			startsAt: lv1,
-			forward: lt1_2,
-			length: 1.004987562112089,
-			forwardWeight: 1.1
-		};
+			init: function() {
+				this.forward = { x:-1, y:-0.1, z:0 };
+				this.start = {
+					center: launch.points[0],
+					forward: launch.forward,
+				};
+				this.straight = {
+					type: 'straight',
+					endsAt: launch.points[1],
+					startsAt: launch.points[0],
+					forwardWeight: 1.1
+				};
+			}
+		}
+		launch.init();
 
 		//----------------------------------------------------------------------
 		// Track 1, a simple slope
@@ -218,9 +233,14 @@
 			type: 'straight',
 			length: 2,
 		};
+		const launchStraight1 = {
+			type: 'straight',
+			endsAt: launch.points[1],
+			forwardWeight: 1.1
+		};
 
 		const t1s1 = {
-			points: [ lep1, launchStraight1, t1ep3, t1ep4 ]
+			points: [ launch.start, launchStraight1, t1ep3, t1ep4 ]
 		};
 
 		tracks.track1 = {
@@ -242,7 +262,7 @@
 		};
 
 		const t1as1 = {
-			points: [ lep1, launchStraight2, t1aep3, t1aep4 ]
+			points: [ launch.start, launch.straight, t1aep3, t1aep4 ]
 		};
 
 		tracks.track1a = {
@@ -261,6 +281,13 @@
 			type: 'straight',
 			length: 2,
 			trackWidth: 2,
+		};
+		const launchStraight4 = {
+			type: 'straight',
+			startsAt: launch.points[0],
+			forward: launch.forward,
+			length: 1.004987562112089,
+			forwardWeight: 1.1
 		};
 
 		const t1bs1 = {
@@ -302,7 +329,7 @@
 		const jrt5 = negX;
 
 		const jrs1 = {
-			points: [ launchStraight2, jrep3 ]
+			points: [ launch.straight, jrep3 ]
 		};
 
 		//----------------------------------------------------------------------
@@ -657,9 +684,14 @@
 			type: 'straight',
 			length: 2 * t4loopRadius,
 		};
+		const lep2 = {	// End of starting ramp, start of runout
+			center: launch.points[1],
+			forward: launch.forward,
+			forwardWeight: 1.1,
+		};
 
 		const t4s1 = {
-			points: [ lep1, lep2, t4ep3, t4ep4, t4ep5, t4ep6, t4ep7, t4ep8, t4ep9 ]
+			points: [ launch.start, lep2, t4ep3, t4ep4, t4ep5, t4ep6, t4ep7, t4ep8, t4ep9 ]
 		};
 
 		tracks.track4 = {
@@ -880,7 +912,7 @@
 			return scene;
 		}
 
-		const createMesh = function() {
+		const createMesh = function(selector) {
 
 			for (let mesh of trackMeshes) {
 				scene.removeMesh(mesh);
@@ -888,9 +920,9 @@
 			}
 			trackMeshes.length = 0;
 
-			const track = tracks[trackSelector.value];
-			let settings = options[trackSelector.value];
-			if (settings === null || settings === undefined) settings = {};
+			const key = !selector ? trackSelector.value : selector.value;
+			const track = tracks[key];
+			const settings = options[key] ? options[key] : {};
 
 			const ribbons = TrackPOC.build(track, (u) => { return new BABYLON.Vector3(u.x, u.y, u.z); }, settings);
 			for (let i = 0; i < ribbons.length; i++) {
