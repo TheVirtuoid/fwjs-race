@@ -9,8 +9,8 @@ import {
 
 const defaults = {
 	wheel: {
-		diameter: 2,
-		height:.5,
+		diameter: 1,
+		height:.25,
 		mass: 10
 	},
 	wheelBase: {

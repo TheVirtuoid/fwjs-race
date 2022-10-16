@@ -7,7 +7,7 @@ import Layout from "../js/classes/Layout";
 
 const trackWidth = 6;
 const jrRadius = 12
-const trackBank = 75;
+const trackBank = 40;
 const wallHeight = .75;
 
 const jrep3 = {
@@ -52,7 +52,7 @@ const t2aep5 = {	// Start of curve
 	center: jrv5,
 	forward: jrt5,
 	forwardWeight: Track.circleWeight * jrRadius,
-	trackBank: 0,
+	trackBank: 30,
 	trackWidth,
 	wallHeight
 };
