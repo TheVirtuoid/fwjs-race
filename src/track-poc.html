@@ -39,10 +39,21 @@
 				height: 100%;
 				touch-action: none;
 			}
+
+			#track-selector {
+				border: 2px solid blue;
+				border-radius: 1rem;
+				background-color: white;
+				padding: .5rem 1rem;
+				color: black;
+				position: absolute;
+				top: 1rem;
+				left: 1rem;
+			}
 		</style>
 	</head>
 <body>
-	<div>
+	<div id="track-selector">
 		<label for="tracks">Choose a track:</label>
 		<select id="trackFamilies"></select>
 		<select id="trackMembers"></select>
