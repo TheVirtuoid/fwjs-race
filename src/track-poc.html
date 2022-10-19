@@ -141,6 +141,20 @@
 				this._scene.enablePhysics(new BABYLON.Vector3(0, -8.91, 0), new BABYLON.AmmoJSPlugin());
 				return this._scene;
 			},
+			createSphere: function(name, sphereOptions, impostorOptions) {
+				if (!this._scene) throw "Must invoke createScene first";
+				const mesh = BABYLON.MeshBuilder.CreateSphere(name, sphereOptions, this._scene);
+				mesh.physicsImpostor = new BABYLON.PhysicsImpostor(mesh, BABYLON.PhysicsImpostor.SphereImpostor, impostorOptions, this._scene);
+				return mesh;
+			},
+			destroyMesh: function(mesh) {
+				if (!this._scene) throw "Must invoke createScene first";
+				if (mesh) {
+					this._scene.removeMesh(mesh);
+					mesh.dispose();
+				}
+				return false;
+			},
 			ready: function() {
 				if (!this._scene) throw "Must invoke createScene first";
 				this._ready = true;
@@ -161,22 +175,25 @@
 		// BALL SUPPORT
 
 		const ball = {
+
+			_diameter: .25,
+			_height: 1,
+			_inset: .8,
+			_weight: 2,
+
+			destroy: function() {
+				this._mesh = babylon.destroyMesh(this._mesh);
+			},
 			setButton(id) {
 				document.getElementById(id).addEventListener('click', this._drop);
 			},
 
 			_drop: function() {
-				throw "Not tested";
 				ball.destroy();
-				ball._mesh = babylon.createSphere("ball", {diameter: ball._diameter}, {mass: ball._weight});
-
-				const track = tracks.getActiveTrack();
-				const segment = track.segments[0];
-				const p0 = segment.points[0].center;
-				const p1 = segment.points[1].center;
-
+				const {p0, p1} = tracks.getTrackStart();
 				const t = ball._inset;
 				const olt = 1 - t;
+				ball._mesh = babylon.createSphere("ball", {diameter: ball._diameter}, {mass: ball._weight});
 				ball._mesh.position.x = p0.x * t + p1.x * olt;
 				ball._mesh.position.y = p0.y * t + p0.y * olt + ball._height;
 				ball._mesh.position.z = p0.z * t + p1.z * olt;
@@ -187,7 +204,7 @@
 		// TRACK MANAGEMENT
 
 		const tracks = {
-
+			getTrackStart: function() { return this._start; },
 			register: function(track) {
 
 				// Invoke function if not an object
@@ -245,17 +262,13 @@
 				this._memberSelector.addEventListener("change", () => { this._createMesh() });
 			},
 			start: function() {
-				console.log('start');
 				if (!this._familySelector || !this._memberSelector) throw "Must invoke setSelectors first";
 				this._onFamilyChanged();
 			},
 
 			_createMesh: function() {
-
-				for (let mesh of this._meshes) {
-					babylon._scene.removeMesh(mesh);
-					mesh.dispose();
-				}
+				ball.destroy();
+				for (let mesh of this._meshes) babylon.destroyMesh(mesh);
 				this._meshes.length = 0;
 
 				try {
@@ -264,6 +277,25 @@
 					const settings = this._options[key] ? this._options[key] : {};
 
 					const ribbons = TrackPOC.build(track, (u) => { return new BABYLON.Vector3(u.x, u.y, u.z); }, settings);
+					const ribbon = ribbons[0];
+					const leftRoad = ribbon[1];
+					const rightRoad = ribbon[2];
+					const p0left = leftRoad[0];
+					const p0right = rightRoad[0];
+					const p1left = leftRoad[1];
+					const p1right = rightRoad[1];
+					this._start = {
+						p0: {
+							x: (p0left.x + p0right.x) / 2,
+							y: (p0left.y + p0right.y) / 2,
+							z: (p0left.z + p0right.z) / 2,
+						},
+						p1: {
+							x: (p1left.x + p1right.x) / 2,
+							y: (p1left.y + p1right.y) / 2,
+							z: (p1left.z + p1right.z) / 2,
+						},
+					}
 					for (let i = 0; i < ribbons.length; i++) {
 						const mesh = BABYLON.MeshBuilder.CreateRibbon(
 								`Segment${i}`,
@@ -996,7 +1028,7 @@
 		}
 
 		//======================================================================
-		// BABYLON IMPLEMENTATION
+		// WINDOW INITIALIZATION
 
 		window.initFunction = async function() {
 
@@ -1027,34 +1059,8 @@
 			window.scene = babylon.createScene();
 			tracks.start();
 		};
-
-		initFunction().then(() => { babylon.ready(); });
-		window.addEventListener("resize", function () { babylon.resize(); });
-
-		// testing on track 2
-		const ballDiameter = .25;
-		const ballWeight = 2;
-		const dropTheBall = () => {
-
-			if (ball._ball) { babylon._scene.removeMesh(ball._ball); ball._ball.dispose(); }
-			ball._ball = BABYLON.MeshBuilder.CreateSphere("ball", { diameter: ballDiameter }, babylon._scene);
-			ball._ball.physicsImpostor = new BABYLON.PhysicsImpostor(ball._ball, BABYLON.PhysicsImpostor.SphereImpostor, {mass: ballWeight}, babylon._scene);
-
-			const track = tracks._tracks[tracks._memberSelector.value];
-			const segment = track.segments[0];
-			const p0 = segment.points[0].center;
-			const p1 = segment.points[1].center;
-
-			const t = .8;
-			const olt = 1 - t;
-			const altitude = 1;
-			ball._ball.position.x = p0.x * t + p1.x * olt;
-			ball._ball.position.y = p0.y * t + p0.y * olt + altitude;	// Force the ball above the track
-			ball._ball.position.z = p0.z * t + p1.z * olt;
-		};
-
-		document.getElementById('go').addEventListener('click', dropTheBall);
-
+		initFunction().then(() => { babylon.ready() });
+		window.addEventListener("resize", function () { babylon.resize() });
 	</script>
 </body>
 </html>
