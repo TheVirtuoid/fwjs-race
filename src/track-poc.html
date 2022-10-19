@@ -117,6 +117,15 @@
 		// BABYLON SUPPORT
 
 		const babylon = {
+			createDefaultEngine: function() {
+				if (!this._canvas) throw "Must invoke setCanvas first";
+				this._engine = new BABYLON.Engine(this._canvas, true, {
+					preserveDrawingBuffer: true,
+					stencil: true,
+					disableWebGL2Support: false
+				});
+				return this._engine;
+			},
 			setCanvas: function(id) { this._canvas = document.getElementById(id); },
 		}
 
@@ -127,6 +136,7 @@
 			setButton(id) {
 				document.getElementById(id).addEventListener('click', this._drop);
 			},
+
 			_drop: function() {
 				throw "Not tested";
 				ball.destroy();
@@ -148,59 +158,8 @@
 		//======================================================================
 		// TRACK MANAGEMENT
 
-		const posX = new BABYLON.Vector3.Right;
-		const negX = new BABYLON.Vector3.Left;
-		const posY = new BABYLON.Vector3.Up;
-		const negY = new BABYLON.Vector3.Down;
-		const posZ = new BABYLON.Vector3.Forward;
-		const negZ = new BABYLON.Vector3.Backward;
-		const zero = { x:0, y:0, z:0 };
-
 		const tracks = {
 
-			_createMesh: function() {
-
-				for (let mesh of this._meshes) {
-					scene.removeMesh(mesh);
-					mesh.dispose();
-				}
-				this._meshes.length = 0;
-
-				try {
-					const key = this._memberSelector.value;
-					const track = this._tracks[key];
-					const settings = this._options[key] ? this._options[key] : {};
-
-					const ribbons = TrackPOC.build(track, (u) => { return new BABYLON.Vector3(u.x, u.y, u.z); }, settings);
-					for (let i = 0; i < ribbons.length; i++) {
-						const mesh = BABYLON.MeshBuilder.CreateRibbon(
-								`Segment${i}`,
-								{
-									pathArray: ribbons[i],
-									sideOrientation: BABYLON.Mesh.DOUBLESIDE,
-									closePath: track.closed,
-								},
-								scene);
-						mesh.physicsImpostor = new BABYLON.PhysicsImpostor(mesh, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0 }, scene);
-						this._meshes.push(mesh);
-					}
-					displayMgr.clearError();
-				} catch (e) {
-					displayMgr.showError(e);
-				}
-			},
-			_onFamilyChanged: function() {
-				const key = this._familySelector.value;
-				let firstMatch = -1;
-				for (let i = 0; i < this._memberSelector.options.length; i++) {
-					const option = this._memberSelector.options[i];
-					const match = option.getAttribute("family") === key;
-					option.style.display = match ? "block" : "none";
-					if (match && firstMatch === -1) firstMatch = i;
-				}
-				if (firstMatch !== -1) this._memberSelector.selectedIndex = firstMatch;
-				this._createMesh();
-			},
 			register: function(track) {
 
 				// Invoke function if not an object
@@ -258,6 +217,50 @@
 				this._memberSelector.addEventListener("change", () => { this._createMesh() });
 			},
 
+			_createMesh: function() {
+
+				for (let mesh of this._meshes) {
+					scene.removeMesh(mesh);
+					mesh.dispose();
+				}
+				this._meshes.length = 0;
+
+				try {
+					const key = this._memberSelector.value;
+					const track = this._tracks[key];
+					const settings = this._options[key] ? this._options[key] : {};
+
+					const ribbons = TrackPOC.build(track, (u) => { return new BABYLON.Vector3(u.x, u.y, u.z); }, settings);
+					for (let i = 0; i < ribbons.length; i++) {
+						const mesh = BABYLON.MeshBuilder.CreateRibbon(
+								`Segment${i}`,
+								{
+									pathArray: ribbons[i],
+									sideOrientation: BABYLON.Mesh.DOUBLESIDE,
+									closePath: track.closed,
+								},
+								scene);
+						mesh.physicsImpostor = new BABYLON.PhysicsImpostor(mesh, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0 }, scene);
+						this._meshes.push(mesh);
+					}
+					displayMgr.clearError();
+				} catch (e) {
+					displayMgr.showError(e);
+				}
+			},
+			_onFamilyChanged: function() {
+				const key = this._familySelector.value;
+				let firstMatch = -1;
+				for (let i = 0; i < this._memberSelector.options.length; i++) {
+					const option = this._memberSelector.options[i];
+					const match = option.getAttribute("family") === key;
+					option.style.display = match ? "block" : "none";
+					if (match && firstMatch === -1) firstMatch = i;
+				}
+				if (firstMatch !== -1) this._memberSelector.selectedIndex = firstMatch;
+				this._createMesh();
+			},
+
 			_families: {},
 			_meshes: [],
 			_options: {},
@@ -265,6 +268,17 @@
 			_removeSpaces: function(value) { return value.replace(/\s/g, ''); },
 			_tracks: {},
 		};
+
+		//======================================================================
+		// TRACK DEFINITION
+
+		const posX = new BABYLON.Vector3.Right;
+		const negX = new BABYLON.Vector3.Left;
+		const posY = new BABYLON.Vector3.Up;
+		const negY = new BABYLON.Vector3.Down;
+		const posZ = new BABYLON.Vector3.Forward;
+		const negZ = new BABYLON.Vector3.Backward;
+		const zero = { x:0, y:0, z:0 };
 
 		const defineTracks = function() {
 
@@ -964,20 +978,12 @@
 		//	'engine' is declared 'let' and does not display anything if 'scene'
 		//	is declared 'let', presumably becasue 'scene' is null when
 		//	sceneToRender is set.
-		var engine = null;
 		var scene = null;
 		let sceneToRender = null;
 
-		const createDefaultEngine = function() {
-			return new BABYLON.Engine(babylon._canvas, true, {
-				preserveDrawingBuffer: true,
-				stencil: true,
-				disableWebGL2Support: false
-			});
-		};
 
 		const createScene = function () {
-			const scene = new BABYLON.Scene(engine);
+			const scene = new BABYLON.Scene(babylon._engine);
 
 			const camera = new BABYLON.ArcRotateCamera(
 				"Camera",
@@ -1006,19 +1012,19 @@
 
 			const asyncEngineCreation = async function() {
 				try {
-					return createDefaultEngine();
+					return babylon.createDefaultEngine();
 				} catch(e) {
 					console.log("the available createEngine function failed. Creating the default engine instead");
-					return createDefaultEngine();
+					return babylon.createDefaultEngine();
 				}
 			}
 
 			window.engine = await asyncEngineCreation();
-			if (!engine) throw 'engine should not be null.';
+			if (!babylon._engine) throw 'engine should not be null.';
 
 			await Ammo();
 
-			startRenderLoop(engine);
+			startRenderLoop(babylon._engine);
 
 			window.scene = createScene();
 			tracks._onFamilyChanged();
@@ -1030,7 +1036,7 @@
 
 		// Resize
 		window.addEventListener("resize", function () {
-			engine.resize();
+			babylon._engine.resize();
 		});
 
 		// testing on track 2
