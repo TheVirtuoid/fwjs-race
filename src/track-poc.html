@@ -141,13 +141,17 @@
 				this._scene.enablePhysics(new BABYLON.Vector3(0, -8.91, 0), new BABYLON.AmmoJSPlugin());
 				return this._scene;
 			},
+			ready: function() {
+				if (!this._scene) throw "Must invoke createScene first";
+				this._ready = true;
+			},
 			resize: function() { if (this._engine) this._engine.resize(); },
 			setCanvas: function(id) { this._canvas = document.getElementById(id); },
 			startRenderLoop: function () {
 				if (!this._engine) throw "Must invoke createDefaultEngine first";
 				this._engine.runRenderLoop(function () {
-					if (sceneToRender && sceneToRender.activeCamera) {
-						sceneToRender.render();
+					if (babylon._ready && babylon._scene.activeCamera) {
+						babylon._scene.render();
 					}
 				});
 			},
@@ -989,8 +993,6 @@
 		//======================================================================
 		// BABYLON IMPLEMENTATION
 
-		let sceneToRender = null;
-
 		window.initFunction = async function() {
 
 			// Hook DOM elements
@@ -1021,9 +1023,7 @@
 			tracks._onFamilyChanged();
 		};
 
-		initFunction().then(() => {
-			sceneToRender = babylon._scene
-		});
+		initFunction().then(() => { babylon.ready(); });
 		window.addEventListener("resize", function () { babylon.resize(); });
 
 		// testing on track 2
