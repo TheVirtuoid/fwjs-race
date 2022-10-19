@@ -127,6 +127,14 @@
 				return this._engine;
 			},
 			setCanvas: function(id) { this._canvas = document.getElementById(id); },
+			startRenderLoop: function () {
+				if (!this._engine) throw "Must invoke createDefaultEngine first";
+				this._engine.runRenderLoop(function () {
+					if (sceneToRender && sceneToRender.activeCamera) {
+						sceneToRender.render();
+					}
+				});
+			},
 		}
 
 		//======================================================================
@@ -965,14 +973,6 @@
 		//======================================================================
 		// BABYLON IMPLEMENTATION
 
-		const startRenderLoop = function (engine) {
-			engine.runRenderLoop(function () {
-				if (sceneToRender && sceneToRender.activeCamera) {
-					sceneToRender.render();
-				}
-			});
-		}
-
 		//	It is not clear why 'engine' and 'scene' must be declared as 'var'
 		//	instead of 'let'. The page throws a 'engine is null' exception if
 		//	'engine' is declared 'let' and does not display anything if 'scene'
@@ -980,7 +980,6 @@
 		//	sceneToRender is set.
 		var scene = null;
 		let sceneToRender = null;
-
 
 		const createScene = function () {
 			const scene = new BABYLON.Scene(babylon._engine);
@@ -1024,8 +1023,7 @@
 
 			await Ammo();
 
-			startRenderLoop(babylon._engine);
-
+			babylon.startRenderLoop();
 			window.scene = createScene();
 			tracks._onFamilyChanged();
 		};
