@@ -50,6 +50,20 @@
 				top: 1rem;
 				left: 1rem;
 			}
+
+			#track-error {
+				border: 2px solid blue;
+				border-radius: 1rem;
+				background-color: white;
+				padding: .5rem 1rem;
+				color: black;
+				display: none;
+				position: absolute;
+				top: 50%;
+				left: 50%;
+				margin-right: -50%;
+				transform: translate(-50%, -50%);
+			}
 		</style>
 	</head>
 <body>
@@ -59,10 +73,18 @@
 		<select id="trackMembers"></select>
 		<button type="button" id="go">GO!</button>
 	</div>
-	<div>
+	<div id="track-renderer">
 		<canvas id="renderCanvas"></canvas>
 	</div>
+	<div id="track-error">
+		<h1>Error</h1>
+		<p id="track-error-text"></p>
+	</div>
 	<script>
+
+		const trackRenderer = document.getElementById("track-renderer");
+		const trackError = document.getElementById("track-error");
+		const trackErrorText = document.getElementById("track-error-text");
 
 		//======================================================================
 		// TRACK SELECTION
@@ -98,22 +120,30 @@
 				}
 				this._meshes.length = 0;
 
-				const key = selector.value;
-				const track = this._tracks[key];
-				const settings = this._options[key] ? this._options[key] : {};
+				try {
+					const key = selector.value;
+					const track = this._tracks[key];
+					const settings = this._options[key] ? this._options[key] : {};
 
-				const ribbons = TrackPOC.build(track, (u) => { return new BABYLON.Vector3(u.x, u.y, u.z); }, settings);
-				for (let i = 0; i < ribbons.length; i++) {
-					const mesh = BABYLON.MeshBuilder.CreateRibbon(
-							`Segment${i}`,
-							{
-								pathArray: ribbons[i],
-								sideOrientation: BABYLON.Mesh.DOUBLESIDE,
-								closePath: track.closed,
-							},
-							scene);
-					mesh.physicsImpostor = new BABYLON.PhysicsImpostor(mesh, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0 }, scene);
-					this._meshes.push(mesh);
+					const ribbons = TrackPOC.build(track, (u) => { return new BABYLON.Vector3(u.x, u.y, u.z); }, settings);
+					for (let i = 0; i < ribbons.length; i++) {
+						const mesh = BABYLON.MeshBuilder.CreateRibbon(
+								`Segment${i}`,
+								{
+									pathArray: ribbons[i],
+									sideOrientation: BABYLON.Mesh.DOUBLESIDE,
+									closePath: track.closed,
+								},
+								scene);
+						mesh.physicsImpostor = new BABYLON.PhysicsImpostor(mesh, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0 }, scene);
+						this._meshes.push(mesh);
+					}
+					console.log("works");
+					trackError.style.display = "none";
+				} catch (e) {
+					console.log('fails: %o', e);
+					trackError.style.display = "block";
+					trackErrorText.innerText = e.toString();
 				}
 			},
 			onFamilyChanged: function(familySelector, memberSelector) {
@@ -854,6 +884,18 @@
 					});
 					track5.pushPoint(segments, 2, runout);
 				},
+			});
+
+			//----------------------------------------------------------------------
+			// Helixes
+
+			const track6 = tracks.register({
+				family: 'Helix',
+				track: { segments: [ { points: [
+					{
+						type: 'error',
+					},
+				]}]},
 			});
 		}();
 
