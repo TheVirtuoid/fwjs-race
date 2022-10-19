@@ -1023,11 +1023,48 @@
 
 			const track6 = tracks.register({
 				family: 'Helix',
+				member: 'Left 360&#176; 4 turns',
 				track: { segments: [ { points: [
 					{
-						type: 'error',
+						type: 'spiral',
+						startsAt: {
+							center: {
+								x: 0,
+								y: 10,
+								z: 0,
+							},
+							forward: posX,
+						},
+						endsAt: {
+							center: zero,
+							forward: posX,
+						},
+						rotate: 'left',
+						turns: 4,
+						center: { x:0, y:0, z:4 },
 					},
 				]}]},
+			});
+			tracks.register({
+				sibling: track6,
+				member: 'Right 360&#176; 4 turns',
+				init() {
+					const p = track6.track.segments[0].points[0];
+					this.track = { segments: [ { points: [
+						{
+							type: 'spiral',
+							startsAt: p.startsAt,
+							endsAt: p.endsAt,
+							rotate: 'right',
+							turns: p.turns,
+							center: {
+								x:-p.center.x,
+								y:-p.center.y,
+								z:-p.center.z
+							},
+						},
+					]}]};
+				},
 			});
 		}
 
@@ -1041,9 +1078,6 @@
 			babylon.setCanvas("renderCanvas");
 			tracks.setSelectors("trackFamilies", "trackMembers");
 			ball.setButton("go");
-
-			// Get tracks
-			defineTracks();
 
 			const asyncEngineCreation = async function() {
 				try {
@@ -1061,7 +1095,14 @@
 
 			babylon.startRenderLoop();
 			window.scene = babylon.createScene();
-			tracks.start();
+
+			// Get tracks
+			try {
+				defineTracks();
+				tracks.start();
+			} catch (e) {
+				displayMgr.showError(e);
+			}
 		};
 		initFunction().then(() => { babylon.ready() });
 		window.addEventListener("resize", function () { babylon.resize() });

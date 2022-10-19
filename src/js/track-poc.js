@@ -18,7 +18,7 @@ const is = {
 	instance: function(value, className) {
 		return value.constructor.toString().indexOf(className) > -1;
 	},
-	integer: function isInteger(value) {
+	integer: function(value) {
 		return Number.isInteger(value);
 	},
 	number: function(value) {
@@ -57,7 +57,7 @@ const validate = {
 	nonNegativeInteger: function(object, memberName, objectName, defaultValue) {
 		const value = object[memberName];
 		if (is.default(value)) return defaultValue;
-		if (isInteger(value) && value >= 0) return value;
+		if (is.integer(value) && value >= 0) return value;
 		throw new RangeError(`${objectName}.${memberName} number be a non-negative integer`);
 	},
 
@@ -298,6 +298,7 @@ const vector = {
 		}
 		return sum;
 	},
+	to: function(from, to) { return this.normalize(this.difference(from, to)) },
 	up: { x:0, y:1, z:0 },
 	zero: { x:0, y:0, z:0 },
 };
@@ -775,18 +776,44 @@ const spiralParser = {
 		let rotCenter, rotAxis;
 		if (plane.isSame(entryPlane, exitPlane)) {
 			if (is.defined(rawSpiral.center)) {
-				throw '_getRotationPlane: not implemented, user-specified center for identical entry and exit planes';
-			} else {
+				if (rotate === 'left' || rotate === 'right') {
+					// Center cannot be directly above/below the entry or exit point
+					const center = validate.vector3(rawSpiral, 'center', name);
+					const isAboveBelow = function(plane, point) {
+						const planeUp = vector.normalize(vector.add(vector.up, -vector.dot(vector.up, plane.normal), plane.normal));
+						const toPoint = vector.to(plane.origin, point);
+						const d = vector.dot(planeUp, toPoint);
+						return Math.abs(d) > .95;
+					}
+					if (isAboveBelow(entryPlane, center)) {
+						throw `${name}: center and entry points are too close vertically; center must have some offset`;
+					}
+					if (isAboveBelow(exitPlane, center)) {
+						throw `${name}: center and exit points are too close vertically; center must have some offset`;
+					}
+					rotCenter = center;
+					rotAxis = this._getRotationAxis(specs, rotate);
+				} else {
+					throw '_getRotationPlane: not implemented, center, rotate up identical entry and exit planes';
+				}
+			} else if (rotate === 'left' || rotate === 'right') {
+				const toEnd = vector.to(entryPlane.origin, exitPlane.origin);
+				const d = vector.dot(vector.up, toEnd);
+				if (Math.abs(d) >= .9) {
+					throw `${name}: starting and ending points are too close vertically; center required`;
+				}
 				rotCenter = vector.midpoint(entryPlane.origin, exitPlane.origin);
 				rotAxis = this._getRotationAxis(specs, rotate);
+			} else {
+				throw '_getRotationPlane: not implemented, no center, rotate up identical entry and exit planes';
 			}
 		} else if (plane.isParallel(entryPlane, exitPlane)) {
-			//const center = validate.vector3(rawSpiral, 'center', name);
-			//if (rotate === 'left') {
-			//	throw '_getRotationPlane: make sure centernot implemented, parallel entry and exit planes';
-			//} else if (rotate === 'right') {
-			//} else {
-			//}
+			/*const center = validate.vector3(rawSpiral, 'center', name);
+			if (rotate === 'left') {
+				throw '_getRotationPlane: make sure centernot implemented, parallel entry and exit planes';
+			} else if (rotate === 'right') {
+			} else {
+			}*/
 			throw '_getRotationPlane: not implemented, parallel entry and exit planes';
 		} else {
 			// 'center' is illegal
