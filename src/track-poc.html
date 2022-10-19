@@ -83,39 +83,70 @@
 	<script>
 
 		//======================================================================
-		// TRACK SELECTION
+		// DISPLAY MANAGER
 
 		const displayMgr = {
 			clearError: function() {
 				this._trackError.style.display = "none";
+				this._disable(false);
 			},
 
 			showError: function(e) {
 				this._trackError.style.display = "block";
 				this._trackErrorText.innerText = e.toString();
+				this._disable(true);
 			},
 
-			init: function() {
-				this._trackError = document.getElementById("track-error");
-				this._trackErrorText = document.getElementById("track-error-text");
+			init: function(div, text, disableOnError = []) {
+				this._trackError = document.getElementById(div);
+				this._trackErrorText = document.getElementById(text);
+				this._disableOnError = [];
+				for (let id of disableOnError) {
+					this._disableOnError.push(document.getElementById(id));
+				}
+			},
+
+			_disable: function(disable) {
+				for (let element of this._disableOnError) {
+					element.disabled = disable;
+				}
 			},
 		}
 
 		//======================================================================
-		// TRACK SELECTION
+		// BABYLON SUPPORT
 
-		const familySelector = document.getElementById("trackFamilies");
-		const memberSelector = document.getElementById("trackMembers");
-
-		familySelector.addEventListener("change", () => {
-			tracks.onFamilyChanged(familySelector, memberSelector);
-		});
-		memberSelector.addEventListener("change", () => {
-			tracks.createMesh(memberSelector);
-		});
+		const babylon = {
+			setCanvas: function(id) { this._canvas = document.getElementById(id); },
+		}
 
 		//======================================================================
-		// TRACK DEFINITIONS
+		// BALL SUPPORT
+
+		const ball = {
+			setButton(id) {
+				document.getElementById(id).addEventListener('click', this._drop);
+			},
+			_drop: function() {
+				throw "Not tested";
+				ball.destroy();
+				ball._mesh = babylon.createSphere("ball", {diameter: ball._diameter}, {mass: ball._weight});
+
+				const track = tracks.getActiveTrack();
+				const segment = track.segments[0];
+				const p0 = segment.points[0].center;
+				const p1 = segment.points[1].center;
+
+				const t = ball._inset;
+				const olt = 1 - t;
+				ball._mesh.position.x = p0.x * t + p1.x * olt;
+				ball._mesh.position.y = p0.y * t + p0.y * olt + ball._height;
+				ball._mesh.position.z = p0.z * t + p1.z * olt;
+			},
+		}
+
+		//======================================================================
+		// TRACK MANAGEMENT
 
 		const posX = new BABYLON.Vector3.Right;
 		const negX = new BABYLON.Vector3.Left;
@@ -127,7 +158,7 @@
 
 		const tracks = {
 
-			createMesh: function(selector) {
+			_createMesh: function() {
 
 				for (let mesh of this._meshes) {
 					scene.removeMesh(mesh);
@@ -136,7 +167,7 @@
 				this._meshes.length = 0;
 
 				try {
-					const key = selector.value;
+					const key = this._memberSelector.value;
 					const track = this._tracks[key];
 					const settings = this._options[key] ? this._options[key] : {};
 
@@ -158,17 +189,17 @@
 					displayMgr.showError(e);
 				}
 			},
-			onFamilyChanged: function(familySelector, memberSelector) {
-				const key = familySelector.value;
+			_onFamilyChanged: function() {
+				const key = this._familySelector.value;
 				let firstMatch = -1;
-				for (let i = 0; i < memberSelector.options.length; i++) {
-					const option = memberSelector.options[i];
+				for (let i = 0; i < this._memberSelector.options.length; i++) {
+					const option = this._memberSelector.options[i];
 					const match = option.getAttribute("family") === key;
 					option.style.display = match ? "block" : "none";
 					if (match && firstMatch === -1) firstMatch = i;
 				}
-				if (firstMatch !== -1) memberSelector.selectedIndex = firstMatch;
-				this.createMesh(memberSelector);
+				if (firstMatch !== -1) this._memberSelector.selectedIndex = firstMatch;
+				this._createMesh();
 			},
 			register: function(track) {
 
@@ -204,7 +235,7 @@
 					const fsOption = document.createElement("option");
 					fsOption.setAttribute('value', familyKey);
 					fsOption.innerHTML = family;
-					familySelector.appendChild(fsOption);
+					this._familySelector.appendChild(fsOption);
 				}
 
 				// Add to member selector
@@ -212,13 +243,19 @@
 				msOption.setAttribute('value', key);
 				msOption.setAttribute('family', familyKey);
 				msOption.innerHTML = member;
-				memberSelector.appendChild(msOption);
+				this._memberSelector.appendChild(msOption);
 
 				// Add the track to the tracks and options arrays
 				this._tracks[key] = track.track;
 				if (track.options) this._options[key] = track.options;
 
 				return track;
+			},
+			setSelectors: function(familyId, membersId) {
+				this._familySelector = document.getElementById(familyId);
+				this._memberSelector = document.getElementById(membersId);
+				this._familySelector.addEventListener("change", () => { this._onFamilyChanged() });
+				this._memberSelector.addEventListener("change", () => { this._createMesh() });
 			},
 
 			_families: {},
@@ -909,14 +946,12 @@
 					},
 				]}]},
 			});
-		}();
+		}
 
 		//======================================================================
 		// BABYLON IMPLEMENTATION
 
-		const canvas = document.getElementById("renderCanvas");
-
-		const startRenderLoop = function (engine, canvas) {
+		const startRenderLoop = function (engine) {
 			engine.runRenderLoop(function () {
 				if (sceneToRender && sceneToRender.activeCamera) {
 					sceneToRender.render();
@@ -934,7 +969,7 @@
 		let sceneToRender = null;
 
 		const createDefaultEngine = function() {
-			return new BABYLON.Engine(canvas, true, {
+			return new BABYLON.Engine(babylon._canvas, true, {
 				preserveDrawingBuffer: true,
 				stencil: true,
 				disableWebGL2Support: false
@@ -950,7 +985,7 @@
 				3 * Math.PI / 8,
 				30,
 				BABYLON.Vector3.Zero());
-			camera.attachControl(canvas, true);
+			camera.attachControl(babylon._canvas, true);
 			const light = new BABYLON.HemisphericLight("hemi", new BABYLON.Vector3(0, 50, 0));
 
 			scene.enablePhysics(new BABYLON.Vector3(0, -8.91, 0), new BABYLON.AmmoJSPlugin());
@@ -960,7 +995,14 @@
 
 		window.initFunction = async function() {
 
-			displayMgr.init();
+			// Hook DOM elements
+			displayMgr.init("track-error", "track-error-text", [ "go" ]);
+			babylon.setCanvas("renderCanvas");
+			tracks.setSelectors("trackFamilies", "trackMembers");
+			ball.setButton("go");
+
+			// Get tracks
+			defineTracks();
 
 			const asyncEngineCreation = async function() {
 				try {
@@ -976,10 +1018,10 @@
 
 			await Ammo();
 
-			startRenderLoop(engine, canvas);
+			startRenderLoop(engine);
 
 			window.scene = createScene();
-			tracks.onFamilyChanged(familySelector, memberSelector);
+			tracks._onFamilyChanged();
 		};
 
 		initFunction().then(() => {
@@ -994,14 +1036,13 @@
 		// testing on track 2
 		const ballDiameter = .25;
 		const ballWeight = 2;
-		let ball;
 		const dropTheBall = () => {
 
 			if (ball) scene.removeMesh(ball);
-			ball = BABYLON.MeshBuilder.CreateSphere("ball", { diameter: ballDiameter }, scene);
-			ball.physicsImpostor = new BABYLON.PhysicsImpostor(ball, BABYLON.PhysicsImpostor.SphereImpostor, {mass: ballWeight}, scene);
+			ball._ball = BABYLON.MeshBuilder.CreateSphere("ball", { diameter: ballDiameter }, scene);
+			ball._ball.physicsImpostor = new BABYLON.PhysicsImpostor(ball._ball, BABYLON.PhysicsImpostor.SphereImpostor, {mass: ballWeight}, scene);
 
-			const track = tracks._tracks[trackSelector.value];
+			const track = tracks._tracks[tracks._memberSelector.value];
 			const segment = track.segments[0];
 			const p0 = segment.points[0].center;
 			const p1 = segment.points[1].center;
@@ -1009,9 +1050,9 @@
 			const t = .8;
 			const olt = 1 - t;
 			const altitude = 1;
-			ball.position.x = p0.x * t + p1.x * olt;
-			ball.position.y = p0.y * t + p0.y * olt + altitude;	// Force the ball above the track
-			ball.position.z = p0.z * t + p1.z * olt;
+			ball._ball.position.x = p0.x * t + p1.x * olt;
+			ball._ball.position.y = p0.y * t + p0.y * olt + altitude;	// Force the ball above the track
+			ball._ball.position.z = p0.z * t + p1.z * olt;
 		};
 
 		document.getElementById('go').addEventListener('click', dropTheBall);
