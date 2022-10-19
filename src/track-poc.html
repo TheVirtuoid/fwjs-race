@@ -82,9 +82,24 @@
 	</div>
 	<script>
 
-		const trackRenderer = document.getElementById("track-renderer");
-		const trackError = document.getElementById("track-error");
-		const trackErrorText = document.getElementById("track-error-text");
+		//======================================================================
+		// TRACK SELECTION
+
+		const displayMgr = {
+			clearError: function() {
+				this._trackError.style.display = "none";
+			},
+
+			showError: function(e) {
+				this._trackError.style.display = "block";
+				this._trackErrorText.innerText = e.toString();
+			},
+
+			init: function() {
+				this._trackError = document.getElementById("track-error");
+				this._trackErrorText = document.getElementById("track-error-text");
+			},
+		}
 
 		//======================================================================
 		// TRACK SELECTION
@@ -138,12 +153,9 @@
 						mesh.physicsImpostor = new BABYLON.PhysicsImpostor(mesh, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0 }, scene);
 						this._meshes.push(mesh);
 					}
-					console.log("works");
-					trackError.style.display = "none";
+					displayMgr.clearError();
 				} catch (e) {
-					console.log('fails: %o', e);
-					trackError.style.display = "block";
-					trackErrorText.innerText = e.toString();
+					displayMgr.showError(e);
 				}
 			},
 			onFamilyChanged: function(familySelector, memberSelector) {
@@ -947,6 +959,8 @@
 		}
 
 		window.initFunction = async function() {
+
+			displayMgr.init();
 
 			const asyncEngineCreation = async function() {
 				try {
