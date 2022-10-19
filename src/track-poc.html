@@ -126,6 +126,21 @@
 				});
 				return this._engine;
 			},
+			createScene: function () {
+				if (!this._canvas) throw "Must invoke setCanvas first";
+				if (!this._engine) throw "Must invoke createDefaultEngine first";
+				this._scene = new BABYLON.Scene(this._engine);
+				const camera = new BABYLON.ArcRotateCamera(
+					"Camera",
+					3 * Math.PI / 2,
+					3 * Math.PI / 8,
+					30,
+					BABYLON.Vector3.Zero());
+				camera.attachControl(this._canvas, true);
+				const light = new BABYLON.HemisphericLight("hemi", new BABYLON.Vector3(0, 50, 0));
+				this._scene.enablePhysics(new BABYLON.Vector3(0, -8.91, 0), new BABYLON.AmmoJSPlugin());
+				return this._scene;
+			},
 			setCanvas: function(id) { this._canvas = document.getElementById(id); },
 			startRenderLoop: function () {
 				if (!this._engine) throw "Must invoke createDefaultEngine first";
@@ -228,7 +243,7 @@
 			_createMesh: function() {
 
 				for (let mesh of this._meshes) {
-					scene.removeMesh(mesh);
+					babylon._scene.removeMesh(mesh);
 					mesh.dispose();
 				}
 				this._meshes.length = 0;
@@ -247,8 +262,8 @@
 									sideOrientation: BABYLON.Mesh.DOUBLESIDE,
 									closePath: track.closed,
 								},
-								scene);
-						mesh.physicsImpostor = new BABYLON.PhysicsImpostor(mesh, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0 }, scene);
+								babylon._scene);
+						mesh.physicsImpostor = new BABYLON.PhysicsImpostor(mesh, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0 }, babylon._scene);
 						this._meshes.push(mesh);
 					}
 					displayMgr.clearError();
@@ -973,30 +988,7 @@
 		//======================================================================
 		// BABYLON IMPLEMENTATION
 
-		//	It is not clear why 'engine' and 'scene' must be declared as 'var'
-		//	instead of 'let'. The page throws a 'engine is null' exception if
-		//	'engine' is declared 'let' and does not display anything if 'scene'
-		//	is declared 'let', presumably becasue 'scene' is null when
-		//	sceneToRender is set.
-		var scene = null;
 		let sceneToRender = null;
-
-		const createScene = function () {
-			const scene = new BABYLON.Scene(babylon._engine);
-
-			const camera = new BABYLON.ArcRotateCamera(
-				"Camera",
-				3 * Math.PI / 2,
-				3 * Math.PI / 8,
-				30,
-				BABYLON.Vector3.Zero());
-			camera.attachControl(babylon._canvas, true);
-			const light = new BABYLON.HemisphericLight("hemi", new BABYLON.Vector3(0, 50, 0));
-
-			scene.enablePhysics(new BABYLON.Vector3(0, -8.91, 0), new BABYLON.AmmoJSPlugin());
-
-			return scene;
-		}
 
 		window.initFunction = async function() {
 
@@ -1024,12 +1016,12 @@
 			await Ammo();
 
 			babylon.startRenderLoop();
-			window.scene = createScene();
+			window.scene = babylon.createScene();
 			tracks._onFamilyChanged();
 		};
 
 		initFunction().then(() => {
-			sceneToRender = scene
+			sceneToRender = babylon._scene
 		});
 
 		// Resize
@@ -1042,9 +1034,9 @@
 		const ballWeight = 2;
 		const dropTheBall = () => {
 
-			if (ball) scene.removeMesh(ball);
-			ball._ball = BABYLON.MeshBuilder.CreateSphere("ball", { diameter: ballDiameter }, scene);
-			ball._ball.physicsImpostor = new BABYLON.PhysicsImpostor(ball._ball, BABYLON.PhysicsImpostor.SphereImpostor, {mass: ballWeight}, scene);
+			if (ball._ball) { babylon._scene.removeMesh(ball._ball); ball._ball.dispose(); }
+			ball._ball = BABYLON.MeshBuilder.CreateSphere("ball", { diameter: ballDiameter }, babylon._scene);
+			ball._ball.physicsImpostor = new BABYLON.PhysicsImpostor(ball._ball, BABYLON.PhysicsImpostor.SphereImpostor, {mass: ballWeight}, babylon._scene);
 
 			const track = tracks._tracks[tracks._memberSelector.value];
 			const segment = track.segments[0];
