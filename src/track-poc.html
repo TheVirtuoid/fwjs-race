@@ -126,6 +126,19 @@
 				});
 				return this._engine;
 			},
+			createRibbon: function(name, ribbon, closed, meshOptions) {
+				if (!this._scene) throw "Must invoke createScene first";
+				const mesh = BABYLON.MeshBuilder.CreateRibbon(
+					name,
+					{
+						pathArray: ribbon,
+						sideOrientation: BABYLON.Mesh.DOUBLESIDE,
+						closePath: closed,
+					},
+					this._scene);
+				mesh.physicsImpostor = new BABYLON.PhysicsImpostor(mesh, BABYLON.PhysicsImpostor.MeshImpostor, meshOptions, this._scene);
+				return mesh;
+			},
 			createScene: function () {
 				if (!this._canvas) throw "Must invoke setCanvas first";
 				if (!this._engine) throw "Must invoke createDefaultEngine first";
@@ -297,16 +310,7 @@
 						},
 					}
 					for (let i = 0; i < ribbons.length; i++) {
-						const mesh = BABYLON.MeshBuilder.CreateRibbon(
-								`Segment${i}`,
-								{
-									pathArray: ribbons[i],
-									sideOrientation: BABYLON.Mesh.DOUBLESIDE,
-									closePath: track.closed,
-								},
-								babylon._scene);
-						mesh.physicsImpostor = new BABYLON.PhysicsImpostor(mesh, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0 }, babylon._scene);
-						this._meshes.push(mesh);
+						tracks._meshes.push(babylon.createRibbon(`Segment${i}`, ribbons[i], track.closed, { mass: 0 }));
 					}
 					displayMgr.clearError();
 				} catch (e) {
