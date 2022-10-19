@@ -244,6 +244,11 @@
 				this._familySelector.addEventListener("change", () => { this._onFamilyChanged() });
 				this._memberSelector.addEventListener("change", () => { this._createMesh() });
 			},
+			start: function() {
+				console.log('start');
+				if (!this._familySelector || !this._memberSelector) throw "Must invoke setSelectors first";
+				this._onFamilyChanged();
+			},
 
 			_createMesh: function() {
 
@@ -1020,7 +1025,7 @@
 
 			babylon.startRenderLoop();
 			window.scene = babylon.createScene();
-			tracks._onFamilyChanged();
+			tracks.start();
 		};
 
 		initFunction().then(() => { babylon.ready(); });
