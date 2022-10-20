@@ -304,7 +304,6 @@ const vector = {
 	zero: { x:0, y:0, z:0 },
 };
 
-// See https://en.wikipedia.org/wiki/Cylindrical_coordinate_system).
 class CylindricalCoordinate {
 
 	#angle;
@@ -357,16 +356,19 @@ class Plane {
 		if (!is.defined(tolerance)) tolerance = Plane.#defaultTolerance;
 		return this.#getHeight(vertex) < (1 - tolerance);
 	}
-	getAngle(vertex) {
+	getCylindricalCoordinate(vertex) {
 		if (!is.defined(this.#xAxis)) this.#setDefaultAxes();
+
 		const toVertex = this.#toVertex(vertex);
+
 		const x = vector.dot(this.#xAxis, toVertex);
 		const y = vector.dot(this.#yAxis, toVertex);
-		return trig.clampDegrees(Math.atan2(y, x) * trig.radiansToDegrees);
-	}
-	getHeight(vertex) {
-		if (!is.defined(this.#xAxis)) this.#setDefaultAxes();
-		return this.#getHeight(vertex);
+		const angle = trig.clampDegrees(Math.atan2(y, x) * trig.radiansToDegrees);
+
+		const height = this.#getHeightTo(toVertex);
+		const radius = vector.length(vector.add(toVertex, -height, this.#normal));
+
+		return new CylindricalCoordinate(radius, angle, height)
 	}
 	getIntersection(other) {
 
@@ -422,10 +424,6 @@ class Plane {
 			forward: forward,
 		}
 	}
-	getRadius(vertex) {
-		const height = this.#getHeight(vertex);
-		return vector.length(vector.add(this.#toVertex(vertex), -height, this.#normal));
-	}
 	isParallel(other, tolerance) {
 		if (!is.defined(tolerance)) tolerance = Plane.#defaultTolerance;
 		return Math.abs(vector.dot(this.#normal, other.#normal)) >= tolerance;
@@ -439,7 +437,10 @@ class Plane {
 	}
 
 	#getHeight(vertex) {
-		return vector.dot(this.#normal, this.#toVertex(vertex));
+		return this.#getHeightTo(this.#toVertex(vertex));
+	}
+	#getHeightTo(toVertex) {
+		return vector.dot(this.#normal, toVertex);
 	}
 	#setDefaultAxes() {
 		if (vector.dot(vector.up, this.#normal) > Plane.#defaultTolerance) {
@@ -757,12 +758,12 @@ const spiralParser = {
 
 		// Now that we have the rotation plane, we can compute the angles,
 		// altitudes, and radii
-		const entry = this._getAltAngleRadius(specs, 'startsAt');
-		const exit = this._getAltAngleRadius(specs, 'endsAt');
+		const entry = this._getCylindricalCoordinate(specs, 'startsAt');
+		const exit = this._getCylindricalCoordinate(specs, 'endsAt');
 
 		// Set the sweep and declination
 		const { sweep, invertTangent, startAngle, endAngle } = this._getSweep(specs, rotate, turns, entry, exit);
-		const deltaAltitude = exit.altitude - entry.altitude;
+		const deltaAltitude = exit.height - entry.height;
 		const declination = Math.abs(deltaAltitude) < .001 ? 0 : (Math.atan2(deltaAltitude, sweep) * trig.radiansToDegrees);
 		if (settings.debug) {
 			console.log('_getSpecs: deltaAltitude %f, sweep %f, declination %f', deltaAltitude, sweep, declination);
@@ -771,7 +772,7 @@ const spiralParser = {
 		specs.sweep = sweep;
 
 		// Set the interpolation functions
-		specs.altitude = this._getInterpolation(entry.altitude, exit.altitude);
+		specs.height = this._getInterpolation(entry.height, exit.height);
 		specs.angle = this._getInterpolation(startAngle, endAngle);
 		specs.radius = this._getInterpolation(entry.radius, exit.radius);
 
@@ -785,13 +786,8 @@ const spiralParser = {
 		return specs;
 	},
 
-	_getAltAngleRadius: function(specs, memberName) {
-		const p = specs[memberName].center;
-		return {
-			altitude: specs.rotationPlane.getHeight(p),
-			angle: specs.rotationPlane.getAngle(p),
-			radius: specs.rotationPlane.getRadius(p)
-		};
+	_getCylindricalCoordinate: function(specs, memberName) {
+		return specs.rotationPlane.getCylindricalCoordinate(specs[memberName].center)
 	},
 
 	_getInterpolation: function(t0, t1) {
@@ -965,7 +961,7 @@ const spiralParser = {
 	},
 
 	_addPoint: function(builders, points, t, specs, rawSpiral, parentSettings, name) {
-		const cylPoint = new CylindricalCoordinate(specs.radius(t), specs.angle(t), specs.altitude(t));
+		const cylPoint = new CylindricalCoordinate(specs.radius(t), specs.angle(t), specs.height(t));
 		const declination = specs.declination;
 
 		const polar = specs.rotationPlane.getHelixAt(cylPoint, declination, specs.debug);
