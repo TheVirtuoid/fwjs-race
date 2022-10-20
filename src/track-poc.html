@@ -673,6 +673,7 @@
 							jump.runout
 						],
 					}],
+					debug: true,
 				},
 			});
 			tracks.register({
@@ -1043,7 +1044,7 @@
 						turns: 4,
 						center: { x:0, y:0, z:4 },
 					},
-				]}]},
+				]}], debug:true, },
 			});
 			tracks.register({
 				sibling: track6,
@@ -1062,8 +1063,33 @@
 								y:-p.center.y,
 								z:-p.center.z
 							},
-						},
-					]}]};
+						}
+					]}], debug: true,};
+				},
+			});
+
+			tracks.register({
+				sibling: track6,
+				member: 'Left 360&#176; 4 turns, 12 high',
+				init() {
+					const p = track6.track.segments[0].points[0];
+					this.track = { segments: [ { points: [
+						{
+							type: 'spiral',
+							startsAt: {
+								center: {x: p.startsAt.center.x, y: p.startsAt.center.y + 2, z: p.startsAt.center.z},
+								forward: p.startsAt.forward
+							},
+							endsAt: p.endsAt,
+							rotate: 'left',
+							turns: p.turns,
+							center: {
+								x:-p.center.x,
+								y:-p.center.y,
+								z:-p.center.z
+							},
+						}
+					]}], debug: true,};
 				},
 			});
 		}
