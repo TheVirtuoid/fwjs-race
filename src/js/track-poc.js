@@ -218,6 +218,56 @@ const trig = {
 	radiansToDegrees: 180 / Math.PI,
 }
 
+class Vector {
+
+	coordinates;
+
+	constructor(dimension) {
+		this.coordinates = []
+		if (is.integer(dimension)) {
+			for (let i = 0; i < dimension; i++) this.coordinates[i] = 0;
+		} else {
+			for (let i = 0; i < dimension.length; i++) this.coordinates[i] = dimension[i];
+		}
+	}
+}
+
+class Vector3 extends Vector {
+
+	static #backward = new Vector3(0, 0, -1)
+	static #down = new Vector3(0, -1, 0)
+	static #forward = new Vector3(0, 0, 1)
+	static #left = new Vector3(-1, 0, 0)
+	static #right = new Vector3(1, 0, 0)
+	static #up = new Vector3(0, 1, 0)
+	static #zero = new Vector3(0, 0, 0)
+
+	constructor(x, y, z) {
+		super(3);
+		if (is.vector3(x)) {
+			this.coordinates[0] = x.x;
+			this.coordinates[1] = x.y;
+			this.coordinates[2] = x.z;
+		} else {
+			this.coordinates[0] = x;
+			this.coordinates[1] = y;
+			this.coordinates[2] = z;
+		}
+	}
+
+	get x() { return this.coordinates[0] }
+	get y() { return this.coordinates[1] }
+	get z() { return this.coordinates[2] }
+
+	static get backward() { return Vector3.#backward }
+	static get down() { return Vector3.#down }
+	static get forward() { return Vector3.#forward }
+	static get left() { return Vector3.#left }
+	static get right() { return Vector3.#right }
+	static get up() { return Vector3.#up }
+	static get zero() { return Vector3.#zero }
+}
+
 const vector = {
 	_defaultTolerance: 0.0001,
 	add: function(u, k, v) {
@@ -247,7 +297,6 @@ const vector = {
 	dot: function(u, v) {
 		return u.x * v.x + u.y * v.y + u.z * v.z;
 	},
-	down: { x:0, y:-1, z:0 },
 	interpolate: function(u, v, t) {
 		const olt = 1 - t;
 		return {
@@ -256,8 +305,6 @@ const vector = {
 			z: olt * u.z + t * v.z,
 		}
 	},
-	forward: { x:0, y:0, z:1 },
-	left: { x:-1, y:0, z:0 },
 	length: function(u) {
 		return Math.sqrt(u.x * u.x + u.y * u.y + u.z * u.z);
 	},
@@ -283,7 +330,6 @@ const vector = {
 			z: u.z / length,
 		};
 	},
-	right: { x:1, y:0, z:0 },
 	rotate: function(axis, u, angle) {
 		const theta = angle * trig.degreesToRadians;
 		const cosTheta = Math.cos(theta);
@@ -293,15 +339,13 @@ const vector = {
 		return vector.add(result, vector.dot(axis, u) * (1 - cosTheta), axis);
 	},
 	sum: function(coeffs, us) {
-		let sum = vector.zero;
+		let sum = Vector3.zero;
 		for (let i = 0; i < coeffs.length; i++) {
 			sum = vector.add(sum, coeffs[i], us[i]);
 		}
 		return sum;
 	},
 	to: function(from, to) { return this.normalize(this.difference(from, to)) },
-	up: { x:0, y:1, z:0 },
-	zero: { x:0, y:0, z:0 },
 };
 
 class CylindricalCoordinate {
@@ -397,7 +441,7 @@ class Plane {
 		const numerator = vector.dot(this.#normal, ldir);
 
 		// Prevent divide by zero.
-		if (Math.abs(numerator) < .0001) return new Line(vector.zero, direction);
+		if (Math.abs(numerator) < .0001) return new Line(Vector3.zero, direction);
 
 		const b2a = vector.add(this.#origin, -1, other.#origin);
 		const t = vector.dot(this.#normal, b2a) / numerator;
@@ -443,16 +487,16 @@ class Plane {
 		return vector.dot(this.#normal, toVertex);
 	}
 	#setDefaultAxes() {
-		if (vector.dot(vector.up, this.#normal) > Plane.#defaultTolerance) {
-			this.setAxes(vector.right);
-		} else if (vector.dot(vector.down, this.#normal) > Plane.#defaultTolerance) {
+		if (vector.dot(Vector3.up, this.#normal) > Plane.#defaultTolerance) {
+			this.setAxes(Vector3.right);
+		} else if (vector.dot(Vector3.down, this.#normal) > Plane.#defaultTolerance) {
 			this.#normal = vector.multiply(-1, this.#normal);
-			this.setAxes(vector.right);
+			this.setAxes(Vector3.right);
 		} else {
 			console.log('Plane.#setDefaultAxes: normal %o, dot up %f, dot down %f',
 				this.#normal,
-				vector.dot(vector.up, this.#normal),
-				vector.dot(vector.down, this.#normal));
+				vector.dot(Vector3.up, this.#normal),
+				vector.dot(Vector3.down, this.#normal));
 			throw 'Plane.#setDefaultAxes: not implemented';
 		}
 	}
@@ -517,7 +561,7 @@ const bezier = {
 
 		// Compute the true 'down' vector. This must be orthogonal to the forward vector.
 		// Remove any component of the down vector inline with the forward vector.
-		let down = vector.down;
+		let down = Vector3.down;
 		const dot = vector.dot(sp.forward, down);
 		if (Math.abs(dot) > .0001)  {
 			down = vector.normalize(vector.add(down, -dot, sp.forward));
@@ -800,7 +844,7 @@ const spiralParser = {
 	_getRotationAxis: function(specs, rotate) {
 		// TODO: This assumes the rotation axis is either up or up X forward.
 		// This may not always be the case.
-		if (rotate === 'left' || rotate === 'right') return vector.up;
+		if (rotate === 'left' || rotate === 'right') return Vector3.up;
 		throw '_getRotationAxis: not implemented for non-up axis';
 	},
 
@@ -819,7 +863,7 @@ const spiralParser = {
 					// Center cannot be directly above/below the entry or exit point
 					const center = validate.vector3(rawSpiral, 'center', name);
 					const isAboveBelow = function(plane, point) {
-						const planeUp = vector.normalize(vector.add(vector.up, -vector.dot(vector.up, plane.normal), plane.normal));
+						const planeUp = vector.normalize(vector.add(Vector3.up, -vector.dot(Vector3.up, plane.normal), plane.normal));
 						const toPoint = vector.to(plane.origin, point);
 						const d = vector.dot(planeUp, toPoint);
 						return Math.abs(d) > .95;
@@ -837,7 +881,7 @@ const spiralParser = {
 				}
 			} else if (rotate === 'left' || rotate === 'right') {
 				const toEnd = vector.to(entryPlane.origin, exitPlane.origin);
-				const d = vector.dot(vector.up, toEnd);
+				const d = vector.dot(Vector3.up, toEnd);
 				if (Math.abs(d) >= .9) {
 					throw `${name}: starting and ending points are too close vertically; center required`;
 				}
