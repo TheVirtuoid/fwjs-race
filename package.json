@@ -1,6 +1,6 @@
 {
   "name": "fwjs-race",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Fun With JavaScript Race Game",
   "main": "index.js",
   "scripts": {
