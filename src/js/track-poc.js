@@ -344,7 +344,6 @@ class Vector3 extends Vector {
 }
 
 const vector = {
-	_defaultTolerance: 0.0001,
 	add: function(u, k, v) {
 		return {
 			x: u.x + k * v.x,
@@ -371,14 +370,6 @@ const vector = {
 	},
 	dot: function(u, v) {
 		return u.x * v.x + u.y * v.y + u.z * v.z;
-	},
-	interpolate: function(u, v, t) {
-		const olt = 1 - t;
-		return {
-			x: olt * u.x + t * v.x,
-			y: olt * u.y + t * v.y,
-			z: olt * u.z + t * v.z,
-		}
 	},
 	length: function(u) {
 		return Math.sqrt(u.x * u.x + u.y * u.y + u.z * u.z);
@@ -412,13 +403,6 @@ const vector = {
 		let result = vector.multiply(cosTheta, u);
 		result = vector.add(result, sinTheta, vector.cross(axis, u));
 		return vector.add(result, vector.dot(axis, u) * (1 - cosTheta), axis);
-	},
-	sum: function(coeffs, us) {
-		let sum = Vector3.zero;
-		for (let i = 0; i < coeffs.length; i++) {
-			sum = vector.add(sum, coeffs[i], us[i]);
-		}
-		return sum;
 	},
 	to: function(from, to) { return this.normalize(this.difference(from, to)) },
 };
