@@ -109,7 +109,7 @@ const validate = {
 
 	vector3: function(object, memberName, objectName) {
 		const value = object[memberName];
-		if (is.vector3(value)) return value;
+		if (is.vector3(value)) return new Vector3(value);
 		throw new TypeError(`${objectName}.${memberName} must be a 3D vector`);
 	},
 
@@ -230,6 +230,65 @@ class Vector {
 			for (let i = 0; i < dimension.length; i++) this.coordinates[i] = dimension[i];
 		}
 	}
+
+	get dimension() { if (this.debug) console.log('Vector.getDimension(%o)', this, k, v); return this.coordinates.length; }
+
+	add(k, v) {
+		if (this.debug) console.log('Vector.add(%o, %f, %o)', this, k, v);
+		return this.#makeVector((i) => this.coordinates[i] + k * v.coordinates[i])
+	}
+	dot(v) {
+		if (this.debug) console.log('Vector.dot(%o)', this);
+		return this.#makeSum((i) => this.coordinates[i] * v.coordinates[i]);
+	}
+	interpolate(v, t) {
+		if (this.debug) console.log('Vector.interpolate(%o, %o, %f)', this, v, t);
+		const olt = 1 - t;
+		return this.#makeVector((i) => olt * this.coordinates[i] + t * v.coordinates[i])
+	}
+	length() {
+		if (this.debug) console.log('Vector.length(%o)', this);
+		return Math.sqrt(this.#makeSum((i) => this.coordinates[i] * this.coordinates[i]));
+	}
+	newHack() {
+		throw 'Vector.newHack must be overridden'
+	}
+	normalize() {
+		if (this.debug) console.log('Vector.normalize(%o)', this);
+		const length = this.length();
+		return this.#makeVector((i) => this.coordinates[i] / length);
+	}
+	scale(k) {
+		if (this.debug) console.log('Vector.scale(%o, %f)', this, k);
+		return this.#makeVector((i) => k * this.coordinates[i])
+	}
+	to(v) {
+		if (this.debug) console.log('Vector.to(%o, %o)', this, v);
+		return this.#makeVector((i) => v.coordinates[i] - this.coordinates[i])
+	}
+	toNormal(v) {
+		if (this.debug) console.log('Vector.toNormal(%o, %o)', this, v);
+		return this.to(v).normalize();
+	}
+
+	static scaledSum(vectors, scalars) {
+		let sum = vectors[0].scale(scalars[0]);
+		for (let i = 1; i < scalars.length; i++) {
+			sum = sum.add(scalars[i], vectors[i]);
+		}
+		return sum;
+	}
+
+	#makeVector(f) {
+		const result = this.newHack();
+		for (let i = 0; i < result.dimension; i++) result.coordinates[i] = f(i);
+		return result;
+	}
+	#makeSum(f) {
+		let result = 0;
+		for (let i = 0; i < this.dimension; i++) result += f(i);
+		return result;
+	}
 }
 
 class Vector3 extends Vector {
@@ -244,7 +303,10 @@ class Vector3 extends Vector {
 
 	constructor(x, y, z) {
 		super(3);
-		if (is.vector3(x)) {
+		if (!is.defined(x)) {
+		} else if (x instanceof Vector3) {
+			for (let i = 0; i < 3; i++) this.coordinates[i] = x.coordinates[i];
+		} else if (is.vector3(x)) {
 			this.coordinates[0] = x.x;
 			this.coordinates[1] = x.y;
 			this.coordinates[2] = x.z;
@@ -255,9 +317,9 @@ class Vector3 extends Vector {
 		}
 	}
 
-	get x() { return this.coordinates[0] }
-	get y() { return this.coordinates[1] }
-	get z() { return this.coordinates[2] }
+	get x() { if (this.debug) console.log('Vector3.getx(%o)', this); return this.coordinates[0] }
+	get y() { if (this.debug) console.log('Vector3.gety(%o)', this); return this.coordinates[1] }
+	get z() { if (this.debug) console.log('Vector3.getz(%o)', this); return this.coordinates[2] }
 
 	static get backward() { return Vector3.#backward }
 	static get down() { return Vector3.#down }
@@ -266,6 +328,19 @@ class Vector3 extends Vector {
 	static get right() { return Vector3.#right }
 	static get up() { return Vector3.#up }
 	static get zero() { return Vector3.#zero }
+
+	cross(v) {
+		if (this.debug) console.log('Vector3.cross(%o, %o)', this, v);
+		return new Vector3(this.y * v.z - this.z * v.y, this.z * v.x - this.x * v.z, this.x * v.y - this.y * v.x);
+	}
+	newHack() { return new Vector3() }
+	rotate(axis, angle) {
+		if (this.debug) console.log('Vector3.rotate(%o, %o, %f)', this, axis, angle);
+		const theta = angle * trig.degreesToRadians;
+		const cos = Math.cos(theta);
+		const sin = Math.sin(theta);
+		return this.scale(cos).add(sin, axis.cross(this)).add(this.dot(axis) * (1 - cos), axis);
+	}
 }
 
 const vector = {
@@ -512,15 +587,15 @@ const ribbonMgr = {
 	// top.
 
 	add: function(ribbon, bp, vectorFactory) {
-		const left = vector.cross(bp.forward, bp.down);
-		const wall = vector.multiply(-bp.wallHeight, bp.down);
+		const left = bp.forward.cross(bp.down);
+		const wall = bp.down.scale(-bp.wallHeight);
 		const edgeDistance = bp.trackWidth / 2;
-		const leftEdge = vector.add(bp.center, edgeDistance, left);
-		const rightEdge = vector.add(bp.center, -edgeDistance, left);
-		ribbon[0].push(vectorFactory(vector.add(leftEdge, 1, wall)));
+		const leftEdge = bp.center.add(edgeDistance, left);
+		const rightEdge = bp.center.add(-edgeDistance, left);
+		ribbon[0].push(vectorFactory(leftEdge.add(1, wall)));
 		ribbon[1].push(vectorFactory(leftEdge));
 		ribbon[2].push(vectorFactory(rightEdge));
-		ribbon[3].push(vectorFactory(vector.add(rightEdge, 1, wall)));
+		ribbon[3].push(vectorFactory(rightEdge.add(1, wall)));
 	},
 
 	create: function() {
@@ -534,45 +609,46 @@ const bezier = {
 
 		// Compute the Bezier cubic curve points
 		const curve = {
-			points: [
-				sp0.center,
-				vector.add(sp0.center, sp0.forwardWeight, sp0.forward),
-				vector.add(sp1.center, -sp1.backwardWeight, sp1.forward),
-				sp1.center,
-			],
+			points: [],
 			trackBanks: [ bezier._getDown(sp0), bezier._getDown(sp1) ],
 			trackWidths: [ sp0.trackWidth, sp1.trackWidth ],
 			wallHeights: [ sp0.wallHeight, sp1.wallHeight ],
 		}
+		curve.points[0] = sp0.center;
+		curve.points[1] = curve.points[0].add(sp0.forwardWeight, sp0.forward);
+		curve.points[3] = sp1.center;
+		curve.points[2] = curve.points[3].add(-sp1.backwardWeight, sp1.forward);
 
 		// Fill out the curve
 		const bpt0 = bezier._getPoint(curve, 0);
 		const bpt1 = bezier._getPoint(curve, 1);
 		bezier._interpolate(ribbon, curve, 0, 1, bpt0, bpt1, vectorFactory, precision);
 
-		// Return the points array
+		// Return the last point
 		return bpt1;
 	},
 
 	_getDown: function(sp) {
 
 		// We are done if we already have a vector
-		if (is.vector3(sp.trackBank)) return sp.trackBank;
+		if (is.vector3(sp.trackBank)) return new Vector3(sp.trackBank);
 
 		// Compute the true 'down' vector. This must be orthogonal to the forward vector.
 		// Remove any component of the down vector inline with the forward vector.
 		let down = Vector3.down;
-		const dot = vector.dot(sp.forward, down);
+		const forward = new Vector3(sp.forward);
+		const dot = forward.dot(down);
 		if (Math.abs(dot) > .0001)  {
-			down = vector.normalize(vector.add(down, -dot, sp.forward));
+			down = down.add(-dot, sp.forward);
 		}
 
 		// Rotate the down vector if there is banking
 		if (Math.abs(sp.trackBank) > .0001) {
-			down = vector.rotate(sp.forward, down, sp.trackBank);
+			console.log('bezier._getDown: rotating');
+			down = down.rotate(sp.forward, sp.trackBank);
 		}
 
-		return vector.normalize(down);
+		return down.normalize();
 	},
 
 	_getPoint: function(curve, t) {
@@ -580,26 +656,26 @@ const bezier = {
 
 		// Compute the point at t
 		// v(t) = (1-t)^3*p0 + 3*(1-t)^2*t*p1 + 3*(1-t)*t^2*p2 + t^3*p3
-		let coeffs = [olt * olt * olt, 3 * olt * olt * t, 3 * olt * t * t, t * t * t];
-		const center = vector.sum(coeffs, curve.points);
+		const vScalars = [olt * olt * olt, 3 * olt * olt * t, 3 * olt * t * t, t * t * t];
+		const center = Vector3.scaledSum(curve.points, vScalars);
 
 		// Compute the forward vector with is the tangent at t
 		// v'(t) = 3*(1-t)^2*(p1 - p0) + 6*(1-t)*t*(p2-p1) + 3*t^2*(p3-p2).
 		// Note that we normalize this to get a unit vector.
-		coeffs = [3 * olt *olt, 6 * olt * t, 3 * t * t];
-		const deltaPoints = [
-			vector.add(curve.points[1], -1, curve.points[0]),
-			vector.add(curve.points[2], -1, curve.points[1]),
-			vector.add(curve.points[3], -1, curve.points[2]),
+		const dvScalars = [3 * olt * olt, 6 * olt * t, 3 * t * t];
+		const dvPoints = [
+			curve.points[1].add(-1, curve.points[0]),
+			curve.points[2].add(-1, curve.points[1]),
+			curve.points[3].add(-1, curve.points[2]),
 		];
-		const forward = vector.normalize(vector.sum(coeffs, deltaPoints));
+		const forward = Vector3.scaledSum(dvPoints, dvScalars).normalize();
 
 		// Compute the track width and wall height through linear interpolation
 		const trackWidth = olt * curve.trackWidths[0] + t * curve.trackWidths[1];
 		const wallHeight = olt * curve.wallHeights[0] + t * curve.wallHeights[1];
 
 		// Interpolate the down vector
-		const down = vector.normalize(vector.interpolate(curve.trackBanks[0], curve.trackBanks[1], t));
+		const down = curve.trackBanks[0].interpolate(curve.trackBanks[1], t).normalize();
 
 		return {
 			center: center,				// center line position at t
@@ -645,8 +721,7 @@ const bezier = {
 const pointParser = {
 
 	parse: function(builders, points, rawPoint, parentSettings, name) {
-		const point = this.validate(rawPoint, parentSettings, name);
-		points.push(point);
+		points.push(this.validate(rawPoint, parentSettings, name));
 		if (points.length > 1) builders.push(createBuilder(parentSettings));
 	},
 
@@ -666,7 +741,7 @@ const pointParser = {
 		point.center = validate.vector3(rawPoint, 'center', name);
 
 		// The point must have a forward vector
-		point.forward = vector.normalize(validate.vector3(rawPoint, 'forward', name));
+		point.forward = validate.vector3(rawPoint, 'forward', name).normalize();
 
 		// Get the weights
 		point.forwardWeight = validate.weight(rawPoint, 'forwardWeight', name);
@@ -703,7 +778,7 @@ const spiralParser = {
 	and exit points onto the rotation plane.
 
 	Let the entry and exit angles be the angle components of the projection
-	points' polar cooordinates.
+	points' polar coordinates.
 
 	Let the entry and exit radii be the distances of the projection points'
 	polar coordinates.
@@ -1091,7 +1166,7 @@ const straightParser = {
 			startPoint.center = validate.vector3(rawStraight, 'startsAt', name);
 			startPoint.forwardWeight = validate.weight(rawStraight, 'startingWeight', name);
 			if (usesEndsAt) {
-				endPoint.forward = vector.normalize(vector.difference(startPoint.center, endPoint.center));
+				endPoint.forward = startPoint.center.toNormal(endPoint.center);
 				startPoint.forward = endPoint.forward;
 			} else {
 				startPoint.forward = validate.vector3(rawStraight, 'forward', name);;
@@ -1101,10 +1176,10 @@ const straightParser = {
 		// Compute the end point's center and forward
 		if (usesLength) {
 			const length = validate.positiveNumber(rawStraight, 'length', name);
-			endPoint.center = vector.add(startPoint.center, length, startPoint.forward);
+			endPoint.center = startPoint.center.add(length, startPoint.forward);
 			endPoint.forward = startPoint.forward;
 		} else if (!generateStart) {
-			endPoint.forward = vector.normalize(vector.difference(startPoint.center, endPoint.center));
+			endPoint.forward = startPoint.center.toNormal(endPoint.center);
 		}
 
 		// Get the weights
@@ -1133,6 +1208,7 @@ const sectionParser = {
 		}
 
 		// Parse the section
+		console.log('sectionParser: using ' + sectionType);
 		sectionParser.parse(builders, points, rawPoint, parentSettings, name);
 	},
 
@@ -1246,11 +1322,5 @@ const TrackPOC = {
 
 		// Build the ribbons
 		return buildTrack(objSpecs, vectorFactory, settings);
-	},
-
-	vector: {
-		direction: function(from, to) {
-			return vector.normalize(vector.difference(from, to));
-		}
 	},
 }
