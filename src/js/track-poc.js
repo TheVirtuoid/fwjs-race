@@ -307,9 +307,9 @@ const vector = {
 // See https://en.wikipedia.org/wiki/Cylindrical_coordinate_system).
 class CylindricalCoordinate {
 
-	#radius;
 	#angle;
 	#height;
+	#radius;
 
 	constructor(radius, angle, height) {
 		this.#radius = radius;
@@ -322,30 +322,53 @@ class CylindricalCoordinate {
 	get height() { return this.#height }
 }
 
-const plane = {
-	_defaultTolerance: 0.95,
-	contains: function(plane, vertex, tolerance) {
-		if (!is.defined(tolerance)) tolerance = this._defaultTolerance;
-		return this._getAltitude(plane, vertex) < (1 - tolerance);
-	},
-	create: function(origin, normal) {
-		return {
-			origin: origin,
-			normal: vector.normalize(normal),
-		};
-	},
-	getAltitude: function(plane, vertex) {
-		if (!is.defined(plane.xAxis)) this._setDefaultAxes(plane);
-		return this._getAltitude(plane, vertex);
-	},
-	getAngle: function(plane, vertex) {
-		if (!is.defined(plane.xAxis)) this._setDefaultAxes(plane);
-		const toVertex = this._toVertex(plane, vertex);
-		const x = vector.dot(plane.xAxis, toVertex);
-		const y = vector.dot(plane.yAxis, toVertex);
+class Line {
+
+	#origin;
+	#normal;
+
+	constructor(origin, normal) {
+		this.#origin = origin;
+		this.#normal = vector.normalize(normal);
+	}
+
+	get normal() { return this.#normal }
+	get origin() { return this.#origin }
+}
+
+class Plane {
+
+	static #defaultTolerance = 0.95;
+
+	#normal;
+	#origin;
+	#xAxis;
+	#yAxis;
+
+	constructor(origin, normal) {
+		this.#origin = origin;
+		this.#normal = vector.normalize(normal);
+	}
+
+	get normal() { return this.#normal }
+	get origin() { return this.#origin }
+
+	contains(vertex, tolerance) {
+		if (!is.defined(tolerance)) tolerance = Plane.#defaultTolerance;
+		return this.#getHeight(vertex) < (1 - tolerance);
+	}
+	getAngle(vertex) {
+		if (!is.defined(this.#xAxis)) this.#setDefaultAxes();
+		const toVertex = this.#toVertex(vertex);
+		const x = vector.dot(this.#xAxis, toVertex);
+		const y = vector.dot(this.#yAxis, toVertex);
 		return trig.clampDegrees(Math.atan2(y, x) * trig.radiansToDegrees);
-	},
-	getIntersection: function(a, b) {
+	}
+	getHeight(vertex) {
+		if (!is.defined(this.#xAxis)) this.#setDefaultAxes();
+		return this.#getHeight(vertex);
+	}
+	getIntersection(other) {
 
 		// NOTE: Technically this returns a line in the form of
 		// a point p on the line and a direction d of the line.
@@ -356,87 +379,85 @@ const plane = {
 
 		// Get the line direction. Normalize should throw an error if the
 		// planes are parallel
-		const direction = vector.normalize(vector.cross(a.normal, b.normal));
+		const direction = vector.normalize(vector.cross(this.#normal, other.#normal));
 
 		// TODO: Figure out why this works
 		// see https://forum.unity.com/threads/how-to-find-line-of-intersecting-planes.109458/
 
 		// Next is to calculate a point on the line to fix it's position.
-		// This is done by finding a vector from the plane2 [b] location,
+		// This is done by finding a vector from the plane2 [other] location,
 		// moving parallel to it's plane, and intersecting plane1. To
 		// prevent rounding errors, this vector also has to be perpendicular
 		// to lineDirection [ldir]. To get this vector, calculate the cross
-		// product of the normal of plane2 [b] and the lineDirection [ldir].
-		const ldir = vector.cross(b.normal, direction);
+		// product of the normal of plane2 [other] and the lineDirection [ldir].
+		const ldir = vector.cross(other.#normal, direction);
 
-		const numerator = vector.dot(a.normal, ldir);
+		const numerator = vector.dot(this.#normal, ldir);
 
 		// Prevent divide by zero.
-		if (Math.abs(numerator) < .0001) return this._createLine(vector.zero, direction);
+		if (Math.abs(numerator) < .0001) return new Line(vector.zero, direction);
 
-		const b2a = vector.add(a.origin, -1, b.origin);
-		const t = vector.dot(a.normal, b2a) / numerator;
-		return this._createLine(vector.add(b.origin, t, ldir), direction);
-	},
-	getHelixAt: function(plane, cylPoint, declination, debug) {
-		if (!is.defined(plane.xAxis)) this._setDefaultAxes(plane);
+		const b2a = vector.add(this.#origin, -1, other.#origin);
+		const t = vector.dot(this.#normal, b2a) / numerator;
+		return new Line(vector.add(other.#origin, t, ldir), direction);
+	}
+	getHelixAt(cylPoint, declination, debug) {
+		if (!is.defined(this.#xAxis)) this.#setDefaultAxes();
 
 		const theta = cylPoint.angle * trig.degreesToRadians;
 		const cos = trig.clampAt0And1(Math.cos(theta));
 		const sin = trig.clampAt0And1(Math.sin(theta));
 
-		const radial = vector.add(vector.multiply(cos, plane.xAxis), sin, plane.yAxis);
-		const point = vector.add(vector.add(plane.origin, cylPoint.radius, radial), cylPoint.height, plane.normal);
-		let forward = vector.add(vector.multiply(-sin, plane.xAxis), cos, plane.yAxis);
-		if (debug) console.log('getHelixAt: declination %f, forward %o', declination, forward);
+		const radial = vector.add(vector.multiply(cos, this.#xAxis), sin, this.#yAxis);
+		const point = vector.add(vector.add(this.#origin, cylPoint.radius, radial), cylPoint.height, this.#normal);
+		let forward = vector.add(vector.multiply(-sin, this.#xAxis), cos, this.#yAxis);
+		if (debug) console.log('Plane.getHelixAt: declination %f, forward %o', declination, forward);
 		if (Math.abs(declination) > 0.01) {
 			forward = vector.rotate(radial, forward, declination);
-			if (debug) console.log('getHelixAt: after forward %o', forward);
+			if (debug) console.log('Plane.getHelixAt: after forward %o', forward);
 		}
 
 		return {
 			point: point,
 			forward: forward,
 		}
-	},
-	getRadius: function(plane, vertex) {
-		const altitude = this.getAltitude(plane, vertex);
-		return vector.length(vector.add(this._toVertex(plane, vertex), -altitude, plane.normal));
-	},
-	isParallel: function(a, b, tolerance) {
-		if (!is.defined(tolerance)) tolerance = this._defaultTolerance;
-		return Math.abs(vector.dot(a.normal, b.normal)) >= tolerance;
-	},
-	isSame: function(a, b, tolerance) {
-		return this.isParallel(a, b, tolerance) && this.contains(a, b.origin, tolerance);
-	},
-	setAxes: function(plane, xAxis) {
-		plane.xAxis = vector.normalize(vector.add(xAxis, -vector.dot(xAxis, plane.normal), plane.normal));
-		plane.yAxis = vector.cross(plane.xAxis, plane.normal);
-	},
-	_createLine: function(p, d) {
-		return this.create(p, d);
-	},
-	_getAltitude: function(plane, vertex) {
-		return vector.dot(plane.normal, this._toVertex(plane, vertex));
-	},
-	_setDefaultAxes: function(plane) {
-		if (vector.dot(vector.up, plane.normal) > this._defaultTolerance) {
-			this.setAxes(plane, vector.right);
-		} else if (vector.dot(vector.down, plane.normal) > this._defaultTolerance) {
-			plane.normal = vector.multiply(-1, plane.normal);
-			this.setAxes(plane, vector.right);
+	}
+	getRadius(vertex) {
+		const height = this.#getHeight(vertex);
+		return vector.length(vector.add(this.#toVertex(vertex), -height, this.#normal));
+	}
+	isParallel(other, tolerance) {
+		if (!is.defined(tolerance)) tolerance = Plane.#defaultTolerance;
+		return Math.abs(vector.dot(this.#normal, other.#normal)) >= tolerance;
+	}
+	isSame(other, tolerance) {
+		return this.isParallel(other, tolerance) && this.contains(other.#origin, tolerance);
+	}
+	setAxes(xAxis) {
+		this.#xAxis = vector.normalize(vector.add(xAxis, -vector.dot(xAxis, this.#normal), this.#normal));
+		this.#yAxis = vector.cross(this.#xAxis, this.#normal);
+	}
+
+	#getHeight(vertex) {
+		return vector.dot(this.#normal, this.#toVertex(vertex));
+	}
+	#setDefaultAxes() {
+		if (vector.dot(vector.up, this.#normal) > Plane.#defaultTolerance) {
+			this.setAxes(vector.right);
+		} else if (vector.dot(vector.down, this.#normal) > Plane.#defaultTolerance) {
+			this.#normal = vector.multiply(-1, this.#normal);
+			this.setAxes(vector.right);
 		} else {
-			console.log('_setDefaultAxes: normal %o, dot up %f, dot down %f',
-				plane.normal,
-				vector.dot(vector.up, plane.normal),
-				vector.dot(vector.down, plane.normal));
-			throw '_setDefaultAxes: not implemented';
+			console.log('Plane.#setDefaultAxes: normal %o, dot up %f, dot down %f',
+				this.#normal,
+				vector.dot(vector.up, this.#normal),
+				vector.dot(vector.down, this.#normal));
+			throw 'Plane.#setDefaultAxes: not implemented';
 		}
-	},
-	_toVertex: function(plane, vertex) {
-		return vector.add(vertex, -1, plane.origin);
-	},
+	}
+	#toVertex(vertex) {
+		return vector.add(vertex, -1, this.#origin);
+	}
 }
 
 const ribbonMgr = {
@@ -767,9 +788,9 @@ const spiralParser = {
 	_getAltAngleRadius: function(specs, memberName) {
 		const p = specs[memberName].center;
 		return {
-			altitude: plane.getAltitude(specs.rotationPlane, p),
-			angle: plane.getAngle(specs.rotationPlane, p),
-			radius: plane.getRadius(specs.rotationPlane, p)
+			altitude: specs.rotationPlane.getHeight(p),
+			angle: specs.rotationPlane.getAngle(p),
+			radius: specs.rotationPlane.getRadius(p)
 		};
 	},
 
@@ -790,13 +811,13 @@ const spiralParser = {
 	_getRotationPlane: function(specs, rotate, rawSpiral, name) {
 
 		// Get the entry and exit planes
-		const entryPlane = plane.create(specs.startsAt.center, specs.startsAt.forward);
-		const exitPlane = plane.create(specs.endsAt.center, specs.endsAt.forward);
+		const entryPlane = new Plane(specs.startsAt.center, specs.startsAt.forward);
+		const exitPlane = new Plane(specs.endsAt.center, specs.endsAt.forward);
 
 		// From the condition of the entry and exit planes, plus any
 		// supporting specifications, determine the rotation center and axis
 		let rotCenter, rotAxis;
-		if (plane.isSame(entryPlane, exitPlane)) {
+		if (entryPlane.isSame(exitPlane)) {
 			if (is.defined(rawSpiral.center)) {
 				if (rotate === 'left' || rotate === 'right') {
 					// Center cannot be directly above/below the entry or exit point
@@ -829,7 +850,7 @@ const spiralParser = {
 			} else {
 				throw '_getRotationPlane: not implemented, no center, rotate up identical entry and exit planes';
 			}
-		} else if (plane.isParallel(entryPlane, exitPlane)) {
+		} else if (entryPlane.isParallel(exitPlane)) {
 			/*const center = validate.vector3(rawSpiral, 'center', name);
 			if (rotate === 'left') {
 				throw '_getRotationPlane: make sure centernot implemented, parallel entry and exit planes';
@@ -843,13 +864,13 @@ const spiralParser = {
 
 			// Get intersection of the planes, a line, and use this as
 			// the rotation center and axis
-			const line = plane.getIntersection(entryPlane, exitPlane);
+			const line = entryPlane.getIntersection(exitPlane);
 			rotCenter = line.origin;
 			rotAxis = line.normal;
 		}
 
 		// Return the rotation plane
-		return plane.create(rotCenter, rotAxis);
+		return new Plane(rotCenter, rotAxis);
 	},
 
 	_getSweep: function(specs, rotate, turns, entry, exit) {
@@ -947,7 +968,7 @@ const spiralParser = {
 		const cylPoint = new CylindricalCoordinate(specs.radius(t), specs.angle(t), specs.altitude(t));
 		const declination = specs.declination;
 
-		const polar = plane.getHelixAt(specs.rotationPlane, cylPoint, declination, specs.debug);
+		const polar = specs.rotationPlane.getHelixAt(cylPoint, declination, specs.debug);
 
 		const pointName = `${name}@${cylPoint.angle}`;
 		const point = merge.settings(parentSettings, rawSpiral, pointName);
