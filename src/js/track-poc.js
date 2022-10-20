@@ -337,16 +337,6 @@ class Vector3 extends Vector {
 	}
 }
 
-const vector = {
-	add: function(u, k, v) {
-		return {
-			x: u.x + k * v.x,
-			y: u.y + k * v.y,
-			z: u.z + k * v.z,
-		}
-	},
-};
-
 class CylindricalCoordinate {
 
 	#angle;
@@ -453,9 +443,7 @@ class Plane {
 		if (!(this.#xAxis instanceof Vector3)) throw new Error('Plane.getHelixAt: #xAxis is not a Vector3');
 		if (!(this.#yAxis instanceof Vector3)) throw new Error('Plane.getHelixAt: #yAxis is not a Vector3');
 		const radial = this.#xAxis.scale(cos).add(sin, this.#yAxis);
-		const point = vector.add(vector.add(this.#origin, cylPoint.radius, radial), cylPoint.height, this.#normal);
-		const newPoint = this.#origin.add(cylPoint.radius, radial).add(cylPoint.height, this.#normal);
-		if (point.x !== newPoint.x || point.y !== newPoint.y || point.z !== newPoint.z) throw Error('Plane.getHelixAt: point not computed');
+		const point = this.#origin.add(cylPoint.radius, radial).add(cylPoint.height, this.#normal);
 		let forward = this.#xAxis.scale(-sin).add(cos, this.#yAxis);
 		if (debug) console.log('Plane.getHelixAt: declination %f, forward %o', declination, forward);
 		if (Math.abs(declination) > 0.01) {
@@ -464,7 +452,7 @@ class Plane {
 		}
 
 		return {
-			point: newPoint,
+			point: point,
 			forward: forward,
 		}
 	}
