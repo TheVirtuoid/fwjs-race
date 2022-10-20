@@ -357,13 +357,6 @@ const vector = {
 			z: u.z + k * v.z,
 		}
 	},
-	cross: function(u, v) {
-		return {
-			x: u.y * v.z - u.z * v.y,
-			y: u.z * v.x - u.x * v.z,
-			z: u.x * v.y - u.y * v.x,
-		}
-	},
 	difference: function(from, to) {
 		return {
 			x: to.x - from.x,
@@ -387,13 +380,6 @@ const vector = {
 			z: (u.z + v.z) / 2,
 		}
 	},
-	multiply: function(k, u) {
-		return {
-			x: k * u.x,
-			y: k * u.y,
-			z: k * u.z,
-		}
-	},
 	normalize: function(u) {
 		const length = vector.length(u);
 		return {
@@ -401,14 +387,6 @@ const vector = {
 			y: u.y / length,
 			z: u.z / length,
 		};
-	},
-	rotate: function(axis, u, angle) {
-		const theta = angle * trig.degreesToRadians;
-		const cosTheta = Math.cos(theta);
-		const sinTheta = Math.sin(theta);
-		let result = vector.multiply(cosTheta, u);
-		result = vector.add(result, sinTheta, vector.cross(axis, u));
-		return vector.add(result, vector.dot(axis, u) * (1 - cosTheta), axis);
 	},
 	to: function(from, to) { return this.normalize(this.difference(from, to)) },
 };
@@ -518,26 +496,20 @@ class Plane {
 
 		if (!(this.#xAxis instanceof Vector3)) throw new Error('Plane.getHelixAt: #xAxis is not a Vector3');
 		if (!(this.#yAxis instanceof Vector3)) throw new Error('Plane.getHelixAt: #yAxis is not a Vector3');
-		const radial = vector.add(vector.multiply(cos, this.#xAxis), sin, this.#yAxis);
-		const newRadial = this.#xAxis.scale(cos).add(sin, this.#yAxis);
-		if (radial.x !== newRadial.x || radial.y !== newRadial.y || radial.z !== newRadial.z) throw new Error('Plane.getHelixAt: radial not computed');
+		const radial = this.#xAxis.scale(cos).add(sin, this.#yAxis);
 		const point = vector.add(vector.add(this.#origin, cylPoint.radius, radial), cylPoint.height, this.#normal);
-		const newPoint = this.#origin.add(cylPoint.radius, newRadial).add(cylPoint.height, this.#normal);
+		const newPoint = this.#origin.add(cylPoint.radius, radial).add(cylPoint.height, this.#normal);
 		if (point.x !== newPoint.x || point.y !== newPoint.y || point.z !== newPoint.z) throw Error('Plane.getHelixAt: point not computed');
-		let forward = vector.add(vector.multiply(-sin, this.#xAxis), cos, this.#yAxis);
-		let newForward = this.#xAxis.scale(-sin).add(cos, this.#yAxis);
-		if (forward.x !== newForward.x || forward.y !== newForward.y || forward.z !== newForward.z) throw new Error('Plane.getHelixAt: forward not computed');
-		if (debug) console.log('Plane.getHelixAt: declination %f, forward %o', declination, newForward);
+		let forward = this.#xAxis.scale(-sin).add(cos, this.#yAxis);
+		if (debug) console.log('Plane.getHelixAt: declination %f, forward %o', declination, forward);
 		if (Math.abs(declination) > 0.01) {
-			forward = vector.rotate(newRadial, forward, declination);
-			newForward = newForward.rotate(newRadial, declination);
-			if (debug) console.log('Plane.getHelixAt: after forward %o', newForward);
-			if (forward.x !== newForward.x || forward.y !== newForward.y || forward.z !== newForward.z) throw new Error('Plane.getHelixAt: rotated forward not computed');
+			forward = forward.rotate(radial, declination);
+			if (debug) console.log('Plane.getHelixAt: after forward %o', forward);
 		}
 
 		return {
 			point: newPoint,
-			forward: newForward,
+			forward: forward,
 		}
 	}
 	isParallel(other, tolerance) {
