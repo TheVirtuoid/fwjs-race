@@ -380,15 +380,6 @@ const vector = {
 			z: (u.z + v.z) / 2,
 		}
 	},
-	normalize: function(u) {
-		const length = vector.length(u);
-		return {
-			x: u.x / length,
-			y: u.y / length,
-			z: u.z / length,
-		};
-	},
-	to: function(from, to) { return this.normalize(this.difference(from, to)) },
 };
 
 class CylindricalCoordinate {
@@ -606,11 +597,10 @@ const bezier = {
 		// Compute the true 'down' vector. This must be orthogonal to the forward vector.
 		// Remove any component of the down vector inline with the forward vector.
 		let down = Vector3.down;
-		const forward = new Vector3(sp.forward);
-		console.log('bezier._getDown: sp.forward %o, new %o', sp.forward, forward);
-		const dot = forward.dot(down);
+		if (!(sp.forward instanceof Vector3)) throw new Error('bezier._getDown: sp.forward is not a Vector3');
+		const dot = sp.forward.dot(down);
 		if (Math.abs(dot) > .0001)  {
-			down = down.add(-dot, forward);
+			down = down.add(-dot, sp.forward);
 		}
 
 		// Rotate the down vector if there is banking
@@ -872,7 +862,6 @@ const spiralParser = {
 		else throw new Error('spiralParser._getSpecs: trackBankMultiplier not implemented');
 
 		// Return the specifications
-		console.log('spiralParser._getSpecs: startsAt.forward %o, endsAt.forward %o', specs.startsAt.forward, specs.endsAt.forward);
 		return specs;
 	},
 
@@ -916,17 +905,9 @@ const spiralParser = {
 					const isAboveBelow = function(plane, point) {
 						if (!(plane instanceof Plane)) throw new Error('spiralParser._getRotationPlane.isAboveBelow: plane is not a Plane');
 						if (!(point instanceof Vector3)) throw new Error('spiralParser._getRotationPlane.isAboveBelow: point is not a Vector3');
-						const oldplaneUp = vector.normalize(vector.add(Vector3.up, -vector.dot(Vector3.up, plane.normal), plane.normal));
 						const planeUp = Vector3.up.add(-Vector3.up.dot(plane.normal), plane.normal).normalize();
-						if (oldplaneUp.x !== planeUp.x || oldplaneUp.y !== planeUp.y || oldplaneUp.z !== planeUp.z) throw new Error('spiralParser._getRotationPlane.isAboveBelow: error computing planeUp');
-						if (!(planeUp instanceof Vector3)) throw new Error('spiralParser._getRotationPlane.isAboveBelow: planeUp is not a Vector3');
-						const oldtoPoint = vector.to(plane.origin, point);
 						const toPoint = plane.origin.toNormal(point);
-						if (oldtoPoint.x !== toPoint.x || oldtoPoint.y !== toPoint.y || oldtoPoint.z !== toPoint.z) throw new Error('spiralParser._getRotationPlane.isAboveBelow: error computing toPoint');
-						if (!(toPoint instanceof Vector3)) throw new Error('spiralParser._getRotationPlane.isAboveBelow: toPoint is not a Vector3');
-						const oldd = vector.dot(planeUp, toPoint);
 						const d = planeUp.dot(toPoint);
-						if (oldd !== d) throw new Error('spiralParser._getRotationPlane.isAboveBelow: error computing d');
 						return Math.abs(d) > .95;
 					}
 					if (isAboveBelow(entryPlane, center)) {
@@ -943,24 +924,12 @@ const spiralParser = {
 					throw new Error('_getRotationPlane: not implemented, center, rotate up identical entry and exit planes');
 				}
 			} else if (rotate === 'left' || rotate === 'right') {
-				const oldtoEnd = vector.to(entryPlane.origin, exitPlane.origin);
 				const toEnd = entryPlane.origin.toNormal(exitPlane.origin);
-				if (oldtoEnd.x !== toEnd.x || oldtoEnd.y !== toEnd.y || oldtoEnd.z !== toEnd.z) {
-					console.log('spiralParser._getRotationPlane: error calculating toEnd %o, expecting %o', toEnd, oldtoEnd);
-					throw new Error('spiralParser._getRotationPlane: error calculating toEnd');
-				}
-				if (!(toEnd instanceof Vector3)) throw new Error('spiralParser._getRotationPlane: toEnd is not a Vector3');
 				const d = vector.dot(Vector3.up, toEnd);
 				if (Math.abs(d) >= .9) {
 					throw new Error(`${name}: starting and ending points are too close vertically; center required`);
 				}
-				const oldrotCenter = vector.midpoint(entryPlane.origin, exitPlane.origin);
 				rotCenter = entryPlane.origin.midpoint(exitPlane.origin);
-				if (oldrotCenter.x !== rotCenter.x || oldrotCenter.y !== rotCenter.y || oldrotCenter.z !== rotCenter.z) {
-					console.log('spiralParser._getRotationPlane: error calculating rotCenter %o, expecting %o', rotCenter, oldrotCenter);
-					throw new Error('spiralParser._getRotationPlane: error calculating rotCenter');
-				}
-				if (!(rotCenter instanceof Vector3)) throw new Error('spiralParser._getRotationPlane: rotCenter is not a Vector3');
 				rotAxis = this._getRotationAxis(specs, rotate);
 				if (!(rotAxis instanceof Vector3)) throw new Error('spiralParser._getRotationPlane: rotAxis is not a Vector3');
 			} else {
@@ -1086,7 +1055,6 @@ const spiralParser = {
 		const cylPoint = new CylindricalCoordinate(specs.radius(t), specs.angle(t), specs.height(t));
 		const declination = specs.declination;
 
-		console.log('bezier._addPoint: rotation plane %o', specs.rotationPlane);
 		const polar = specs.rotationPlane.getHelixAt(cylPoint, declination, specs.debug);
 
 		const pointName = `${name}@${cylPoint.angle}`;
@@ -1094,7 +1062,6 @@ const spiralParser = {
 		point.backwardWeight = cylPoint.radius * this._circleWeight;
 		point.center = polar.point;
 		point.forward = polar.forward;
-		console.log('spiralParser._addPoint: old forward %o, new forward %o', polar.forward, new Vector3(polar.forward));
 		point.forwardWeight = point.backwardWeight;
 		point.name = pointName;
 		point.trackBank = this._processInterpolationArray(specs.trackBank, t, specs.trackBankMultiplier);
@@ -1213,7 +1180,6 @@ const sectionParser = {
 		}
 
 		// Parse the section
-		console.log('sectionParser: using ' + sectionType);
 		sectionParser.parse(builders, points, rawPoint, parentSettings, name);
 	},
 
