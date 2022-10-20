@@ -304,6 +304,24 @@ const vector = {
 	zero: { x:0, y:0, z:0 },
 };
 
+// See https://en.wikipedia.org/wiki/Cylindrical_coordinate_system).
+class CylindricalCoordinate {
+
+	#radius;
+	#angle;
+	#height;
+
+	constructor(radius, angle, height) {
+		this.#radius = radius;
+		this.#angle = angle;
+		this.#height = height;
+	}
+
+	get angle() { return this.#angle }
+	get radius() { return this.#radius }
+	get height() { return this.#height }
+}
+
 const plane = {
 	_defaultTolerance: 0.95,
 	contains: function(plane, vertex, tolerance) {
@@ -360,20 +378,20 @@ const plane = {
 		const t = vector.dot(a.normal, b2a) / numerator;
 		return this._createLine(vector.add(b.origin, t, ldir), direction);
 	},
-	getPolar: function(plane, radius, degrees, altitude, declination, debug) {
+	getHelixAt: function(plane, cylPoint, declination, debug) {
 		if (!is.defined(plane.xAxis)) this._setDefaultAxes(plane);
 
-		const theta = degrees * trig.degreesToRadians;
+		const theta = cylPoint.angle * trig.degreesToRadians;
 		const cos = trig.clampAt0And1(Math.cos(theta));
 		const sin = trig.clampAt0And1(Math.sin(theta));
 
 		const radial = vector.add(vector.multiply(cos, plane.xAxis), sin, plane.yAxis);
-		const point = vector.add(vector.add(plane.origin, radius, radial), altitude, plane.normal);
+		const point = vector.add(vector.add(plane.origin, cylPoint.radius, radial), cylPoint.height, plane.normal);
 		let forward = vector.add(vector.multiply(-sin, plane.xAxis), cos, plane.yAxis);
-		if (debug) console.log('getPolar: declination %f, forward %o', declination, forward);
+		if (debug) console.log('getHelixAt: declination %f, forward %o', declination, forward);
 		if (Math.abs(declination) > 0.01) {
 			forward = vector.rotate(radial, forward, declination);
-			if (debug) console.log('getPolar: after forward %o', forward);
+			if (debug) console.log('getHelixAt: after forward %o', forward);
 		}
 
 		return {
@@ -926,16 +944,14 @@ const spiralParser = {
 	},
 
 	_addPoint: function(builders, points, t, specs, rawSpiral, parentSettings, name) {
-		const altitude = specs.altitude(t);
-		const angle = specs.angle(t);
-		const radius = specs.radius(t);
+		const cylPoint = new CylindricalCoordinate(specs.radius(t), specs.angle(t), specs.altitude(t));
 		const declination = specs.declination;
 
-		const polar = plane.getPolar(specs.rotationPlane, radius, angle, altitude, declination, specs.debug);
+		const polar = plane.getHelixAt(specs.rotationPlane, cylPoint, declination, specs.debug);
 
-		const pointName = `${name}@${angle}`;
+		const pointName = `${name}@${cylPoint.angle}`;
 		const point = merge.settings(parentSettings, rawSpiral, pointName);
-		point.backwardWeight = radius * this._circleWeight;
+		point.backwardWeight = cylPoint.radius * this._circleWeight;
 		point.center = polar.point;
 		point.forward = polar.forward;
 		point.forwardWeight = point.backwardWeight;
