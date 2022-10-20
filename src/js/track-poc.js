@@ -931,7 +931,7 @@ const spiralParser = {
 		const radius = specs.radius(t);
 		const declination = specs.declination;
 
-		const polar = plane.getPolar(specs.rotationPlane, radius, angle, altitude, declination, debug);
+		const polar = plane.getPolar(specs.rotationPlane, radius, angle, altitude, declination, specs.debug);
 
 		const pointName = `${name}@${angle}`;
 		const point = merge.settings(parentSettings, rawSpiral, pointName);
