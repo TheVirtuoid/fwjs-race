@@ -373,13 +373,6 @@ const vector = {
 	length: function(u) {
 		return Math.sqrt(u.x * u.x + u.y * u.y + u.z * u.z);
 	},
-	midpoint: function(u, v) {
-		return {
-			x: (u.x + v.x) / 2,
-			y: (u.y + v.y) / 2,
-			z: (u.z + v.z) / 2,
-		}
-	},
 };
 
 class CylindricalCoordinate {
@@ -605,7 +598,6 @@ const bezier = {
 
 		// Rotate the down vector if there is banking
 		if (Math.abs(sp.trackBank) > .0001) {
-			console.log('bezier._getDown: rotating');
 			down = down.rotate(sp.forward, sp.trackBank);
 		}
 
@@ -659,8 +651,8 @@ const bezier = {
 
 		// Calculate the linear and curve midpoints of the current subsection
 		const midtime = (t0 + t1) / 2;
-		const lmp = vector.midpoint(bpt0.center, bpt1.center);	// Linear midpoint
-		const bmp = this._getPoint(curve, midtime);				// Bezier midpoint
+		const lmp = bpt0.center.midpoint(bpt1.center);	// Linear midpoint
+		const bmp = this._getPoint(curve, midtime);		// Bezier midpoint
 
 		// TODO: This precision test is insufficient. It is possible for the curve to pass
 		// through the linear midpoint but the tangent at the midpoint be different (e.g.,
