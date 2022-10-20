@@ -234,46 +234,36 @@ class Vector {
 	get dimension() { if (this.debug) console.log('Vector.getDimension(%o)', this, k, v); return this.coordinates.length; }
 
 	add(k, v) {
-		if (this.debug) console.log('Vector.add(%o, %f, %o)', this, k, v);
 		return this.#makeVector((i) => this.coordinates[i] + k * v.coordinates[i])
 	}
+	distance(v) { return this.to(v).length() }
 	dot(v) {
-		if (this.debug) console.log('Vector.dot(%o)', this);
 		return this.#makeSum((i) => this.coordinates[i] * v.coordinates[i]);
 	}
 	interpolate(v, t) {
-		if (this.debug) console.log('Vector.interpolate(%o, %o, %f)', this, v, t);
 		const olt = 1 - t;
 		return this.#makeVector((i) => olt * this.coordinates[i] + t * v.coordinates[i])
 	}
 	length() {
-		if (this.debug) console.log('Vector.length(%o)', this);
 		return Math.sqrt(this.#makeSum((i) => this.coordinates[i] * this.coordinates[i]));
 	}
 	midpoint(v) {
-		if (this.debug) console.log('Vector.midpoint(%o, %o)', this, v);
 		return this.#makeVector((i) => (this.coordinates[i] + v.coordinates[i]) / 2)
 	}
 	newHack() {
 		throw new InternalError('Vector.newHack must be overridden')
 	}
 	normalize() {
-		if (this.debug) console.log('Vector.normalize(%o)', this);
 		const length = this.length();
 		return this.#makeVector((i) => this.coordinates[i] / length);
 	}
 	scale(k) {
-		if (this.debug) console.log('Vector.scale(%o, %f)', this, k);
 		return this.#makeVector((i) => k * this.coordinates[i])
 	}
 	to(v) {
-		if (this.debug) console.log('Vector.to(%o, %o)', this, v);
 		return this.#makeVector((i) => v.coordinates[i] - this.coordinates[i])
 	}
-	toNormal(v) {
-		if (this.debug) console.log('Vector.toNormal(%o, %o)', this, v);
-		return this.to(v).normalize();
-	}
+	toNormal(v) { return this.to(v).normalize() }
 
 	static scaledSum(vectors, scalars) {
 		let sum = vectors[0].scale(scalars[0]);
@@ -321,9 +311,9 @@ class Vector3 extends Vector {
 		}
 	}
 
-	get x() { if (this.debug) console.log('Vector3.getx(%o)', this); return this.coordinates[0] }
-	get y() { if (this.debug) console.log('Vector3.gety(%o)', this); return this.coordinates[1] }
-	get z() { if (this.debug) console.log('Vector3.getz(%o)', this); return this.coordinates[2] }
+	get x() { return this.coordinates[0] }
+	get y() { return this.coordinates[1] }
+	get z() { return this.coordinates[2] }
 
 	static get backward() { return Vector3.#backward }
 	static get down() { return Vector3.#down }
@@ -334,14 +324,12 @@ class Vector3 extends Vector {
 	static get zero() { return Vector3.#zero }
 
 	cross(v) {
-		if (this.debug) console.log('Vector3.cross(%o, %o)', this, v);
 		return new Vector3(this.y * v.z - this.z * v.y, this.z * v.x - this.x * v.z, this.x * v.y - this.y * v.x);
 	}
 	newHack() { return new Vector3() }
 	rotate(axis, angle) {
 		if (!(axis instanceof Vector3)) throw new Error('Vector3.rotate: axis is not a Vector3');
 		if (!is.number(angle)) throw new Error('Vector3.rotate: angle is not a number');
-		if (this.debug) console.log('Vector3.rotate(%o, %o, %f)', this, axis, angle);
 		const theta = angle * trig.degreesToRadians;
 		const cos = Math.cos(theta);
 		const sin = Math.sin(theta);
@@ -356,19 +344,6 @@ const vector = {
 			y: u.y + k * v.y,
 			z: u.z + k * v.z,
 		}
-	},
-	difference: function(from, to) {
-		return {
-			x: to.x - from.x,
-			y: to.y - from.y,
-			z: to.z - from.z,
-		};
-	},
-	distance: function(u, v) {
-		return vector.length(this.difference(u, v));
-	},
-	length: function(u) {
-		return Math.sqrt(u.x * u.x + u.y * u.y + u.z * u.z);
 	},
 };
 
@@ -660,7 +635,7 @@ const bezier = {
 		// to the  ribbon. Otherwise recursively add the sections of the curve
 		// (t0, midtime) and (midtime, t1). Note that the latter eventually adds
 		// the midpoint calcuated here.
-		if (vector.distance(lmp, bmp.center) <= precision) {
+		if (lmp.distance(bmp.center) <= precision) {
 			ribbonMgr.add(ribbon, bpt0, vectorFactory);
 		} else {
 			this._interpolate(ribbon, curve, t0, midtime, bpt0, bmp, vectorFactory, precision);
