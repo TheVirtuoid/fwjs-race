@@ -181,6 +181,7 @@ const merge = {
 	},
 	_validSettings: [
 		{ key: 'debug' },
+		{ key: 'debugSegments' },
 		{ key: 'precision', validator: validate.positiveNumber },
 		{ key: 'trackBank', validator: validate.trackBank, },
 		{ key: 'trackWidth', validator: validate.positiveNumber },
@@ -369,10 +370,10 @@ const plane = {
 		const radial = vector.add(vector.multiply(cos, plane.xAxis), sin, plane.yAxis);
 		const point = vector.add(vector.add(plane.origin, radius, radial), altitude, plane.normal);
 		let forward = vector.add(vector.multiply(-sin, plane.xAxis), cos, plane.yAxis);
-		if (debug) console.log('getPolor: declination %f, forward %o', declination, forward);
+		if (debug) console.log('getPolar: declination %f, forward %o', declination, forward);
 		if (Math.abs(declination) > 0.01) {
 			forward = vector.rotate(radial, forward, declination);
-			if (debug) console.log('getPolor: after forward %o', forward);
+			if (debug) console.log('getPolar: after forward %o', forward);
 		}
 
 		return {
@@ -685,7 +686,10 @@ const spiralParser = {
 
 		// Create the settings and base spiral specification
 		const settings = merge.settings(parentSettings, rawSpiral, name);
-		const specs = {};
+		const specs = {
+			debug: settings.debug,
+			debugSegments: settings.debugSegments,
+		};
 
 		// Get either the entry point or the overrideFirstWeight option
 		if (points.length === 0) {
@@ -922,9 +926,6 @@ const spiralParser = {
 	},
 
 	_addPoint: function(builders, points, t, specs, rawSpiral, parentSettings, name) {
-
-		const debug = rawSpiral.debug || parentSettings.debug;
-		if (debug) console.log('_addPoint: t %f, specs %o', t, specs);
 		const altitude = specs.altitude(t);
 		const angle = specs.angle(t);
 		const radius = specs.radius(t);
@@ -1093,7 +1094,7 @@ function buildSegment(segment, vectorFactory, parentSettings, isClosed, name) {
 	for (let i = 0; i < segment.points.length; i++) {
 		sectionParser.parse(builders, points, segment.points[i], settings, `${name}.points[${i}]`);
 	}
-	if (settings.debug) {
+	if (settings.debugSegments) {
 		for (let i = 0; i < points.length; i++) console.log('buildSegment: %o', points[i]);
 	}
 
@@ -1140,14 +1141,15 @@ function buildTrack(track, vectorFactory, parentSettings) {
 	return ribbons;
 }
 
-//==========================================================================
-// API
+/*==========================================================================
+API
 
-// specs			a specification object or a json serialization of a
-//					specification object
-// vectorFactory	function to build an application friendly 3D vector,
-//					v = vectorFactory(u) where u has keys x, y, z.
-// settings			application settings for the build
+specs			a specification object or a json serialization of a
+				specification object
+vectorFactory	function to build an application friendly 3D vector,
+				v = vectorFactory(u) where u has keys x, y, z.
+settings		application settings for the build
+*/
 
 const TrackPOC = {
 
