@@ -367,9 +367,6 @@ const vector = {
 	distance: function(u, v) {
 		return vector.length(this.difference(u, v));
 	},
-	dot: function(u, v) {
-		return u.x * v.x + u.y * v.y + u.z * v.z;
-	},
 	length: function(u) {
 		return Math.sqrt(u.x * u.x + u.y * u.y + u.z * u.z);
 	},
@@ -432,12 +429,12 @@ class Plane {
 
 		const toVertex = this.#toVertex(vertex);
 
-		const x = vector.dot(this.#xAxis, toVertex);
-		const y = vector.dot(this.#yAxis, toVertex);
+		const x = this.#xAxis.dot(toVertex);
+		const y = this.#yAxis.dot(toVertex);
 		const angle = trig.clampDegrees(Math.atan2(y, x) * trig.radiansToDegrees);
 
 		const height = this.#getHeightTo(toVertex);
-		const radius = vector.length(vector.add(toVertex, -height, this.#normal));
+		const radius = toVertex.add(-height, this.#normal).length();
 
 		return new CylindricalCoordinate(radius, angle, height)
 	}
@@ -498,7 +495,8 @@ class Plane {
 	}
 	isParallel(other, tolerance) {
 		if (!is.defined(tolerance)) tolerance = Plane.#defaultTolerance;
-		return Math.abs(vector.dot(this.#normal, other.#normal)) >= tolerance;
+		const dot = this.#normal.dot(other.#normal);
+		return Math.abs(dot) >= tolerance;
 	}
 	isSame(other, tolerance) {
 		return this.isParallel(other, tolerance) && this.contains(other.#origin, tolerance);
@@ -513,7 +511,7 @@ class Plane {
 		return this.#getHeightTo(this.#toVertex(vertex));
 	}
 	#getHeightTo(toVertex) {
-		return vector.dot(this.#normal, toVertex);
+		return this.#normal.dot(toVertex);
 	}
 	#setDefaultAxes() {
 		if (Vector3.up.dot(this.#normal) > Plane.#defaultTolerance) {
@@ -530,7 +528,7 @@ class Plane {
 		}
 	}
 	#toVertex(vertex) {
-		return vector.add(vertex, -1, this.#origin);
+		return this.#origin.to(vertex);
 	}
 }
 
@@ -917,7 +915,7 @@ const spiralParser = {
 				}
 			} else if (rotate === 'left' || rotate === 'right') {
 				const toEnd = entryPlane.origin.toNormal(exitPlane.origin);
-				const d = vector.dot(Vector3.up, toEnd);
+				const d = Vector3.up.dot(toEnd);
 				if (Math.abs(d) >= .9) {
 					throw new Error(`${name}: starting and ending points are too close vertically; center required`);
 				}
