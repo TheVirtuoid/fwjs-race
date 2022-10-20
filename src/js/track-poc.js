@@ -914,11 +914,19 @@ const spiralParser = {
 					const center = validate.vector3(rawSpiral, 'center', name);
 					if (!(center instanceof Vector3)) throw new Error('spiralParser._getRotationPlane: center is not a Vector3');
 					const isAboveBelow = function(plane, point) {
-						const planeUp = vector.normalize(vector.add(Vector3.up, -vector.dot(Vector3.up, plane.normal), plane.normal));
+						if (!(plane instanceof Plane)) throw new Error('spiralParser._getRotationPlane.isAboveBelow: plane is not a Plane');
+						if (!(point instanceof Vector3)) throw new Error('spiralParser._getRotationPlane.isAboveBelow: point is not a Vector3');
+						const oldplaneUp = vector.normalize(vector.add(Vector3.up, -vector.dot(Vector3.up, plane.normal), plane.normal));
+						const planeUp = Vector3.up.add(-Vector3.up.dot(plane.normal), plane.normal).normalize();
+						if (oldplaneUp.x !== planeUp.x || oldplaneUp.y !== planeUp.y || oldplaneUp.z !== planeUp.z) throw new Error('spiralParser._getRotationPlane.isAboveBelow: error computing planeUp');
 						if (!(planeUp instanceof Vector3)) throw new Error('spiralParser._getRotationPlane.isAboveBelow: planeUp is not a Vector3');
-						const toPoint = vector.to(plane.origin, point);
+						const oldtoPoint = vector.to(plane.origin, point);
+						const toPoint = plane.origin.toNormal(point);
+						if (oldtoPoint.x !== toPoint.x || oldtoPoint.y !== toPoint.y || oldtoPoint.z !== toPoint.z) throw new Error('spiralParser._getRotationPlane.isAboveBelow: error computing toPoint');
 						if (!(toPoint instanceof Vector3)) throw new Error('spiralParser._getRotationPlane.isAboveBelow: toPoint is not a Vector3');
-						const d = vector.dot(planeUp, toPoint);
+						const oldd = vector.dot(planeUp, toPoint);
+						const d = planeUp.dot(toPoint);
+						if (oldd !== d) throw new Error('spiralParser._getRotationPlane.isAboveBelow: error computing d');
 						return Math.abs(d) > .95;
 					}
 					if (isAboveBelow(entryPlane, center)) {
