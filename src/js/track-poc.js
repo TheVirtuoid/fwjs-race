@@ -231,7 +231,7 @@ class Vector {
 		}
 	}
 
-	get dimension() { if (this.debug) console.log('Vector.getDimension(%o)', this, k, v); return this.coordinates.length; }
+	get dimension() { return this.coordinates.length }
 
 	add(k, v) {
 		return this.#makeVector((i) => this.coordinates[i] + k * v.coordinates[i])
@@ -440,8 +440,6 @@ class Plane {
 		const cos = trig.clampAt0And1(Math.cos(theta));
 		const sin = trig.clampAt0And1(Math.sin(theta));
 
-		if (!(this.#xAxis instanceof Vector3)) throw new Error('Plane.getHelixAt: #xAxis is not a Vector3');
-		if (!(this.#yAxis instanceof Vector3)) throw new Error('Plane.getHelixAt: #yAxis is not a Vector3');
 		const radial = this.#xAxis.scale(cos).add(sin, this.#yAxis);
 		const point = this.#origin.add(cylPoint.radius, radial).add(cylPoint.height, this.#normal);
 		let forward = this.#xAxis.scale(-sin).add(cos, this.#yAxis);
@@ -551,7 +549,6 @@ const bezier = {
 		// Compute the true 'down' vector. This must be orthogonal to the forward vector.
 		// Remove any component of the down vector inline with the forward vector.
 		let down = Vector3.down;
-		if (!(sp.forward instanceof Vector3)) throw new Error('bezier._getDown: sp.forward is not a Vector3');
 		const dot = sp.forward.dot(down);
 		if (Math.abs(dot) > .0001)  {
 			down = down.add(-dot, sp.forward);
@@ -839,10 +836,6 @@ const spiralParser = {
 	_getRotationPlane: function(specs, rotate, rawSpiral, name) {
 
 		// Get the entry and exit planes
-		if (!(specs.startsAt.center instanceof Vector3)) throw new Error('spiralParser._getRotationPlane: specs.startsAt.center is not a Vector3');
-		if (!(specs.startsAt.forward instanceof Vector3)) throw new Error('spiralParser._getRotationPlane: specs.startsAt.forward is not a Vector3');
-		if (!(specs.endsAt.center instanceof Vector3)) throw new Error('spiralParser._getRotationPlane: specs.endsAt.center is not a Vector3');
-		if (!(specs.endsAt.forward instanceof Vector3)) throw new Error('spiralParser._getRotationPlane: specs.endsAt.forward is not a Vector3');
 		const entryPlane = new Plane(specs.startsAt.center, specs.startsAt.forward);
 		const exitPlane = new Plane(specs.endsAt.center, specs.endsAt.forward);
 
@@ -854,10 +847,7 @@ const spiralParser = {
 				if (rotate === 'left' || rotate === 'right') {
 					// Center cannot be directly above/below the entry or exit point
 					const center = validate.vector3(rawSpiral, 'center', name);
-					if (!(center instanceof Vector3)) throw new Error('spiralParser._getRotationPlane: center is not a Vector3');
 					const isAboveBelow = function(plane, point) {
-						if (!(plane instanceof Plane)) throw new Error('spiralParser._getRotationPlane.isAboveBelow: plane is not a Plane');
-						if (!(point instanceof Vector3)) throw new Error('spiralParser._getRotationPlane.isAboveBelow: point is not a Vector3');
 						const planeUp = Vector3.up.add(-Vector3.up.dot(plane.normal), plane.normal).normalize();
 						const toPoint = plane.origin.toNormal(point);
 						const d = planeUp.dot(toPoint);
@@ -870,9 +860,7 @@ const spiralParser = {
 						throw new Error(`${name}: center and exit points are too close vertically; center must have some offset`);
 					}
 					rotCenter = center;
-					if (!(rotCenter instanceof Vector3)) throw new Error('spiralParser._getRotationPlane: rotCenter is not a Vector3');
 					rotAxis = this._getRotationAxis(specs, rotate);
-					if (!(rotAxis instanceof Vector3)) throw new Error('spiralParser._getRotationPlane: rotAxis is not a Vector3');
 				} else {
 					throw new Error('_getRotationPlane: not implemented, center, rotate up identical entry and exit planes');
 				}
@@ -884,7 +872,6 @@ const spiralParser = {
 				}
 				rotCenter = entryPlane.origin.midpoint(exitPlane.origin);
 				rotAxis = this._getRotationAxis(specs, rotate);
-				if (!(rotAxis instanceof Vector3)) throw new Error('spiralParser._getRotationPlane: rotAxis is not a Vector3');
 			} else {
 				throw new Error('_getRotationPlane: not implemented, no center, rotate up identical entry and exit planes');
 			}
@@ -904,9 +891,7 @@ const spiralParser = {
 			// the rotation center and axis
 			const line = entryPlane.getIntersection(exitPlane);
 			rotCenter = line.origin;
-			if (!(rotCenter instanceof Vector3)) throw new Error('spiralParser._getRotationPlane: rotCenter is not a Vector3');
 			rotAxis = line.normal;
-			if (!(rotAxis instanceof Vector3)) throw new Error('spiralParser._getRotationPlane: rotAxis is not a Vector3');
 		}
 
 		// Return the rotation plane
