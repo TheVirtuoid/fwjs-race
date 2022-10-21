@@ -352,6 +352,14 @@ class CylindricalCoordinate {
 	get angle() { return this.#angle }
 	get radius() { return this.#radius }
 	get height() { return this.#height }
+
+	interpolate(other, t) {
+		const olt = 1 - t;
+		return new CylindricalCoordinate(
+			olt * this.#radius + t * other.#radius,
+			olt * this.#angle + t * other.#angle,
+			olt * this.#height + t * other.#height)
+	}
 }
 
 class Line {
@@ -768,23 +776,19 @@ const spiralParser = {
 
 		// Now that we have the rotation plane, we can compute the angles,
 		// altitudes, and radii
-		const entry = this._getCylindricalCoordinate(specs, 'startsAt');
-		const exit = this._getCylindricalCoordinate(specs, 'endsAt');
+		specs.entry = this._getCylindricalCoordinate(specs, 'startsAt');
+		specs.exit = this._getCylindricalCoordinate(specs, 'endsAt');
 
 		// Set the sweep and declination
-		const { sweep, invertTangent, startAngle, endAngle } = this._getSweep(specs, rotate, turns, entry, exit);
-		const deltaAltitude = exit.height - entry.height;
+		const { sweep, invertTangent, startAngle, endAngle } = this._getSweep(specs, rotate, turns, specs.entry, specs.exit);
+		specs.exit = new CylindricalCoordinate(specs.exit.radius, endAngle, specs.exit.height);
+		const deltaAltitude = specs.exit.height - specs.entry.height;
 		const declination = Math.abs(deltaAltitude) < .001 ? 0 : (Math.atan2(deltaAltitude, sweep) * trig.radiansToDegrees);
 		if (specs.debug) {
 			console.log('spiralParser._getSpecs: deltaAltitude %f, sweep %f, declination %f', deltaAltitude, sweep, declination);
 		}
 		specs.declination = invertTangent ? (180 - declination) : declination;
 		specs.sweep = sweep;
-
-		// Set the interpolation functions
-		specs.height = this._getInterpolation(entry.height, exit.height);
-		specs.angle = this._getInterpolation(startAngle, endAngle);
-		specs.radius = this._getInterpolation(entry.radius, exit.radius);
 
 		// Set the trackBank multiplier
 		specs.trackBank = settings.trackBank;
@@ -798,13 +802,6 @@ const spiralParser = {
 
 	_getCylindricalCoordinate: function(specs, memberName) {
 		return specs.rotationPlane.getCylindricalCoordinate(specs[memberName].center)
-	},
-
-	_getInterpolation: function(t0, t1) {
-		const delta = t1 - t0;
-		return Math.abs(delta) < .001 ?
-			(t) => { return t0; } :
-			(t) => { return t0 + t * delta; };
 	},
 
 	_getRotationAxis: function(specs, rotate) {
@@ -937,7 +934,7 @@ const spiralParser = {
 		// Otherwise patch its forwardWeight if required.
 		if (points.length === 0) points.push(specs.startsAt);
 		let p = points[points.length - 1];
-		p.forwardWeight = specs.radius(0) * this._circleWeight;
+		p.forwardWeight = specs.entry.radius * this._circleWeight;
 		p.trackBank = this._processInterpolationArray(specs.trackBank, 0, specs.trackBankMultiplier);
 
 		// Add the 90° points
@@ -946,14 +943,14 @@ const spiralParser = {
 		}
 
 		// Add the last point
-		specs.endsAt.backwardWeight = specs.radius(1) * this._circleWeight;
+		specs.endsAt.backwardWeight = specs.exit.radius * this._circleWeight;
 		specs.endsAt.trackBank = this._processInterpolationArray(specs.trackBank, 1, specs.trackBankMultiplier);
 		points.push(specs.endsAt);
 		builders.push(createBuilder(parentSettings));
 	},
 
 	_addPoint: function(builders, points, t, specs, rawSpiral, parentSettings, name) {
-		const cylPoint = new CylindricalCoordinate(specs.radius(t), specs.angle(t), specs.height(t));
+		const cylPoint = specs.entry.interpolate(specs.exit, t);
 		const declination = specs.declination;
 
 		const polar = specs.rotationPlane.getHelixAt(cylPoint, declination, specs.debug);
