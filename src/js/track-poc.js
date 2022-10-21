@@ -667,49 +667,30 @@ const spiralParser = {
 	/*--------------------------------------------------------------------------
 	THEORETICAL FOUNDATION
 
+	A spiral section represents a helix with varying radii. If the start and
+	end of the helix are on the same level, the helix degenerates into a
+	planar curve.
+
 	A spiral section has (a) a center of the rotation, (b) a normalized
 	rotation axis, (c) an entry point, (d) an exit point, and (e) a number of
 	full rotations, or turns, between the entry and exit points.
 
+	For now we ignore the direction of rotation, being either clockwise or
+	counterclockwise.
+
 	Let the rotation plane be the plane defined by the center and rotation
-	axis with the plane's normal being the rotation axis.
+	axis with the plane's normal being the rotation axis. The plane also has
+	an arbitrary polar axis analogous to the X coordinate axis in standard
+	Euclidean geometry. The polar axis is orthogonal to the rotation axis.
 
-	Note that the rotation axis, being on one side or the other of the plane,
-	determines if the sprial turns left or right relative to the perceived
-	'up' of the entry point.
+	Hence, the rotation plane dictates the entry and exit points' cylindrical
+	coordinates, being the points' radius, angle, and height. For convenience,
+	the exit point's angle is increased or decreased by 360° times the number
+	of turns.
 
-	Let the rotation plane have an arbitrary 'x' axis or 0° vector,
-	orthogonal to the rotation axis.
-
-	Note that all points projected on the rotation plane can be expressed in
-	polar coordinates [d, θ] where d is the distance of the projection from
-	the center point and θ is the angle off the plane's x axis.
-
-	Let the entry and exit projection points be the projections of the entry
-	and exit points onto the rotation plane.
-
-	Let the entry and exit angles be the angle components of the projection
-	points' polar coordinates.
-
-	Let the entry and exit radii be the distances of the projection points'
-	polar coordinates.
-
-	Note that the radii do not need to be the same. This allows for the
-	construction of increasing or decreasing radii curves.
-
-	Let the sweep of the spiral being the sum of (a) 360° times the number
-	of turns and (b) the difference between the entry and exit angles in the
-	direction of rotation.
-
-	Let the entry and exit altitudes be the distances of the entry and exit
-	points from the rotation plane. Note that this is the dot product of the
-	points and the rotation axis.
-
-	Note that the altitudes may have the same sign as the spiral does not
-	need to pass through the rotation plane.
-
-	Furthermore, note that if the altitudes are the same, all points on the
-	spiral have the same altitude and the number of turns should be 0.
+	The spiral section then produces a curve, from the entry point to the
+	exit point with intermediate points linearly interpolating between the
+	points' cylindrical coordinates.
 
 	--------------------------------------------------------------------------*/
 
@@ -723,32 +704,32 @@ const spiralParser = {
 	/*--------------------------------------------------------------------------
 	SPECIFICATION
 
-	As stated above, we need these elements to be specified:
-	(a) the rotation center and axis which define the rotation plane
-	(b) the entry and exit angles
-	(c) the entry and exit altitudes
-	(d) the entry and exit radii
-	(e) the number of turns
-	(f) The entry point if the sprial starts the segment.
+	For convenience, define a 'point-forward' to be an object with two members:
+		'vector': object having 'x', 'y', and 'z' keys defining numeric
+			coordinate values
+		'point': a vector defining a point in space
+		'direction': a vector defining a direction
 
-	Note that if the spiral starts a segment, the entry point implicitly
-	supplies the entry angle, altitude, and radius.
+	Using these, define:
+		'center-forward': object with a 'center' point and 'forward' direction
 
+	'center' (required if some situations, illegal in others)
+		If specified, a point setting the center of rotation.
 	'endsAt' (required)
-		If specified, sets the exit point of the spiral. This object
-		must define the 'x', 'y', and 'z' coordinate values of the
-		vector and a 'forward' vector. A 'forwardWeight' is optional.
+		A center-forward defining the exit point and direction of the spiral
+		at that point. A 'forwardWeight' is optional.
 	'rotate' (required)
-		This is either 'left', 'right', or 'up' and determines how the
-		spiral rotates relative to the entry point.
+		This is either 'left', 'right', or 'up' and determines the rotation
+		axis and how the spiral rotates relative to the entry point. The
+		left and right rotations use an upward axis while up uses a rightward
+		axis, relative to the entry point's forward direction.
 	'startsAt' (required if the spiral starts the track segment)
-		This sets the entry point of the spiral. This is illegal if the
-		spiral does not start the segment. This object must define
-		the 'x', 'y', and 'z' coordinate values of the vector and
-		a 'forward' vector.
+		If specified, a center-forward definig the entry point of the spiral.
+		This is illegal if the spiral does not start the segment. Any
+		'forwardWeight' is ignored.
 	'turns' (optional)
-		If specified, this positive integer sets the number of complete
-		rotations in the spiral.
+		A positive integer setting the number of complete rotations in the
+		spiral. If not specified, this is treated as no complete rotations.
 
 	--------------------------------------------------------------------------*/
 
@@ -925,46 +906,28 @@ const spiralParser = {
 	/*--------------------------------------------------------------------------
 	IMPLEMENTATION
 
-	TODO: Determine if the rotation direction coefficient is needed. The
-	rotation functions may handle this innately.
+	The _getSpecs function compiles the user specification into an algorithm
+	friendly specification. Hereout, the term specification refers to this
+	algorithm friedly form.
 
-	Note that the rotation direction is either 1 or -1 to reflect,
-	respectively, a counterclockwise or clockwise rotation.
+	'sweep' is the difference between the entry and exit points' angles
+	including 360° times the number of turns. This is always positive.
 
-	First we need a series of parametric functions on t = 0 to 1.
+	As with all good parametric algorithms, the algorithm execute functions
+	providing 0 <= t <= 1, representing an angle of the helix between 0 and
+	sweep.
 
-	Let Sweep(t) return the linearly interpolated sweep between 0 at t = 0
-	and the spiral's sweep at t = 1.
-
-	Let Altitude(t) return the linearly interpolated altitude between the
-	entry altitude at t = 0 and the exit altitude at t = 1.
-
-	Let Radius(t) return the linearly interpolated radius between the entry
-	radius at t = 0 and the exit radius at t = 1.
-
-	Let Angle(t) return the sum of the entry angle and the product of
-	Sweep(t) and rotation direction, normalized to the range [0°, 360°).
-
-	Let PlanarPoint(t) return the point at [Radius(t), Angle(t)].
-
-	Let Point(t) return the sum of PlanarPoint(t) and the product of
-	Altitude(t) and the rotation axis.
-
-	Now let Spiral(u) be a Bezier cubic function to compute the spiral
-	points.
+	Given t, we can now linearly interpolate between the cylindrical
+	coordinates of the entry and exit points. Note that _getSpecs adjusts
+	the angle of the exit point to reflect clockwise or counterwise rotation.
 
 	The current implementation of the Bezier cubic curve for circles
-	requires that a circle be partitioned into 90° segments. The Bezier
-	function Spiral(u) treat u = 0 as 0° and u = 1 as 90°.
+	requires that a circle be partitioned into 90° segments. The entry
+	point is t = 0. Additional points at 90°, 180°, ..., (k-1)90°, where
+	sweep < k90°, are generated. The exit point is also used.
 
-	This requires the top-level algorithm to break the sprial into a series
-	of 90 sections [0°, 90°], [90°, 180°], ..., [(k-1)90°, k90°] where
-	(k-1)90° < the spiral's sweep <= k90°. This requires additional
-	arguments to the Bezier function to allow mapping of u onto the
-	parameteric argument t in the other functions. Also note that the for
-	the last section, even though Point(k90°) is used to determine the
-	the control points of the curve, range of points produced are up to
-	Point(sweep).
+	Note that the Bezier algorithm requires the tangent or forward direction
+	of these intermediate points.
 
 	--------------------------------------------------------------------------*/
 
@@ -977,7 +940,7 @@ const spiralParser = {
 		p.forwardWeight = specs.radius(0) * this._circleWeight;
 		p.trackBank = this._processInterpolationArray(specs.trackBank, 0, specs.trackBankMultiplier);
 
-		// Add the 90° sections
+		// Add the 90° points
 		for (let angle = 90; angle < specs.sweep; angle += 90) {
 			this._addPoint(builders, points, angle / specs.sweep, specs, rawSpiral, parentSettings, name);
 		}
