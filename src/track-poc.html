@@ -1023,18 +1023,14 @@
 			//----------------------------------------------------------------------
 			// Helixes
 
-			const track6l = tracks.register({
+			const track6 = tracks.register({
 				family: 'Helix',
 				member: 'Left 360&#176; 4 turns',
 				track: { segments: [ { points: [
 					{
 						type: 'spiral',
 						startsAt: {
-							center: {
-								x: 0,
-								y: 10,
-								z: 0,
-							},
+							center: { x: 0, y: 10, z: 0, },
 							forward: posX,
 						},
 						endsAt: {
@@ -1045,13 +1041,13 @@
 						turns: 4,
 						center: { x:0, y:0, z:4 },
 					},
-				]}], debug:true, },
+				]}],},
 			});
 			const track6r = tracks.register({
-				sibling: track6l,
+				sibling: track6,
 				member: 'Right 360&#176; 4 turns',
 				init() {
-					const p = track6l.track.segments[0].points[0];
+					const p = track6.track.segments[0].points[0];
 					this.track = { segments: [ { points: [
 						{
 							type: 'spiral',
@@ -1065,15 +1061,14 @@
 								z:-p.center.z
 							},
 						}
-					]}], debug: true,};
+					]}],};
 				},
 			});
-
 			tracks.register({
-				sibling: track6l,
+				sibling: track6,
 				member: 'Left 360&#176; 4 turns, 12 high',
 				init() {
-					const p = track6l.track.segments[0].points[0];
+					const p = track6.track.segments[0].points[0];
 					this.track = { segments: [ { points: [
 						{
 							type: 'spiral',
@@ -1086,12 +1081,11 @@
 							turns: p.turns,
 							center: p.center,
 						}
-					]}], debug: true,};
+					]}],};
 				},
 			});
-
 			tracks.register({
-				sibling: track6l,
+				sibling: track6,
 				member: 'Right 360&#176; 4 turns, 12 high',
 				init() {
 					const p = track6r.track.segments[0].points[0];
@@ -1107,8 +1101,45 @@
 							turns: p.turns,
 							center: p.center,
 						}
-					]}], debug: true,};
+					]}],};
 				},
+			});
+			tracks.register({
+				sibling: track6,
+				member: 'Left 360&#176; 4 turns up',
+				init() {
+					const p = track6.track.segments[0].points[0];
+					this.track = { segments: [ { points: [
+						{
+							type: 'spiral',
+							startsAt: p.endsAt,
+							endsAt: p.startsAt,
+							rotate: p.rotate,
+							turns: p.turns,
+							center: p.center,
+						}
+					]}],};
+				},
+			});
+			tracks.register({
+				sibling: track6,
+				member: 'Left 270&#176; 6 turns',
+				track: { segments: [ { points: [
+					{
+						type: 'spiral',
+						startsAt: {
+							center: { x: 0, y: 10, z: 0, },
+							forward: posX,
+						},
+						endsAt: {
+							center: { x: 0, y: 0, z: 4, },
+							forward: posZ,
+						},
+						rotate: 'left',
+						turns: 6,
+						//center: { x:0, y:0, z:4 },
+					}
+				]}], debug:true, },
 			});
 		}
 

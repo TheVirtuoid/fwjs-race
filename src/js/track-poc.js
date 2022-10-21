@@ -101,9 +101,9 @@ const validate = {
 		throw new TypeError(`${objectName}.${memberName} must be a number, 3D vector, or interpolation array`);
 	},
 
-	undefined: function(object, memberName, objectName, excludingMemberName) {
+	undefined: function(object, memberName, objectName, reason) {
 		if (is.defined(object[memberName])) {
-			throw new TypeError(`Cannot specify ${objectName}.${memberName} because ${excludingMemberName} is specified.`);
+			throw new TypeError(`Cannot specify ${objectName}.${memberName} because ${reason}.`);
 		}
 	},
 
@@ -867,13 +867,14 @@ const spiralParser = {
 			throw new Error('_getRotationPlane: not implemented, parallel entry and exit planes');
 		} else {
 			// 'center' is illegal
-			validate.undefined(rawSpiral, 'center', name);
+			validate.undefined(rawSpiral, 'center', name, 'entry and exit planes intersect');
 
 			// Get intersection of the planes, a line, and use this as
 			// the rotation center and axis
 			const line = entryPlane.getIntersection(exitPlane);
 			rotCenter = line.origin;
 			rotAxis = line.normal;
+			console.log('spiralParser._getRotationPlane: rotCenter %o, rotAxis %o', rotCenter, rotAxis);
 		}
 
 		// Return the rotation plane
@@ -1043,7 +1044,7 @@ const spiralParser = {
 				const t0y = plane.normal.scale(1 / options.depth);
 				const t0z = plane.yAxis.scale(cos);
 				const t0 = t0x.add(1, t0y).add(1, t0z).normalize();
-				console.log('\ttangent %o, test %o', tangent, t0);
+				if (options.debug) console.log('\ttangent %o, test %o', tangent, t0);
 				forward = t0;
 			} else if (options.rotate === 'right') {
 				const tangent = plane.xAxis.scale(sin).add(1, plane.normal.scale(1 / -10)).add(1, plane.yAxis.scale(-cos)).normalize();
@@ -1056,7 +1057,7 @@ const spiralParser = {
 				const t0y = plane.normal.scale(1 / options.depth);
 				const t0z = plane.yAxis.scale(-cos);
 				const t0 = t0x.add(1, t0y).add(1, t0z).normalize();
-				console.log('\ttangent %o, test %o', tangent, t0);
+				if (options.debug) console.log('\ttangent %o, test %o', tangent, t0);
 				forward = t0;
 				//throw `spiralParser._getForwardTest1: ${options.rotate} rotation for depth not implemented`;
 				//forward = vector.add(forward, depth * radius / sweep, p.normal);
