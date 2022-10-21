@@ -12,6 +12,7 @@ import {
 import NoSceneSetError from "./errors/NoSceneSetError";
 import NoEngineSetError from "./errors/NoEngineSetError";
 import ammo from "ammo.js";
+import Vector3Constant from "./types/Vector3Constant";
 
 let instance;
 
@@ -31,8 +32,12 @@ export default class BabylonEngine {
 		return instance;
 	}
 
-	vector3(...args) {
+	createVector3(...args) {
 		return new Vector3(...args);
+	}
+
+	createVector3Constant(constant) {
+		return Vector3Constant[constant];
 	}
 
 	createDefaultEngine() {

@@ -120,7 +120,7 @@ export default class Tracks {
 			const settings = this.#options[key] ? this.#options[key] : {};
 
 			const ribbons = TrackPOC.build(track, (u) => {
-				return this.#graphicsEngine.vector3(u.x, u.y, u.z);
+				return this.#graphicsEngine.createVector3(u.x, u.y, u.z);
 				}, settings);
 			const ribbon = ribbons[0];
 			const leftRoad = ribbon[1];
