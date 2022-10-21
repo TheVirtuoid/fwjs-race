@@ -780,8 +780,10 @@ const spiralParser = {
 		specs.exit = this._getCylindricalCoordinate(specs, 'endsAt');
 
 		// Set the sweep and declination
-		const { sweep, invertTangent, startAngle, endAngle } = this._getSweep(specs, rotate, turns, specs.entry, specs.exit);
-		specs.exit = new CylindricalCoordinate(specs.exit.radius, endAngle, specs.exit.height);
+		const { sweep, invertTangent, endAngle } = this._getSweep(specs, rotate, turns);
+		if (endAngle !== specs.exit.angle) {
+			specs.exit = new CylindricalCoordinate(specs.exit.radius, endAngle, specs.exit.height);
+		}
 		const deltaAltitude = specs.exit.height - specs.entry.height;
 		const declination = Math.abs(deltaAltitude) < .001 ? 0 : (Math.atan2(deltaAltitude, sweep) * trig.radiansToDegrees);
 		if (specs.debug) {
@@ -805,7 +807,7 @@ const spiralParser = {
 	},
 
 	_getRotationAxis: function(specs, rotate) {
-		// TODO: This assumes the rotation axis is either up or up X forward.
+		// TODO: This assumes the rotation axis is either up or forward.
 		// This may not always be the case.
 		if (rotate === 'left' || rotate === 'right') return Vector3.up;
 		throw new Error('_getRotationAxis: not implemented for non-up axis');
@@ -876,9 +878,9 @@ const spiralParser = {
 		return new Plane(rotCenter, rotAxis);
 	},
 
-	_getSweep: function(specs, rotate, turns, entry, exit) {
+	_getSweep: function(specs, rotate, turns) {
 		const turnsDegrees = turns * 360;
-		let sweep, invertTangent, startAngle = entry.angle, endAngle = exit.angle;
+		let sweep, invertTangent, startAngle = specs.entry.angle, endAngle = specs.exit.angle;
 		if (rotate === 'left') {
 			if (startAngle > endAngle) endAngle += 360;
 			endAngle += turnsDegrees;
@@ -895,7 +897,6 @@ const spiralParser = {
 		return {
 			endAngle: endAngle,
 			invertTangent: invertTangent,
-			startAngle: startAngle,
 			sweep: sweep,
 		}
 	},
