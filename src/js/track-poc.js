@@ -874,7 +874,6 @@ const spiralParser = {
 			const line = entryPlane.getIntersection(exitPlane);
 			rotCenter = line.origin;
 			rotAxis = line.normal;
-			console.log('spiralParser._getRotationPlane: rotCenter %o, rotAxis %o', rotCenter, rotAxis);
 		}
 
 		// Return the rotation plane
