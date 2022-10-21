@@ -182,6 +182,7 @@ const merge = {
 	_validSettings: [
 		{ key: 'debug' },
 		{ key: 'debugSegments' },
+		{ key: 'altDeclination' },
 		{ key: 'precision', validator: validate.positiveNumber },
 		{ key: 'trackBank', validator: validate.trackBank, },
 		{ key: 'trackWidth', validator: validate.positiveNumber },
@@ -794,6 +795,7 @@ const spiralParser = {
 			specs.exit = new CylindricalCoordinate(specs.exit.radius, endAngle, specs.exit.height);
 		}
 		specs.sweep = sweep;
+		specs.altDeclination = settings.altDeclination;
 
 		// Set the trackBank multiplier
 		specs.trackBank = settings.trackBank;
@@ -883,7 +885,8 @@ const spiralParser = {
 
 	_getSweep: function(specs, rotate, turns) {
 		const turnsDegrees = turns * 360;
-		let sweep, startAngle = specs.entry.angle, endAngle = specs.exit.angle;
+		const startAngle = specs.entry.angle;
+		let sweep, endAngle = specs.exit.angle;
 		if (rotate === 'left') {
 			if (startAngle > endAngle) endAngle += 360;
 			endAngle += turnsDegrees;
@@ -934,7 +937,7 @@ const spiralParser = {
 		// Insert the entry point if this is the first point of the segment.
 		// Otherwise patch its forwardWeight if required.
 		if (points.length === 0) points.push(specs.startsAt);
-		let p = points[points.length - 1];
+		const p = points[points.length - 1];
 		p.forwardWeight = specs.entry.radius * this._circleWeight;
 		p.trackBank = this._processInterpolationArray(specs.trackBank, 0, specs.trackBankMultiplier);
 
@@ -960,6 +963,7 @@ const spiralParser = {
 		const options = {
 			debug: specs.debug,
 			getForward: this._getPointForward,
+			altDeclination: specs.altDeclination,
 			depth: specs.exit.height - specs.entry.height,
 			rotate: specs.rotate,
 			sweep: specs.sweep,
@@ -978,6 +982,7 @@ const spiralParser = {
 		points.push(point);
 		builders.push(createBuilder(parentSettings));
 	},
+
 	_getPointForward: function(plane, cos, sin, radial, options) {
 		/*
 		Let a left-rotating helix be centered at (0, 0, 0), with radius r,
@@ -985,8 +990,7 @@ const spiralParser = {
 		altitude h1. For our purposes, 0 ≤ θ0 < 2π and θ0 < θ1.
 
 		The first point in the helix is (r cos θ0, h0, r sin θ0) and the
-		last is (r cos θ1, h1, r sin θ1). Generally any point on the helix
-		is provided by:
+		last is (r cos θ1, h1, r sin θ1). Any point on the helix is provided by:
 			P(θ) = (r cos θ, h0 + (h1 - h0) (θ - θ0) / (θ1 - θ0), r sin θ)
 		where θ0 ≤ θ ≤ θ1.
 
@@ -1001,33 +1005,42 @@ const spiralParser = {
 			= (r cos θ1, h1, r sin θ1)
 
 		The tangent at an angle is then P’(θ)
-			= (r cos θ / dθ, [h0 + (h1 - h0) (θ - θ0) / (θ1 - θ0)] / dθ, r sin θ / dθ)
-			= (-r sin θ, h0 / dθ + (h1 - h0) θ / (θ1 - θ0) / dθ - (h1 - h0) (-θ0) / (θ1 - θ0) / dθ, r cos θ)
+			= (d[r cos θ]/dθ, d[h0 + (h1 - h0) (θ - θ0) / (θ1 - θ0)]/dθ, d[r sin θ]/dθ)
+			= (-r sin θ, dh0/dθ + d[(h1 - h0) θ / (θ1 - θ0)]/dθ - d[(h1 - h0) (-θ0) / (θ1 - θ0)]/dθ, r cos θ)
 			= (-r sin θ, (h1 - h0) / (θ1 - θ0), r cos θ)
 		*/
 
-		//	(-r sin θ, (h1 - h0) / (θ1 - θ0), r cos θ)
-
+		if (!is.defined(options.depth)) throw new Error();
+		if (!is.defined(options.rotate)) throw new Error();
+		if (!is.defined(options.sweep)) throw new Error();
 		if (options.debug) {
 			console.log('spiralParser._getPointForward: options %o', options);
 		}
 
-		if (!is.defined(options.rotate)) throw new Error();
 		if (options.rotate !== 'left' && options.rotate !== 'right') {
 			throw new Error(`spiralParser._getPointForward: ${options.rotate} not implemented`);
 		}
 
 		const tangents = [];
 
-		if (!is.defined(options.depth)) throw new Error();
-		if (!is.defined(options.sweep)) throw new Error();
+		// TODO: The forward vector is not yet correct.
+		//	'appearsToWork' seems to work for turns >= 4 but fails for turns <= 1
+		//	'fromDerivative' seems to work for sweeps < 2π but fails otherwise
 		const absDepth = Math.abs(options.depth);
 		if (absDepth <= 0.1) tangents[1] = Vector3.zero;
 		else {
+
+			// NOTE: This mostly works with
 			const appearsToWork = 1 / options.depth;
-			const experiment = options.depth / (options.sweep * trig.degreesToRadians);
-			if (options.debug) console.log('\tappearsToWork %f, experiment %f', appearsToWork, experiment);
-			tangents[1] = plane.normal.scale(absDepth <= 1 ? experiment : appearsToWork);
+			const fromDerivative = options.depth / (options.sweep * trig.degreesToRadians);
+			const toUse =
+				is.defined(options.altDeclination) ? options.altDeclination :
+				options.sweep <= 360 ? fromDerivative : appearsToWork;
+			if (options.debug) {
+				console.log('\tappearsToWork %f, fromDerivative %f, using %f',
+					appearsToWork, fromDerivative, toUse);
+			}
+			tangents[1] = plane.normal.scale(toUse);
 		}
 
 		if (options.debug) console.log('\tY component %o', tangents[1]);

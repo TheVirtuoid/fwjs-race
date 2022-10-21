@@ -40,7 +40,11 @@
 				touch-action: none;
 			}
 
-			#track-selector {
+			#track-declination {
+				margin-top:5px;
+			}
+
+			#track-selector-box {
 				border: 2px solid blue;
 				border-radius: 1rem;
 				background-color: white;
@@ -67,11 +71,17 @@
 		</style>
 	</head>
 <body>
-	<div id="track-selector">
-		<label for="tracks">Choose a track:</label>
-		<select id="trackFamilies"></select>
-		<select id="trackMembers"></select>
-		<button type="button" id="go">GO!</button>
+	<div id="track-selector-box">
+		<div>
+			<label for="trackFamilies">Choose a track:</label>
+			<select id="trackFamilies"></select>
+			<select id="trackMembers"></select>
+			<button type="button" id="go">GO!</button>
+		</div>
+		<div id="track-declination">
+			<label for="altDeclination">Set alternate declination:</label>
+			<input type="number" id="altDeclination" step=".01"/>
+		</div>
 	</div>
 	<div id="track-renderer">
 		<canvas id="renderCanvas"></canvas>
@@ -83,15 +93,15 @@
 	<script>
 
 		//======================================================================
-		// DISPLAY MANAGER
+		// ERROR DISPLAY MANAGER
 
-		const displayMgr = {
-			clearError: function() {
+		const errorDisplay = {
+			clear: function() {
 				this._trackError.style.display = "none";
 				this._disable(false);
 			},
 
-			showError: function(e) {
+			show: function(e) {
 				console.log(e);
 				this._trackError.style.display = "block";
 				this._trackErrorText.innerText = e.toString();
@@ -110,6 +120,38 @@
 			_disable: function(disable) {
 				for (let element of this._disableOnError) {
 					element.disabled = disable;
+				}
+			},
+		}
+
+		//======================================================================
+		// ALT DECLINATION MANAGER
+
+		const altDeclinationDisplay = {
+
+			register: function(track) {
+				if (!track || track.altDeclination === null || track.altDeclination === undefined) {
+					this._track = false;
+				} else {
+					this._track = track;
+					this._input.value = track.altDeclination;
+					console.log(this._input.value, track.altDeclination);
+				}
+				this._div.style.display = this._track ? "block" : "none";
+			},
+
+			init: function(div, input) {
+				this._div = document.getElementById(div);
+				this._input = document.getElementById(input);
+				this._input.addEventListener("change", () => this._onChange());
+				this.register();
+			},
+
+			_onChange: function() {
+				const value = Number(this._input.value);
+				if (value != this._track.altDeclination) {
+					this._track.altDeclination = value;
+					tracks._createMesh();
 				}
 			},
 		}
@@ -272,8 +314,8 @@
 			setSelectors: function(familyId, membersId) {
 				this._familySelector = document.getElementById(familyId);
 				this._memberSelector = document.getElementById(membersId);
-				this._familySelector.addEventListener("change", () => { this._onFamilyChanged() });
-				this._memberSelector.addEventListener("change", () => { this._createMesh() });
+				this._familySelector.addEventListener("change", () => this._onFamilyChanged());
+				this._memberSelector.addEventListener("change", () => this._createMesh());
 			},
 			start: function() {
 				if (!this._familySelector || !this._memberSelector) throw "Must invoke setSelectors first";
@@ -289,6 +331,8 @@
 					const key = this._memberSelector.value;
 					const track = this._tracks[key];
 					const settings = this._options[key] ? this._options[key] : {};
+
+					altDeclinationDisplay.register(track);
 
 					const ribbons = TrackPOC.build(track, (u) => { return new BABYLON.Vector3(u.x, u.y, u.z); }, settings);
 					const ribbon = ribbons[0];
@@ -313,9 +357,9 @@
 					for (let i = 0; i < ribbons.length; i++) {
 						tracks._meshes.push(babylon.createRibbon(`Segment${i}`, ribbons[i], track.closed, { mass: 0 }));
 					}
-					displayMgr.clearError();
+					errorDisplay.clear();
 				} catch (e) {
-					displayMgr.showError(e);
+					errorDisplay.show(e);
 				}
 			},
 			_onFamilyChanged: function() {
@@ -657,7 +701,7 @@
 			});
 			tracks.register({
 				sibling: track2,
-				member: "Using spiral",
+				member: "Using spiral (cheat -.1)",
 				track: {
 					segments: [ jump.launchSegment, {
 						points: [
@@ -675,6 +719,7 @@
 						],
 					}],
 					debug: true,
+					altDeclination: -.1,
 				},
 			});
 			tracks.register({
@@ -1025,43 +1070,59 @@
 
 			const track6 = tracks.register({
 				family: 'Helix',
-				member: 'Left 360&#176; 4 turns',
-				track: { segments: [ { points: [
-					{
-						type: 'spiral',
-						startsAt: {
-							center: { x: 0, y: 10, z: 0, },
-							forward: posX,
-						},
-						endsAt: {
-							center: zero,
-							forward: posX,
-						},
-						rotate: 'left',
-						turns: 4,
-						center: { x:0, y:0, z:4 },
-					},
-				]}],},
+				member: 'Left 360&#176; 4 turns (alt -.1)',
+				track: {
+					segments: [
+						{
+							points: [
+								{
+									type: 'spiral',
+									startsAt: {
+										center: { x: 0, y: 10, z: 0, },
+										forward: posX,
+									},
+									endsAt: {
+										center: zero,
+										forward: posX,
+									},
+									rotate: 'left',
+									turns: 4,
+									center: { x:0, y:0, z:4 },
+								},
+							],
+						}
+					],
+					debug: true,
+					altDeclination: -.1,
+				},
 			});
 			tracks.register({
 				sibling: track6,
-				member: 'Left 360&#176; 1 turn',
-				track: { segments: [ { points: [
-					{
-						type: 'spiral',
-						startsAt: {
-							center: { x: 0, y: 2, z: 0, },
-							forward: posX,
-						},
-						endsAt: {
-							center: zero,
-							forward: posX,
-						},
-						rotate: 'left',
-						turns: 1,
-						center: { x:0, y:0, z:4 },
-					},
-				]}],},
+				member: 'Left 360&#176; 1 turn (cheat -0.06)',
+				track: {
+					segments: [
+						{
+							points: [
+								{
+									type: 'spiral',
+									startsAt: {
+										center: { x: 0, y: 2, z: 0, },
+										forward: posX,
+									},
+									endsAt: {
+										center: zero,
+										forward: posX,
+									},
+									rotate: 'left',
+									turns: 1,
+									center: { x:0, y:0, z:4 },
+								},
+							],
+						}
+					],
+					debug: true,
+					altDeclination: -0.06,
+				},
 			});
 			const track6r = tracks.register({
 				sibling: track6,
@@ -1259,7 +1320,8 @@
 		window.initFunction = async function() {
 
 			// Hook DOM elements
-			displayMgr.init("track-error", "track-error-text", [ "go" ]);
+			errorDisplay.init("track-error", "track-error-text", [ "go" ]);
+			altDeclinationDisplay.init("track-declination", "altDeclination");
 			babylon.setCanvas("renderCanvas");
 			tracks.setSelectors("trackFamilies", "trackMembers");
 			ball.setButton("go");
@@ -1286,7 +1348,7 @@
 				defineTracks();
 				tracks.start();
 			} catch (e) {
-				displayMgr.showError(e);
+				errorDisplay.show(e);
 			}
 		};
 		initFunction().then(() => { babylon.ready() });
