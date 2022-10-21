@@ -1023,7 +1023,7 @@
 			//----------------------------------------------------------------------
 			// Helixes
 
-			const track6 = tracks.register({
+			const track6l = tracks.register({
 				family: 'Helix',
 				member: 'Left 360&#176; 4 turns',
 				track: { segments: [ { points: [
@@ -1047,11 +1047,11 @@
 					},
 				]}], debug:true, },
 			});
-			tracks.register({
-				sibling: track6,
+			const track6r = tracks.register({
+				sibling: track6l,
 				member: 'Right 360&#176; 4 turns',
 				init() {
-					const p = track6.track.segments[0].points[0];
+					const p = track6l.track.segments[0].points[0];
 					this.track = { segments: [ { points: [
 						{
 							type: 'spiral',
@@ -1070,10 +1070,31 @@
 			});
 
 			tracks.register({
-				sibling: track6,
+				sibling: track6l,
 				member: 'Left 360&#176; 4 turns, 12 high',
 				init() {
-					const p = track6.track.segments[0].points[0];
+					const p = track6l.track.segments[0].points[0];
+					this.track = { segments: [ { points: [
+						{
+							type: 'spiral',
+							startsAt: {
+								center: {x: p.startsAt.center.x, y: p.startsAt.center.y + 2, z: p.startsAt.center.z},
+								forward: p.startsAt.forward
+							},
+							endsAt: p.endsAt,
+							rotate: p.rotate,
+							turns: p.turns,
+							center: p.center,
+						}
+					]}], debug: true,};
+				},
+			});
+
+			tracks.register({
+				sibling: track6l,
+				member: 'Right 360&#176; 4 turns, 12 high',
+				init() {
+					const p = track6r.track.segments[0].points[0];
 					this.track = { segments: [ { points: [
 						{
 							type: 'spiral',

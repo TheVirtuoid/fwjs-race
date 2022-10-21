@@ -1024,15 +1024,16 @@ const spiralParser = {
 
 		//	(-r sin θ, (h1 - h0) / (θ1 - θ0), r cos θ)
 
-		const tangent = plane.xAxis.scale(-sin).add(1, plane.normal.scale(1 / -10)).add(1, plane.yAxis.scale(cos)).normalize();
-		let forward;
 		if (options.debug) {
 			console.log('spiralParser._getForwardTest1: options %o', options);
 		}
+
+		let forward;
 		if (!is.defined(options.depth)) throw new Error();
 		if (Math.abs(options.depth) > 0.1) {
 			if (!is.defined(options.rotate)) throw new Error();
 			if (options.rotate === 'left') {
+				const tangent = plane.xAxis.scale(-sin).add(1, plane.normal.scale(1 / -10)).add(1, plane.yAxis.scale(cos)).normalize();
 				if (!is.defined(options.invertTangent)) throw new Error();
 				if (this._debugLeftInvertTangent && options.invertTangent) {
 					this._debugLeftInvertTangent = false;
@@ -1043,15 +1044,21 @@ const spiralParser = {
 				const t0z = plane.yAxis.scale(cos);
 				const t0 = t0x.add(1, t0y).add(1, t0z).normalize();
 				console.log('\ttangent %o, test %o', tangent, t0);
-				forward = tangent;
-				//forward = vector.add(forward, 1 / depth, p.normal);
+				forward = t0;
 			} else if (options.rotate === 'right') {
+				const tangent = plane.xAxis.scale(sin).add(1, plane.normal.scale(1 / -10)).add(1, plane.yAxis.scale(-cos)).normalize();
 				if (!is.defined(options.invertTangent)) throw new Error();
 				if (this._debugRigthInvertTangent && !options.invertTangent) {
 					this._debugRigthInvertTangent = false;
 					console.log(`spiralParser._getForwardTest1: invertTangent ${options.invertTangent}, rotate ${options.rotate}`);
 				}
-				throw `spiralParser._getForwardTest1: ${options.rotate} rotation for depth not implemented`;
+				const t0x = plane.xAxis.scale(sin);
+				const t0y = plane.normal.scale(1 / options.depth);
+				const t0z = plane.yAxis.scale(-cos);
+				const t0 = t0x.add(1, t0y).add(1, t0z).normalize();
+				console.log('\ttangent %o, test %o', tangent, t0);
+				forward = t0;
+				//throw `spiralParser._getForwardTest1: ${options.rotate} rotation for depth not implemented`;
 				//forward = vector.add(forward, depth * radius / sweep, p.normal);
 				//forward = vector.add(forward, -1/depth, p.normal);
 				//forward = vector.multiply(-1, forward);
