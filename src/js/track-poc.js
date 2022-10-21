@@ -789,17 +789,11 @@ const spiralParser = {
 		specs.exit = this._getCylindricalCoordinate(specs, 'endsAt');
 
 		// Set the sweep
-		const { sweep, invertTangent, endAngle } = this._getSweep(specs, rotate, turns);
+		const { sweep, endAngle } = this._getSweep(specs, rotate, turns);
 		if (endAngle !== specs.exit.angle) {
 			specs.exit = new CylindricalCoordinate(specs.exit.radius, endAngle, specs.exit.height);
 		}
 		specs.sweep = sweep;
-		specs.invertTangent = invertTangent;
-
-		// Set the declination
-		const deltaAltitude = specs.exit.height - specs.entry.height;
-		const declination = Math.abs(deltaAltitude) < .001 ? 0 : (Math.atan2(deltaAltitude, sweep) * trig.radiansToDegrees);
-		specs.declination = invertTangent ? (180 - declination) : declination;
 
 		// Set the trackBank multiplier
 		specs.trackBank = settings.trackBank;
@@ -889,23 +883,20 @@ const spiralParser = {
 
 	_getSweep: function(specs, rotate, turns) {
 		const turnsDegrees = turns * 360;
-		let sweep, invertTangent, startAngle = specs.entry.angle, endAngle = specs.exit.angle;
+		let sweep, startAngle = specs.entry.angle, endAngle = specs.exit.angle;
 		if (rotate === 'left') {
 			if (startAngle > endAngle) endAngle += 360;
 			endAngle += turnsDegrees;
 			sweep = endAngle - startAngle;
-			invertTangent = false;
 		} else if (rotate === 'right') {
 			if (startAngle < endAngle) endAngle -= 360;
 			endAngle -= turnsDegrees;
 			sweep = startAngle - endAngle;
-			invertTangent = true;
 		} else {
 			throw new Error('_setSweep: need to compute sweep up');
 		}
 		return {
 			endAngle: endAngle,
-			invertTangent: invertTangent,
 			sweep: sweep,
 		}
 	},
@@ -966,22 +957,13 @@ const spiralParser = {
 				t, specs.entry, specs.exit, cylPoint);
 		}
 
-		const useDeclination = false;
-		const useTest1 = true;
-
-		const options = useDeclination ? {
-				debug: specs.debug,
-				getForward: this._getForwardDeclination,
-				declination: specs.declination,
-			} : useTest1 ? {
-				debug: specs.debug,
-				getForward: this._getPointForward,
-				depth: specs.exit.height - specs.entry.height,
-				rotate: specs.rotate,
-				sweep: specs.sweep,
-			} : {
-				getForward: () => { throw new Error('spiralParser._addPoint: options not selected') }
-			};
+		const options = {
+			debug: specs.debug,
+			getForward: this._getPointForward,
+			depth: specs.exit.height - specs.entry.height,
+			rotate: specs.rotate,
+			sweep: specs.sweep,
+		};
 		const polar = specs.rotationPlane.getHelixAt(cylPoint, options);
 
 		const pointName = `${name}@${cylPoint.angle}`;
@@ -995,15 +977,6 @@ const spiralParser = {
 
 		points.push(point);
 		builders.push(createBuilder(parentSettings));
-	},
-	_getForwardDeclination: function(plane, cos, sin, radial, options) {
-		let forward = plane.xAxis.scale(-sin).add(cos, plane.yAxis);
-		if (options.debug) console.log('spiralParser._getForwardDeclination: declination %f, forward %o', options.declination, forward);
-		if (Math.abs(options.declination) > 0.01) {
-			forward = forward.rotate(radial, options.declination);
-			if (options.debug) console.log('\tafter forward %o', forward);
-		}
-		return forward;
 	},
 	_getPointForward: function(plane, cos, sin, radial, options) {
 		/*
