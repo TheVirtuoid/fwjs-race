@@ -31,6 +31,10 @@ export default class BabylonEngine {
 		return instance;
 	}
 
+	vector3(...args) {
+		return new Vector3(...args);
+	}
+
 	createDefaultEngine() {
 		this.#validateCanvas();
 		// TODO: Need more documentation on 'preserverDrawingBuffer' and 'stencil'

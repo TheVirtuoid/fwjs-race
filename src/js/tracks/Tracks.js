@@ -6,18 +6,22 @@ let instance;
 export default class Tracks {
 
 	#start;
-	#originalMember;
+	#originalMember = 'Original';
 	#families;
 	#familySelector;
 	#memberSelector;
 	#tracks;
 	#options;
 	#meshes;
+	#graphicsEngine;
+	#displayManager;
 
-	constructor() {
+	constructor(graphicsEngine, displayManager) {
 		if (!instance) {
 			instance = this;
 		}
+		this.#graphicsEngine = graphicsEngine;
+		this.#displayManager = displayManager;
 		return instance;
 	}
 
@@ -48,14 +52,14 @@ export default class Tracks {
 			throw new TrackRegistrationError(`A "sibling" track, here "${track.sibling}", must define "family"`);
 		}
 		const family = track.family ? track.family : track.sibling.family;
-		const familyKey = this._removeSpaces(family);
+		const familyKey = this.#removeSpaces(family);
 
 		// Get the member
 		if (track.sibling && !track.member) {
 			throw new TrackRegistrationError('A track defining "sibling" must also define "member".');
 		}
-		if (track.sibling && track.member && track.member === this._originalMember) {
-			throw new TrackRegistrationError(`A track defining "sibling" cannot have "member" set to "${this._originalMember}".`);
+		if (track.sibling && track.member && track.member === this.#originalMember) {
+			throw new TrackRegistrationError(`A track defining "sibling" cannot have "member" set to "${this.#originalMember}".`);
 		}
 		const member = track.member ? track.member : this.#originalMember;
 		const memberKey = familyKey + this.#removeSpaces(member);
@@ -101,21 +105,23 @@ export default class Tracks {
 		if (!this.#familySelector || !this.#memberSelector) {
 			throw new TrackSelectorInvokeError();
 		}
-		this._onFamilyChanged();
+		this.#onFamilyChanged();
 	}
 
 	#createMesh() {
 		// TODO: ball shouldn't be here - we will need to fix this
 		// ball.destroy();
-		for (let mesh of this._meshes) babylon.destroyMesh(mesh);
-		this._meshes.length = 0;
+		this.#meshes.forEach((mesh) => this.#graphicsEngine.destroyMesh(mesh));
+		this.#meshes = [];
 
 		try {
-			const key = this._memberSelector.value;
-			const track = this._tracks[key];
-			const settings = this._options[key] ? this._options[key] : {};
+			const key = this.#memberSelector.value;
+			const track = this.#tracks[key];
+			const settings = this.#options[key] ? this.#options[key] : {};
 
-			const ribbons = TrackPOC.build(track, (u) => { return new BABYLON.Vector3(u.x, u.y, u.z); }, settings);
+			const ribbons = TrackPOC.build(track, (u) => {
+				return this.#graphicsEngine.vector3(u.x, u.y, u.z);
+				}, settings);
 			const ribbon = ribbons[0];
 			const leftRoad = ribbon[1];
 			const rightRoad = ribbon[2];
@@ -123,7 +129,7 @@ export default class Tracks {
 			const p0right = rightRoad[0];
 			const p1left = leftRoad[1];
 			const p1right = rightRoad[1];
-			this._start = {
+			this.#start = {
 				p0: {
 					x: (p0left.x + p0right.x) / 2,
 					y: (p0left.y + p0right.y) / 2,
@@ -135,31 +141,32 @@ export default class Tracks {
 					z: (p1left.z + p1right.z) / 2,
 				},
 			}
-			for (let i = 0; i < ribbons.length; i++) {
-				tracks._meshes.push(babylon.createRibbon(`Segment${i}`, ribbons[i], track.closed, { mass: 0 }));
-			}
-			displayMgr.clearError();
+			this.#meshes = ribbons.map((mesh, index) => {
+				return this.#graphicsEngine.createRibbon(`Segment${index}`, ribbon, track.closed, { mass: 0 })
+			});
+			this.#displayManager.clearError();
 		} catch (e) {
-			displayMgr.showError(e);
+			this.#displayManager.showError(e);
 		}
-	},
-	_onFamilyChanged: function() {
-		const key = this._familySelector.value;
+	}
+
+	#onFamilyChanged() {
+		const key = this.#familySelector.value;
 		let firstMatch = -1;
-		for (let i = 0; i < this._memberSelector.options.length; i++) {
-			const option = this._memberSelector.options[i];
+		this.#memberSelector.options.forEach((option, index) => {
 			const match = option.getAttribute("family") === key;
 			option.style.display = match ? "block" : "none";
-			if (match && firstMatch === -1) firstMatch = i;
+			if (match && firstMatch === -1) {
+				firstMatch = index;
+			}
+		});
+		if (firstMatch !== -1) {
+			this.#memberSelector.selectedIndex = firstMatch;
 		}
-		if (firstMatch !== -1) this._memberSelector.selectedIndex = firstMatch;
-		this._createMesh();
-	},
+		this.#createMesh();
+	}
 
-	_families: {},
-	_meshes: [],
-	_options: {},
-	_originalMember: 'Original',
-	_removeSpaces: function(value) { return value.replace(/\s/g, ''); },
-	_tracks: {},
+	#removeSpaces(value) {
+		return value.replace(/\s/g, '');
+	}
 }
