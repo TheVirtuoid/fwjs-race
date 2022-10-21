@@ -789,9 +789,6 @@ const spiralParser = {
 		// Set the declination
 		const deltaAltitude = specs.exit.height - specs.entry.height;
 		const declination = Math.abs(deltaAltitude) < .001 ? 0 : (Math.atan2(deltaAltitude, sweep) * trig.radiansToDegrees);
-		if (specs.debug) {
-			console.log('spiralParser._getSpecs: deltaAltitude %f, sweep %f, declination %f', deltaAltitude, sweep, declination);
-		}
 		specs.declination = invertTangent ? (180 - declination) : declination;
 
 		// Set the trackBank multiplier
@@ -877,6 +874,7 @@ const spiralParser = {
 		}
 
 		// Return the rotation plane
+		if (specs.debug) console.log('spiralParser._getRotationPlane: entry %o, exit %o, center %o, axis %o', entryPlane, exitPlane, rotCenter, rotAxis);
 		return new Plane(rotCenter, rotAxis);
 	},
 
@@ -954,6 +952,10 @@ const spiralParser = {
 
 	_addPoint: function(builders, points, t, specs, rawSpiral, parentSettings, name) {
 		const cylPoint = specs.entry.interpolate(specs.exit, t);
+		if (specs.debug) {
+			console.log('spiralParser._addPoint(%f): entry %o, exit %o, interpolated %o',
+				t, specs.entry, specs.exit, cylPoint);
+		}
 
 		const useDeclination = false;
 		const useTest1 = true;
@@ -1029,43 +1031,36 @@ const spiralParser = {
 		}
 
 		if (!is.defined(options.depth)) throw new Error();
-		const tangentY = Math.abs(options.depth) > 0.1 ?
+		const tangents = [];
+		tangents[1] = Math.abs(options.depth) > 0.1 ?
 			plane.normal.scale(1 / options.depth) : Vector3.zero;
-
-		let forward;
+		if (options.debug) console.log('\tY component %o', tangents[1]);
 
 		if (!is.defined(options.rotate)) throw new Error();
 		if (options.rotate === 'left') {
-			const tangent = plane.xAxis.scale(-sin).add(1, plane.normal.scale(1 / -10)).add(1, plane.yAxis.scale(cos)).normalize();
 			if (!is.defined(options.invertTangent)) throw new Error();
 			if (this._debugLeftInvertTangent && options.invertTangent) {
 				this._debugLeftInvertTangent = false;
 				console.log(`spiralParser._getForwardTest1: invertTangent ${options.invertTangent}, rotate ${options.rotate}`);
 			}
-			const t0x = plane.xAxis.scale(-sin);
-			const t0z = plane.yAxis.scale(cos);
-			const t0 = t0x.add(1, tangentY).add(1, t0z).normalize();
-			if (options.debug) console.log('\ttangent %o, test %o', tangent, t0);
-			forward = t0;
+			tangents[0] = plane.xAxis.scale(-sin);
+			tangents[2] = plane.yAxis.scale(cos);
 		} else if (options.rotate === 'right') {
-			const tangent = plane.xAxis.scale(sin).add(1, plane.normal.scale(1 / -10)).add(1, plane.yAxis.scale(-cos)).normalize();
 			if (!is.defined(options.invertTangent)) throw new Error();
 			if (this._debugRigthInvertTangent && !options.invertTangent) {
 				this._debugRigthInvertTangent = false;
 				console.log(`spiralParser._getForwardTest1: invertTangent ${options.invertTangent}, rotate ${options.rotate}`);
 			}
-			const t0x = plane.xAxis.scale(sin);
-			const t0z = plane.yAxis.scale(-cos);
-			const t0 = t0x.add(1, tangentY).add(1, t0z).normalize();
-			if (options.debug) console.log('\ttangent %o, test %o', tangent, t0);
-			forward = t0;
+			tangents[0] = plane.xAxis.scale(sin);
+			tangents[2] = plane.yAxis.scale(-cos);
 		}
-		else throw `spiralParser._getForwardTest1: ${options.rotate} rotation for depth not implemented`;
+		else throw new Error(`spiralParser._getForwardTest1: ${options.rotate} not implemented`);
 
-		if (options.debug) {
-			console.log('\tforward %o', forward);
-		}
-
+		// TODO: Assuming that tangents[1], the declination, should be
+		// fixed, then the scalars for 0 & 2 need to be adjusted to preserve
+		// 1 after normalization.
+		const forward = Vector3.scaledSum(tangents, [1, 1, 1]);
+		if (options.debug) console.log('\tforward %o', forward);
 		return forward;
 	},
 
