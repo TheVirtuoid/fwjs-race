@@ -392,6 +392,8 @@ class Plane {
 
 	get normal() { return this.#normal }
 	get origin() { return this.#origin }
+	get xAxis() { return this.#xAxis }
+	get yAxis() { return this.#yAxis }
 
 	contains(vertex, tolerance) {
 		if (!is.defined(tolerance)) tolerance = Plane.#defaultTolerance;
@@ -441,7 +443,7 @@ class Plane {
 			return new Line(origin, direction);
 		}
 	}
-	getHelixAt(cylPoint, declination, debug) {
+	getHelixAt(cylPoint, options) {
 		if (!is.defined(this.#xAxis)) this.#setDefaultAxes();
 
 		const theta = cylPoint.angle * trig.degreesToRadians;
@@ -450,12 +452,8 @@ class Plane {
 
 		const radial = this.#xAxis.scale(cos).add(sin, this.#yAxis);
 		const point = this.#origin.add(cylPoint.radius, radial).add(cylPoint.height, this.#normal);
-		let forward = this.#xAxis.scale(-sin).add(cos, this.#yAxis);
-		if (debug) console.log('Plane.getHelixAt: declination %f, forward %o', declination, forward);
-		if (Math.abs(declination) > 0.01) {
-			forward = forward.rotate(radial, declination);
-			if (debug) console.log('Plane.getHelixAt: after forward %o', forward);
-		}
+
+		const forward = options.getForward(this, cos, sin, radial, options);
 
 		return {
 			point: point,
@@ -767,6 +765,7 @@ const spiralParser = {
 		if (rotate !== 'left' && rotate !== 'right' && rotate !== 'up') {
 			throw new RangeError(`${name}.rotate must be either 'left', 'right', or 'up'.`);
 		}
+		specs.rotate = rotate;
 
 		// Get the endsAt
 		specs.endsAt = pointParser.validate(rawSpiral.endsAt, settings, name + '.endsAt');
@@ -779,18 +778,21 @@ const spiralParser = {
 		specs.entry = this._getCylindricalCoordinate(specs, 'startsAt');
 		specs.exit = this._getCylindricalCoordinate(specs, 'endsAt');
 
-		// Set the sweep and declination
+		// Set the sweep
 		const { sweep, invertTangent, endAngle } = this._getSweep(specs, rotate, turns);
 		if (endAngle !== specs.exit.angle) {
 			specs.exit = new CylindricalCoordinate(specs.exit.radius, endAngle, specs.exit.height);
 		}
+		specs.sweep = sweep;
+		specs.invertTangent = invertTangent;
+
+		// Set the declination
 		const deltaAltitude = specs.exit.height - specs.entry.height;
 		const declination = Math.abs(deltaAltitude) < .001 ? 0 : (Math.atan2(deltaAltitude, sweep) * trig.radiansToDegrees);
 		if (specs.debug) {
 			console.log('spiralParser._getSpecs: deltaAltitude %f, sweep %f, declination %f', deltaAltitude, sweep, declination);
 		}
 		specs.declination = invertTangent ? (180 - declination) : declination;
-		specs.sweep = sweep;
 
 		// Set the trackBank multiplier
 		specs.trackBank = settings.trackBank;
@@ -952,9 +954,24 @@ const spiralParser = {
 
 	_addPoint: function(builders, points, t, specs, rawSpiral, parentSettings, name) {
 		const cylPoint = specs.entry.interpolate(specs.exit, t);
-		const declination = specs.declination;
 
-		const polar = specs.rotationPlane.getHelixAt(cylPoint, declination, specs.debug);
+		const useDeclination = false;
+		const useTest1 = true;
+
+		const options = useDeclination ? {
+				debug: specs.debug,
+				getForward: this._getForwardDeclination,
+				declination: specs.declination,
+			} : useTest1 ? {
+				debug: specs.debug,
+				getForward: this._getForwardTest1,
+				depth: specs.exit.height - specs.entry.height,
+				invertTangent: specs.invertTangent,
+				rotate: specs.rotate,
+			} : {
+				getForward: () => { throw new Error('spiralParser._addPoint: options not selected') }
+			};
+		const polar = specs.rotationPlane.getHelixAt(cylPoint, options);
 
 		const pointName = `${name}@${cylPoint.angle}`;
 		const point = merge.settings(parentSettings, rawSpiral, pointName);
@@ -967,6 +984,85 @@ const spiralParser = {
 
 		points.push(point);
 		builders.push(createBuilder(parentSettings));
+	},
+	_getForwardDeclination: function(plane, cos, sin, radial, options) {
+		let forward = plane.xAxis.scale(-sin).add(cos, plane.yAxis);
+		if (options.debug) console.log('spiralParser._getForwardDeclination: declination %f, forward %o', options.declination, forward);
+		if (Math.abs(options.declination) > 0.01) {
+			forward = forward.rotate(radial, options.declination);
+			if (options.debug) console.log('\tafter forward %o', forward);
+		}
+		return forward;
+	},
+	_getForwardTest1: function(plane, cos, sin, radial, options) {
+		/*
+		Let a left-rotating helix be centered at (0, 0, 0), with radius r,
+		starting at angle θ0 and altitude h0 and ending at angle θ1 and
+		altitude h1. For our purposes, 0 ≤ θ0 < 2π and θ0 < θ1.
+
+		The first point in the helix is (r cos θ0, h0, r sin θ0) and the
+		last is (r cos θ1, h1, r sin θ1). Generally any point on the helix
+		is provided by:
+			P(θ) = (r cos θ, h0 + (h1 - h0) (θ - θ0) / (θ1 - θ0), r sin θ)
+		where θ0 ≤ θ ≤ θ1.
+
+		To verify, P(θ0)
+			= (r cos θ0, h0 + (h1 - h0) (θ0 - θ0) / (θ1 - θ0), r sin θ0)
+			= (r cos θ0, h0 + (h1 - h0) 0 / (θ1 - θ0), r sin θ0)
+			= (r cos θ0, h0, r sin θ0)
+		and P(θ1)
+			= (r cos θ1, h0 + (h1 - h0) ( θ1 - θ0) / (θ1 - θ0), r sin θ1)
+			= (r cos θ1, h0 + (h1 - h0) 1, r sin θ1)
+			= (r cos θ1, h0 + h1 - h0, r sin θ1)
+			= (r cos θ1, h1, r sin θ1)
+
+		The tangent at an angle is then P’(θ)
+			= (r cos θ / dθ, [h0 + (h1 - h0) (θ - θ0) / (θ1 - θ0)] / dθ, r sin θ / dθ)
+			= (-r sin θ, h0 / dθ + (h1 - h0) θ / (θ1 - θ0) / dθ - (h1 - h0) (-θ0) / (θ1 - θ0) / dθ, r cos θ)
+			= (-r sin θ, (h1 - h0) / (θ1 - θ0), r cos θ)
+		*/
+
+		//	(-r sin θ, (h1 - h0) / (θ1 - θ0), r cos θ)
+
+		const tangent = plane.xAxis.scale(-sin).add(1, plane.normal.scale(1 / -10)).add(1, plane.yAxis.scale(cos)).normalize();
+		let forward;
+		if (options.debug) {
+			console.log('spiralParser._getForwardTest1: options %o', options);
+		}
+		if (!is.defined(options.depth)) throw new Error();
+		if (Math.abs(options.depth) > 0.1) {
+			if (!is.defined(options.rotate)) throw new Error();
+			if (options.rotate === 'left') {
+				if (!is.defined(options.invertTangent)) throw new Error();
+				if (this._debugLeftInvertTangent && options.invertTangent) {
+					this._debugLeftInvertTangent = false;
+					console.log(`spiralParser._getForwardTest1: invertTangent ${options.invertTangent}, rotate ${options.rotate}`);
+				}
+				const t0x = plane.xAxis.scale(-sin);
+				const t0y = plane.normal.scale(1 / options.depth);
+				const t0z = plane.yAxis.scale(cos);
+				const t0 = t0x.add(1, t0y).add(1, t0z).normalize();
+				console.log('\ttangent %o, test %o', tangent, t0);
+				forward = tangent;
+				//forward = vector.add(forward, 1 / depth, p.normal);
+			} else if (options.rotate === 'right') {
+				if (!is.defined(options.invertTangent)) throw new Error();
+				if (this._debugRigthInvertTangent && !options.invertTangent) {
+					this._debugRigthInvertTangent = false;
+					console.log(`spiralParser._getForwardTest1: invertTangent ${options.invertTangent}, rotate ${options.rotate}`);
+				}
+				throw `spiralParser._getForwardTest1: ${options.rotate} rotation for depth not implemented`;
+				//forward = vector.add(forward, depth * radius / sweep, p.normal);
+				//forward = vector.add(forward, -1/depth, p.normal);
+				//forward = vector.multiply(-1, forward);
+			}
+			else throw `spiralParser._getForwardTest1: ${options.rotate} rotation for depth not implemented`;
+		}
+		if (options.debug) {
+			console.log('\tforward %o', forward);
+		}
+
+		return forward;
 	},
 
 	_processInterpolationArray: function(value, t, multiplier) {
