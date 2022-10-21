@@ -1043,6 +1043,26 @@
 					},
 				]}],},
 			});
+			tracks.register({
+				sibling: track6,
+				member: 'Left 360&#176; 1 turn',
+				track: { segments: [ { points: [
+					{
+						type: 'spiral',
+						startsAt: {
+							center: { x: 0, y: 2, z: 0, },
+							forward: posX,
+						},
+						endsAt: {
+							center: zero,
+							forward: posX,
+						},
+						rotate: 'left',
+						turns: 1,
+						center: { x:0, y:0, z:4 },
+					},
+				]}],},
+			});
 			const track6r = tracks.register({
 				sibling: track6,
 				member: 'Right 360&#176; 4 turns',
@@ -1160,7 +1180,7 @@
 			});
 			tracks.register({
 				sibling: track6,
-				member: 'Right 315&#176; 6 turns (bad)',
+				member: 'Right 315&#176; 6 turns (a)',
 				track: {
 					segments: [{
 						points: [{
@@ -1186,7 +1206,7 @@
 			});
 			tracks.register({
 				sibling: track6,
-				member: 'Right 315&#176; 6 turns (better)',
+				member: 'Right 315&#176; 6 turns (b)',
 				track: {
 					segments: [{
 						points: [

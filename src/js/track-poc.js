@@ -221,6 +221,7 @@ const trig = {
 class Vector {
 
 	coordinates;
+	static #clampTolerance = .001;
 
 	constructor(dimension) {
 		this.coordinates = []
@@ -235,6 +236,13 @@ class Vector {
 
 	add(k, v) {
 		return this.#makeVector((i) => this.coordinates[i] + k * v.coordinates[i])
+	}
+	clamp(tolerance) {
+		if (!is.defined(tolerance)) tolerance = Vector.#clampTolerance;
+		for (let i = 0; i < this.dimension; i++) {
+			if (Math.abs(this.coordinates[i]) < tolerance) this.coordinates[i] = 0;
+		}
+		return this;
 	}
 	distance(v) { return this.to(v).length() }
 	dot(v) {
@@ -413,12 +421,14 @@ class Plane {
 
 		return new CylindricalCoordinate(radius, angle, height)
 	}
-	getIntersection(other) {
+	getIntersection(other, options) {
 
 		// Get the line direction. Normalize should throw an error if the
 		// planes are parallel
 		if (!(other instanceof Plane)) throw new Error('Plane.getIntersection: other is not a Plane');
 		const direction = this.#normal.cross(other.#normal).normalize();
+		const clamp = options && options.clamp;
+		if (clamp) direction.clamp();
 
 		// TODO: Figure out why this works
 		// see https://forum.unity.com/threads/how-to-find-line-of-intersecting-planes.109458/
@@ -868,13 +878,12 @@ const spiralParser = {
 
 			// Get intersection of the planes, a line, and use this as
 			// the rotation center and axis
-			const line = entryPlane.getIntersection(exitPlane);
+			const line = entryPlane.getIntersection(exitPlane, { clamp: true });
 			rotCenter = line.origin;
 			rotAxis = line.normal;
 		}
 
 		// Return the rotation plane
-		if (specs.debug) console.log('spiralParser._getRotationPlane: entry %o, exit %o, center %o, axis %o', entryPlane, exitPlane, rotCenter, rotAxis);
 		return new Plane(rotCenter, rotAxis);
 	},
 
@@ -966,10 +975,10 @@ const spiralParser = {
 				declination: specs.declination,
 			} : useTest1 ? {
 				debug: specs.debug,
-				getForward: this._getForwardTest1,
+				getForward: this._getPointForward,
 				depth: specs.exit.height - specs.entry.height,
-				invertTangent: specs.invertTangent,
 				rotate: specs.rotate,
+				sweep: specs.sweep,
 			} : {
 				getForward: () => { throw new Error('spiralParser._addPoint: options not selected') }
 			};
@@ -996,7 +1005,7 @@ const spiralParser = {
 		}
 		return forward;
 	},
-	_getForwardTest1: function(plane, cos, sin, radial, options) {
+	_getPointForward: function(plane, cos, sin, radial, options) {
 		/*
 		Let a left-rotating helix be centered at (0, 0, 0), with radius r,
 		starting at angle θ0 and altitude h0 and ending at angle θ1 and
@@ -1027,39 +1036,37 @@ const spiralParser = {
 		//	(-r sin θ, (h1 - h0) / (θ1 - θ0), r cos θ)
 
 		if (options.debug) {
-			console.log('spiralParser._getForwardTest1: options %o', options);
+			console.log('spiralParser._getPointForward: options %o', options);
 		}
-
-		if (!is.defined(options.depth)) throw new Error();
-		const tangents = [];
-		tangents[1] = Math.abs(options.depth) > 0.1 ?
-			plane.normal.scale(1 / options.depth) : Vector3.zero;
-		if (options.debug) console.log('\tY component %o', tangents[1]);
 
 		if (!is.defined(options.rotate)) throw new Error();
-		if (options.rotate === 'left') {
-			if (!is.defined(options.invertTangent)) throw new Error();
-			if (this._debugLeftInvertTangent && options.invertTangent) {
-				this._debugLeftInvertTangent = false;
-				console.log(`spiralParser._getForwardTest1: invertTangent ${options.invertTangent}, rotate ${options.rotate}`);
-			}
-			tangents[0] = plane.xAxis.scale(-sin);
-			tangents[2] = plane.yAxis.scale(cos);
-		} else if (options.rotate === 'right') {
-			if (!is.defined(options.invertTangent)) throw new Error();
-			if (this._debugRigthInvertTangent && !options.invertTangent) {
-				this._debugRigthInvertTangent = false;
-				console.log(`spiralParser._getForwardTest1: invertTangent ${options.invertTangent}, rotate ${options.rotate}`);
-			}
-			tangents[0] = plane.xAxis.scale(sin);
-			tangents[2] = plane.yAxis.scale(-cos);
+		if (options.rotate !== 'left' && options.rotate !== 'right') {
+			throw new Error(`spiralParser._getPointForward: ${options.rotate} not implemented`);
 		}
-		else throw new Error(`spiralParser._getForwardTest1: ${options.rotate} not implemented`);
 
-		// TODO: Assuming that tangents[1], the declination, should be
-		// fixed, then the scalars for 0 & 2 need to be adjusted to preserve
-		// 1 after normalization.
-		const forward = Vector3.scaledSum(tangents, [1, 1, 1]);
+		const tangents = [];
+
+		if (!is.defined(options.depth)) throw new Error();
+		if (!is.defined(options.sweep)) throw new Error();
+		const absDepth = Math.abs(options.depth);
+		if (absDepth <= 0.1) tangents[1] = Vector3.zero;
+		else {
+			const appearsToWork = 1 / options.depth;
+			const experiment = options.depth / (options.sweep * trig.degreesToRadians);
+			if (options.debug) console.log('\tappearsToWork %f, experiment %f', appearsToWork, experiment);
+			tangents[1] = plane.normal.scale(absDepth <= 1 ? experiment : appearsToWork);
+		}
+
+		if (options.debug) console.log('\tY component %o', tangents[1]);
+
+		const k =
+			options.rotate === 'left' ? 1 :
+			options.rotate === 'right' ? -1 :
+			0;
+		tangents[0] = plane.xAxis.scale(-k * sin);
+		tangents[2] = plane.yAxis.scale(k * cos);
+
+		const forward = Vector3.scaledSum(tangents, [1, 1, 1]).normalize().clamp();
 		if (options.debug) console.log('\tforward %o', forward);
 		return forward;
 	},
