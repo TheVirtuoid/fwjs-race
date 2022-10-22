@@ -9,130 +9,9 @@ import {
 } from "@babylonjs/core";
 
 import ammo from "ammo.js";
-import is from "./is.js";
-import validate from "./validate.js"
-import trig from './trig.js'
+
+import { TrackPOC } from './Builder.js'
 import Vector3 from './Vector3.js'
-import Plane from './Plane.js'
-import CylindricalCoordinate from './CylindricalCoordinate.js'
-import merge from './merge.js'
-import Ribbon from './Ribbon.js'
-import bezier from './bezier.js'
-import pointParser from './pointParser.js'
-import { createBuilder, executeBuilder } from './Builder.js'
-import spiralParser from './spiralParser.js'
-import straightParser from './straightParser.js'
-
-const sectionParser = {
-
-	parse: function(builders, points, rawPoint, parentSettings, name) {
-
-		// The raw point must be an object
-		validate.object(rawPoint, name);
-
-		// Check the type
-		const sectionType = is.defined(rawPoint.type) ? rawPoint.type : 'point';
-		const sectionParser = this._parsers[sectionType];
-		if (!is.defined(sectionParser)) {
-			throw new TypeError(`${name}.type of '${sectionType}' is not recognized`);
-		}
-
-		// Parse the section
-		sectionParser.parse(builders, points, rawPoint, parentSettings, name);
-	},
-
-	_parsers: {
-		point: pointParser,
-		spiral: spiralParser,
-		straight: straightParser,
-	},
-}
-
-function buildSegment(segment, vectorFactory, parentSettings, isClosed, name) {
-
-	// Segment must be an object
-	validate.object(segment, name);
-
-	// Create settings
-	const settings = merge.settings(parentSettings, segment, name);
-
-	// Make sure that 'points' is an array with at least one element
-	validate.sizedArray(segment, 'points', name, 1);
-
-	// Reform the points array into two arrays of n section builders and
-	// n+1 segment points
-	const builders = [];
-	const points = [];
-	for (let i = 0; i < segment.points.length; i++) {
-		sectionParser.parse(builders, points, segment.points[i], settings, `${name}.points[${i}]`);
-	}
-	if (settings.debugSegments) {
-		for (let i = 0; i < points.length; i++) console.log('buildSegment: %o', points[i]);
-	}
-
-	// Ensure we have at least one builder and two segment points
-	validate.sizedArray(points, '', name, 2);
-
-	// Loop through the builders, creating curves between them
-	const ribbon = new Ribbon();
-	let lastPoint = null;
-	for (let i = 0; i < builders.length; i++) {
-		lastPoint = executeBuilder(builders[i], ribbon, points[i], points[i+1], vectorFactory);
-	}
-
-	// If this is not a closed segment, add the last point to the ribbon
-	if (!isClosed) {
-		ribbon.push(lastPoint, vectorFactory, settings);
-	}
-
-	return ribbon.ribbon;
-}
-
-function buildTrack(track, vectorFactory, parentSettings) {
-
-	// Create settings
-	const settings = merge.settings(parentSettings, track, 'track');
-
-	// Make sure that 'segments' is an array with at least one element
-	validate.sizedArray(track, 'segments', 'track', 1);
-
-	// Check if this is a closed track
-	const isClosed = track.segments.length == 1 && track.closed;
-
-	// Loop through the segments
-	const ribbons = [];
-	for (let i = 0; i < track.segments.length; i++) {
-		const ribbon = buildSegment(
-			track.segments[i],
-			vectorFactory,
-			settings,
-			isClosed,
-			'track.segments[' + i.toString() + ']');
-		ribbons[i] = ribbon;
-	}
-	return ribbons;
-}
-
-const TrackPOC = {
-
-	build: function(specs, vectorFactory, appSettings = {}) {
-
-		// Validate the arguments
-		const objSpecs = validate.jsonOrObject(specs, 'specs');
-		if (!is.function(vectorFactory)) {
-			throw new TypeError('vectorFactory must be a function');
-		}
-		if (!is.object(appSettings)) {
-			throw new TypeError('appSettings must be an object');
-		}
-
-		// Create a settings block. This also validates the settings.
-		const settings = merge.settings(merge.default, appSettings, 'appSettings');
-
-		// Build the ribbons
-		return buildTrack(objSpecs, vectorFactory, settings);
-	},
-}
 
 //======================================================================
 // ERROR DISPLAY MANAGER
@@ -481,7 +360,7 @@ const tracks = {
 			debugDisplay.register(track);
 			declinationDisplay.register(track);
 
-			const ribbons = TrackPOC.build(track, (u) => { return new BabylonVector3(u.x, u.y, u.z); }, settings);
+			const ribbons = TrackPOC(track, (u) => { return new BabylonVector3(u.x, u.y, u.z); }, settings);
 			const ribbon = ribbons[0];
 			const leftRoad = ribbon[1];
 			const rightRoad = ribbon[2];
