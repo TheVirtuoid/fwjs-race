@@ -15,36 +15,7 @@ import trig from './trig.js'
 import Vector3 from './Vector3.js'
 import Plane from './Plane.js'
 import CylindricalCoordinate from './CylindricalCoordinate.js'
-
-const merge = {
-	default: {
-		precision: .01,
-		trackBank: 0,
-		trackWidth: 1,
-		wallHeight: .5,
-	},
-	settings: function(parentSettings, overrideSettings, name) {
-		const mergedSettings = {...parentSettings};
-		for (let vs of this._validSettings) {
-			if (is.defined(overrideSettings[vs.key])) {
-				mergedSettings[vs.key] = vs.validator ?
-					vs.validator(overrideSettings, vs.key, name) :
-					overrideSettings[vs.key];
-			}
-		}
-		return mergedSettings;
-	},
-	_validSettings: [
-		{ key: 'debug' },
-		{ key: 'debugSegments' },
-		{ key: 'altDeclination' },
-		{ key: 'altDeclinationAlgo' },
-		{ key: 'precision', validator: validate.positiveNumber },
-		{ key: 'trackBank', validator: validate.trackBank, },
-		{ key: 'trackWidth', validator: validate.positiveNumber },
-		{ key: 'wallHeight', validator: validate.positiveNumber },
-	],
-}
+import merge from './merge.js'
 
 const ribbonMgr = {
 
