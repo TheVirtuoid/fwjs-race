@@ -10,7 +10,7 @@ import {
 	Vector3
 } from "@babylonjs/core";
 import ammo from "ammo.js";
-import {TrackPOC} from "./track-poc";
+import {TrackPOC} from "./track-poc-util";
 
 const displayMgr = {
 	clearError: function() {
