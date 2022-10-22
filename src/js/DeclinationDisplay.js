@@ -4,13 +4,16 @@ class DeclinationDisplay {
 
 	#algoSelector;
 	#clearButton;
+	#createMesh;
 	#resetButton;
 	#resetValue;
 	#rule;
 	#track;
 	#valueInput;
 
-	constructor(styleSheetTitle, styleSelector, input) {
+	constructor(styleSheetTitle, styleSelector, input, createMesh) {
+
+		this.#createMesh = createMesh;
 
 		// Find the style sheet
 		let targetSheet;
@@ -112,7 +115,7 @@ class DeclinationDisplay {
 		const value = this.#valueInput.value;
 		if (value != this.#track.altDeclination) {
 			this.#track.altDeclination = value;
-			tracks.createMesh();
+			this.#createMesh();
 		}
 	}
 

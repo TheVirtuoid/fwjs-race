@@ -2,53 +2,9 @@ import { TrackPOC } from './Builder.js'
 
 import BabylonAdapter from './BabylonAdapter.js'
 
+import DebugDisplay from './DebugDisplay.js'
 import DeclinationDisplay from './DeclinationDisplay.js'
 import ErrorDisplay from './ErrorDisplay.js'
-
-//======================================================================
-// DEBUG MANAGER
-
-const debugDisplay = {
-
-	disable: function() {
-		for (let elem of this._elements) {
-			elem.element.disabled = true;
-			elem.element.checked = false;
-		}
-	},
-
-	register: function(track) {
-		this._track = track;
-		for (let elem of this._elements) {
-			elem.element.disabled = false;
-			elem.element.checked = track[elem.member];
-		}
-	},
-
-	init: function(debugIds) {
-		for (let id of debugIds) {
-			const elem = document.getElementById(id);
-			if (!elem) throw new Error('Cannot find debug id ' + id);
-			if (!elem.hasAttribute('member')) throw new Error(`Element ${id} must have a 'member' attribute`);
-
-			this._elements.push({ element: elem, member: elem.getAttribute('member')});
-			elem.disabled = true;
-			elem.checked = false;
-			elem.addEventListener("click", (e) => { this._onClick(e) });
-		}
-	},
-
-	_onClick: function(event) {
-		if (this._track) {
-			const checkbox = event.target;
-			const member = checkbox.getAttribute('member')
-			this._track[member] = checkbox.checked;
-			if (checkbox.checked) tracks.createMesh();
-		}
-	},
-
-	_elements: [],
-}
 
 //======================================================================
 // BALL SUPPORT
@@ -219,7 +175,7 @@ import { defineTracks } from './defineTracks.js'
 // WINDOW INITIALIZATION
 
 let gameEngine;
-let errorDisplay, declinationDisplay;
+let errorDisplay, debugDisplay, declinationDisplay;
 
 window.initFunction = async function() {
 
@@ -232,8 +188,12 @@ window.initFunction = async function() {
 			(v) => declinationDisplay.disable(v)
 		]);
 	try {
-		declinationDisplay = new DeclinationDisplay("ThisIsMe", ".declination", "altDeclination");
-		debugDisplay.init(['debugGeneral', 'debugSegments']);
+		declinationDisplay = new DeclinationDisplay(
+			"ThisIsMe", ".declination", "altDeclination",
+			() => tracks.createMesh());
+		debugDisplay = new DebugDisplay(
+			['debugGeneral', 'debugSegments'],
+			() => tracks.createMesh());
 
 		// Create the game engine
 		gameEngine = new BabylonAdapter();
