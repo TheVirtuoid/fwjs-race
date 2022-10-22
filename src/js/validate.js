@@ -1,78 +1,86 @@
 import is from "./is.js"
+import StaticClassError from './StaticClassError.js'
+//import Vector3 from './Vector3.js'
 
-const validate = {
-	boolean: function(object, memberName, objectName, defaultValue) {
+class validate {
+
+	constructor() {
+		throw new StaticClassError('validate')
+	}
+
+	static boolean(object, memberName, objectName, defaultValue) {
 		const value = object[memberName];
 		if (is.default(value)) return defaultValue;
 		if (is.boolean(value)) return value;
 		throw new TypeError(`${objectName}.${memberName} must be 'true' or 'false'`);
-	},
+	}
 
-	nonNegativeInteger: function(object, memberName, objectName, defaultValue) {
+	static nonNegativeInteger(object, memberName, objectName, defaultValue) {
 		const value = object[memberName];
 		if (is.default(value)) return defaultValue;
 		if (is.integer(value) && value >= 0) return value;
 		throw new RangeError(`${objectName}.${memberName} number be a non-negative integer`);
-	},
+	}
 
-	jsonOrObject: function(o, name) {
+	static jsonOrObject(o, name) {
 		if (is.string(o)) return JSON.parse(o);
 		if (is.object(o)) return o;
 		throw new TypeError(`${name} must be an JSON string or object`);
-	},
+	}
 
-	object: function(object, objectName) {
+	static object(object, objectName) {
 		if (is.object(object)) return object;
 		throw new TypeError(`${objectName} must be an object`);
-	},
+	}
 
-	positiveNumber: function(object, memberName, objectName) {
+	static positiveNumber(object, memberName, objectName) {
 		const value = object[memberName];
 		if (is.positiveNumber(value)) return value;
 		throw new RangeError(`${objectName}.${memberName} number be a positive number`);
-	},
+	}
 
-	sizedArray: function(object, memberName, objectName, minElements) {
-		const value = this._getValue(object, memberName);
+	static sizedArray(object, memberName, objectName, minElements) {
+		const value = validate.#getValue(object, memberName);
 		if (is.array(value)) {
 			if (value.length >= minElements) return value;
-			throw new RangeError(`${this._resolveName(objectName, memberName)} must have at least ${minElements} element(s)`);
+			throw new RangeError(`${validate.#resolveName(objectName, memberName)} must have at least ${minElements} element(s)`);
 		}
-		throw new TypeError(`${this._resolveName(objectName, memberName)} must be an Array`);
-	},
+		throw new TypeError(`${validate.#resolveName(objectName, memberName)} must be an Array`);
+	}
 
-	string: function(object, memberName, objectName) {
+	static string(object, memberName, objectName) {
 		const value = object[memberName];
 		if (is.string(value)) return value;
 		throw new TypeError(`${objectName}.${memberName} must be a string`);
-	},
+	}
 
-	trackBank: function(object, memberName, objectName) {
+	static trackBank(object, memberName, objectName) {
 		const value = object[memberName];
 		if (Vector3.is(value)) return value;
 		if (is.number(value)) return trig.normalizeAngle(value);
 		if (is.array(value)) return validate._interpolationArray(object, memberName, objectName);
 		throw new TypeError(`${objectName}.${memberName} must be a number, 3D vector, or interpolation array`);
-	},
+	}
 
-	undefined: function(object, memberName, objectName, reason) {
+	static undefined(object, memberName, objectName, reason) {
 		if (is.defined(object[memberName])) {
 			throw new TypeError(`Cannot specify ${objectName}.${memberName} because ${reason}.`);
 		}
-	},
+	}
 
-	weight: function(object, memberName, objectName) {
+	static weight(object, memberName, objectName) {
 		const value = object[memberName];
 		if (is.default(value)) return 1;
 		if (is.positiveNumber(value)) return value;
 		throw new RangeError(`${objectName}.${memberName} must be a positive number`);
-	},
+	}
 
-	_getValue: function(object, memberName) {
+	static #getValue(object, memberName) {
 		return memberName.length === 0 ? object : object[memberName];
-	},
+	}
 
-	_interpolationArray: function(object, memberName, objectName) {
+/*
+	static #interpolationArray(object, memberName, objectName) {
 		const value = object[memberName];
 		const name = objectName + '.' + memberName;
 		if (!is.array(value) || value.length < 2) {
@@ -102,11 +110,12 @@ const validate = {
 			throw new RangeError(`${name}[${value.length - 1}].t must be 1`);
 		}
 		return result;
-	},
+	}
+*/
 
-	_resolveName: function(objectName, memberName) {
+	static #resolveName(objectName, memberName) {
 		return memberName.length === 0 ? objectName : (objectName + '.' + memberName);
-	},
+	}
 }
 
 export default validate;
