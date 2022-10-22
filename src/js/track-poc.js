@@ -60,7 +60,7 @@ const validate = {
 
 	trackBank: function(object, memberName, objectName) {
 		const value = object[memberName];
-		if (is.vector3(value)) return value;
+		if (Vector3.is(value)) return value;
 		if (is.number(value)) return trig.normalizeAngle(value);
 		if (is.array(value)) return validate._interpolationArray(object, memberName, objectName);
 		throw new TypeError(`${objectName}.${memberName} must be a number, 3D vector, or interpolation array`);
@@ -74,7 +74,7 @@ const validate = {
 
 	vector3: function(object, memberName, objectName) {
 		const value = object[memberName];
-		if (is.vector3(value)) return new Vector3(value);
+		if (Vector3.is(value)) return new Vector3(value);
 		throw new TypeError(`${objectName}.${memberName} must be a 3D vector`);
 	},
 
@@ -240,6 +240,14 @@ class Vector {
 	}
 	toNormal(v) { return this.to(v).normalize() }
 
+	static is(value, coordinateNames) {
+		if (!is.object(value)) return false;
+		for (let coord of coordinateNames) {
+			if (!is.number(value[coord])) return false;
+		}
+		return true;
+	}
+
 	static scaledSum(vectors, scalars) {
 		let sum = vectors[0].scale(scalars[0]);
 		for (let i = 1; i < scalars.length; i++) {
@@ -270,19 +278,24 @@ class Vector3 extends Vector {
 	static #up = new Vector3(0, 1, 0)
 	static #zero = new Vector3(0, 0, 0)
 
+	// TODO: This should be private but 'is' throws an exception
+	static coordinateNames = ['x', 'y', 'z'];
+
 	constructor(x, y, z) {
 		super(3);
 		if (!is.defined(x)) {
 		} else if (x instanceof Vector3) {
 			for (let i = 0; i < 3; i++) this.coordinates[i] = x.coordinates[i];
-		} else if (is.vector3(x)) {
-			this.coordinates[0] = x.x;
-			this.coordinates[1] = x.y;
-			this.coordinates[2] = x.z;
 		} else {
-			this.coordinates[0] = x;
-			this.coordinates[1] = y;
-			this.coordinates[2] = z;
+			if (Vector.is(x, Vector3.coordinateNames)) {
+				this.coordinates[0] = x.x;
+				this.coordinates[1] = x.y;
+				this.coordinates[2] = x.z;
+			} else {
+				this.coordinates[0] = x;
+				this.coordinates[1] = y;
+				this.coordinates[2] = z;
+			}
 		}
 	}
 
@@ -297,6 +310,10 @@ class Vector3 extends Vector {
 	static get right() { return Vector3.#right }
 	static get up() { return Vector3.#up }
 	static get zero() { return Vector3.#zero }
+
+	static is(value) {
+		return value instanceof Vector3 || Vector.is(value, Vector3.coordinateNames);
+	}
 
 	cross(v) {
 		return new Vector3(this.y * v.z - this.z * v.y, this.z * v.x - this.x * v.z, this.x * v.y - this.y * v.x);
@@ -527,7 +544,7 @@ const bezier = {
 	_getDown: function(sp) {
 
 		// We are done if we already have a vector
-		if (is.vector3(sp.trackBank)) return new Vector3(sp.trackBank);
+		if (Vector3.is(sp.trackBank)) return new Vector3(sp.trackBank);
 
 		// Compute the true 'down' vector. This must be orthogonal to the forward vector.
 		// Remove any component of the down vector inline with the forward vector.
@@ -1026,7 +1043,7 @@ const spiralParser = {
 	},
 
 	_processInterpolationArray: function(value, t, multiplier) {
-		if (is.vector3(value)) return value;
+		if (Vector3.is(value)) return value;
 		if (is.number(value)) return multiplier * value;
 		if (t <= 0) return multiplier * value[0].v;
 		if (t >= 1) return multiplier * value[value.length - 1].v;
