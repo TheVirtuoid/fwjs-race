@@ -66,7 +66,6 @@ class DeclinationDisplay {
 		if (track && this.#hasSpiral(track)) {
 			this.#track = track;
 
-			console.log(typeof(track.altDeclination));
 			if (typeof(track.altDeclination) === 'string') {
 				this.#resetValue = track.altDeclination;
 			} else if (typeof(track.altDeclination) === 'number') {
