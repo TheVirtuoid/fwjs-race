@@ -176,7 +176,7 @@ const ball = {
 		const t = ball._inset;
 		const olt = 1 - t;
 		const x = p0.x * t + p1.x * olt - 1;
-		const y = p0.y * t + p0.y * olt + ball._height;
+		const y = p0.y * t + p0.y * olt + ball._height / 2;
 		const z = p0.z * t + p1.z * olt;
 		car.build({
 			name: 'test',
@@ -503,7 +503,7 @@ const defineTracks = function() {
 		runoutStraight: {
 			type: 'straight',
 			length: track1.runoutStraight.length,
-			trackWidth: 2,
+			trackWidth: 4,
 		},
 
 		init: function() {
