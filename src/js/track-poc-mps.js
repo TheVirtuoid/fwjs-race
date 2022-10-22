@@ -1,6 +1,6 @@
 import {
 	AmmoJSPlugin,
-	ArcRotateCamera,
+	ArcRotateCamera, Color3,
 	Engine,
 	HemisphericLight,
 	Mesh,
@@ -11,6 +11,7 @@ import {
 } from "@babylonjs/core";
 import ammo from "ammo.js";
 import {TrackPOC} from "./track-poc-util";
+import Car from "./Car";
 
 
 //======================================================================
@@ -150,7 +151,7 @@ const babylon = {
 
 //======================================================================
 // BALL SUPPORT
-
+let car;
 const ball = {
 
 	_diameter: .25,
@@ -166,6 +167,24 @@ const ball = {
 	},
 
 	_drop: function() {
+
+		if (car) {
+			car.junk();
+		}
+		car = new Car({ scale: .1 });
+		const {p0, p1} = tracks.getTrackStart();
+		const t = ball._inset;
+		const olt = 1 - t;
+		const x = p0.x * t + p1.x * olt - 1;
+		const y = p0.y * t + p0.y * olt + ball._height;
+		const z = p0.z * t + p1.z * olt;
+		car.build({
+			name: 'test',
+			scene,
+			position: new Vector3(x, y, z),
+			color: Color3.Green()
+		});
+/*
 		ball.destroy();
 		const {p0, p1} = tracks.getTrackStart();
 		const t = ball._inset;
@@ -174,6 +193,7 @@ const ball = {
 		ball._mesh.position.x = p0.x * t + p1.x * olt;
 		ball._mesh.position.y = p0.y * t + p0.y * olt + ball._height;
 		ball._mesh.position.z = p0.z * t + p1.z * olt;
+*/
 	},
 }
 
