@@ -1,3 +1,4 @@
+import is from './is.js'
 import StaticClassError from './StaticClassError.js'
 
 class trig {
