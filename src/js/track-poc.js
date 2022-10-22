@@ -1,18 +1,8 @@
-import {
-	AmmoJSPlugin, ArcRotateCamera,
-	Engine,
-	HemisphericLight,
-	Mesh, MeshBuilder,
-	PhysicsImpostor,
-	Scene,
-	Vector3 as BabylonVector3,
-} from "@babylonjs/core";
-
-import ammo from "ammo.js";
-
 import { TrackPOC } from './Builder.js'
-import Vector3 from './Vector3.js'
 
+import BabylonAdapter from './BabylonAdapter.js'
+
+import DeclinationDisplay from './DeclinationDisplay.js'
 import ErrorDisplay from './ErrorDisplay.js'
 
 //======================================================================
@@ -61,165 +51,6 @@ const debugDisplay = {
 }
 
 //======================================================================
-// DECLINATION MANAGER
-
-const declinationDisplay = {
-
-	disable: function(state = true) {
-		if (this._valueInput) {
-			this._valueInput.disable = state;
-			this._resetButton.disable =  state;
-			this._clearButton.disable = state;
-			this._algoSelector.disable = state;
-		}
-	},
-
-	register: function(track) {
-		if (!track || track.altDeclination === null || track.altDeclination === undefined) {
-			this._track = false;
-		} else {
-			this._track = track;
-			this._valueInput.value = track.altDeclination;
-		}
-
-		this._styleRule.style = "display:" + (this._track ? "block" : "none");
-	},
-
-	init: function(styleSheetTitle, styleSelector, input) {
-
-		// Find the style sheet
-		for (let sheet of document.styleSheets) {
-			if (styleSheetTitle === sheet.title) {
-				this._styleSheet = sheet;
-				break;
-			}
-		}
-		if (!this._styleSheet) {
-			throw new Error('declinateDisplay.init: Cannot find stylesheet ' + styleSheetTitle);
-		}
-
-		// Find the rule
-		if (this._styleSheet) {
-			for (let rule of this._styleSheet.cssRules) {
-				if (rule instanceof CSSStyleRule && rule.selectorText === styleSelector) {
-					this._styleRule = rule;
-					break;
-				}
-			}
-			if (!this._styleRule) throw new Error('declinateDisplay.init: Cannot find selector ' + styleSelector);
-		}
-
-		// Find the user input elements
-		this._valueInput = document.getElementById(input);
-		this._valueInput.addEventListener("change", (e) => this._onChangeValue(e));
-		this._resetButton = document.getElementById(input + "Reset");
-		this._resetButton.addEventListener("click", (e) => this._onReset(e));
-		this._clearButton = document.getElementById(input + "Clear");
-		this._clearButton.addEventListener("click", (e) => this._onClear(e));
-		this._algoSelector = document.getElementById(input + "Algo");
-		this._algoSelector.addEventListener("change", (e) => this._onChangeAlgo(e));
-
-		// Trigger the initial display
-		this.register();
-	},
-
-	_onChangeAlgo: function(e) {
-		console.log(e);
-		throw new Error('Not implemented');
-	},
-
-	_onChangeValue: function(e) {
-		console.log(e);
-		const value = Number(this._valueInput.value);
-		if (value != this._track.altDeclination) {
-			this._track.altDeclination = value;
-			tracks.createMesh();
-		}
-	},
-
-	_onClear: function(e) {
-		console.log(e);
-		throw new Error('Not implemented');
-	},
-
-	_onReset: function(e) {
-		console.log(e);
-		throw new Error('Not implemented');
-	},
-}
-
-//======================================================================
-// BABYLON SUPPORT
-
-const babylon = {
-	createDefaultEngine: function() {
-		if (!this._canvas) throw "Must invoke setCanvas first";
-		this._engine = new Engine(this._canvas, true, {
-			preserveDrawingBuffer: true,
-			stencil: true,
-			disableWebGL2Support: false
-		});
-		return this._engine;
-	},
-	createRibbon: function(name, ribbon, closed, meshOptions) {
-		if (!this._scene) throw "Must invoke createScene first";
-		const mesh = MeshBuilder.CreateRibbon(
-			name,
-			{
-				pathArray: ribbon,
-				sideOrientation: Mesh.DOUBLESIDE,
-				closePath: closed,
-			},
-			this._scene);
-		mesh.physicsImpostor = new PhysicsImpostor(mesh, PhysicsImpostor.MeshImpostor, meshOptions, this._scene);
-		return mesh;
-	},
-	createScene: function () {
-		if (!this._canvas) throw "Must invoke setCanvas first";
-		if (!this._engine) throw "Must invoke createDefaultEngine first";
-		this._scene = new Scene(this._engine);
-		const camera = new ArcRotateCamera(
-			"Camera",
-			3 * Math.PI / 2,
-			3 * Math.PI / 8,
-			30,
-			BabylonVector3.Zero());
-		camera.attachControl(this._canvas, true);
-		const light = new HemisphericLight("hemi", new BabylonVector3(0, 50, 0));
-		this._scene.enablePhysics(new BabylonVector3(0, -8.91, 0), new AmmoJSPlugin());
-		return this._scene;
-	},
-	createSphere: function(name, sphereOptions, impostorOptions) {
-		if (!this._scene) throw "Must invoke createScene first";
-		const mesh = MeshBuilder.CreateSphere(name, sphereOptions, this._scene);
-		mesh.physicsImpostor = new PhysicsImpostor(mesh, PhysicsImpostor.SphereImpostor, impostorOptions, this._scene);
-		return mesh;
-	},
-	destroyMesh: function(mesh) {
-		if (!this._scene) throw "Must invoke createScene first";
-		if (mesh) {
-			this._scene.removeMesh(mesh);
-			mesh.dispose();
-		}
-		return false;
-	},
-	ready: function() {
-		if (!this._scene) throw "Must invoke createScene first";
-		this._ready = true;
-	},
-	resize: function() { if (this._engine) this._engine.resize(); },
-	setCanvas: function(id) { this._canvas = document.getElementById(id); },
-	startRenderLoop: function () {
-		if (!this._engine) throw "Must invoke createDefaultEngine first";
-		this._engine.runRenderLoop(function () {
-			if (babylon._ready && babylon._scene.activeCamera) {
-				babylon._scene.render();
-			}
-		});
-	},
-}
-
-//======================================================================
 // BALL SUPPORT
 
 const ball = {
@@ -230,7 +61,7 @@ const ball = {
 	_weight: 2,
 
 	destroy: function() {
-		this._mesh = babylon.destroyMesh(this._mesh);
+		this._mesh = gameEngine.destroyMesh(this._mesh);
 	},
 	setButton(id) {
 		document.getElementById(id).addEventListener('click', (e) => { this._drop(e) });
@@ -242,7 +73,7 @@ const ball = {
 		const {p0, p1} = tracks.getTrackStart();
 		const t = ball._inset;
 		const olt = 1 - t;
-		ball._mesh = babylon.createSphere("ball", {diameter: ball._diameter}, {mass: ball._weight});
+		ball._mesh = gameEngine.createSphere("ball", {diameter: ball._diameter}, {mass: ball._weight});
 		ball._mesh.position.x = p0.x * t + p1.x * olt;
 		ball._mesh.position.y = p0.y * t + p0.y * olt + ball._height;
 		ball._mesh.position.z = p0.z * t + p1.z * olt;
@@ -317,7 +148,7 @@ const tracks = {
 
 	createMesh: function() {
 		ball.destroy();
-		for (let mesh of this._meshes) babylon.destroyMesh(mesh);
+		for (let mesh of this._meshes) gameEngine.destroyMesh(mesh);
 		this._meshes.length = 0;
 
 		try {
@@ -328,7 +159,10 @@ const tracks = {
 			debugDisplay.register(track);
 			declinationDisplay.register(track);
 
-			const ribbons = TrackPOC(track, (u) => { return new BabylonVector3(u.x, u.y, u.z); }, settings);
+			const ribbons = TrackPOC(
+				track,
+				(u) => { return gameEngine.createVector(u) },
+				settings);
 			const ribbon = ribbons[0];
 			const leftRoad = ribbon[1];
 			const rightRoad = ribbon[2];
@@ -349,7 +183,7 @@ const tracks = {
 				},
 			}
 			for (let i = 0; i < ribbons.length; i++) {
-				tracks._meshes.push(babylon.createRibbon(`Segment${i}`, ribbons[i], track.closed, { mass: 0 }));
+				tracks._meshes.push(gameEngine.createRibbon(`Segment${i}`, ribbons[i], track.closed, { mass: 0 }));
 			}
 			errorDisplay.clear();
 		} catch (e) {
@@ -384,7 +218,8 @@ import { defineTracks } from './defineTracks.js'
 //======================================================================
 // WINDOW INITIALIZATION
 
-let errorDisplay;
+let gameEngine;
+let errorDisplay, declinationDisplay;
 
 window.initFunction = async function() {
 
@@ -397,9 +232,13 @@ window.initFunction = async function() {
 			(v) => declinationDisplay.disable(v)
 		]);
 	try {
-		declinationDisplay.init("ThisIsMe", ".declination", "altDeclination");
+		declinationDisplay = new DeclinationDisplay("ThisIsMe", ".declination", "altDeclination");
 		debugDisplay.init(['debugGeneral', 'debugSegments']);
-		babylon.setCanvas("renderCanvas");
+
+		// Create the game engine
+		gameEngine = new BabylonAdapter();
+		gameEngine.setCanvas("renderCanvas");
+
 		tracks.setSelectors("trackFamilies", "trackMembers");
 		ball.setButton("go");
 	} catch (e) {
@@ -409,20 +248,20 @@ window.initFunction = async function() {
 
 	const asyncEngineCreation = async function() {
 		try {
-			return babylon.createDefaultEngine();
+			return gameEngine.createDefaultEngine();
 		} catch(e) {
 			console.log("the available createEngine function failed. Creating the default engine instead");
-			return babylon.createDefaultEngine();
+			return gameEngine.createDefaultEngine();
 		}
 	}
 
 	window.engine = await asyncEngineCreation();
-	if (!babylon._engine) throw 'engine should not be null.';
+	if (!window.engine) throw new Error('engine should not be null.');
 
-	await ammo.bind(window)();
+	await gameEngine.initializePhysics();
 
-	babylon.startRenderLoop();
-	window.scene = babylon.createScene();
+	gameEngine.startRenderLoop();
+	window.scene = gameEngine.createScene();
 
 	// Get tracks
 	try {
@@ -432,5 +271,5 @@ window.initFunction = async function() {
 		errorDisplay.showError(e);
 	}
 };
-initFunction().then(() => { babylon.ready() });
-window.addEventListener("resize", babylon.resize());
+initFunction().then(() => { gameEngine.ready() });
+window.addEventListener("resize", gameEngine.resize());

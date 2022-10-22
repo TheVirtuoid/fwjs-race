@@ -49,7 +49,7 @@ class spiralParser {
 		this.#generate(builders, points, specs, rawSpiral, parentSettings, name);
 	}
 
-	static getPointForwardFunctions() {
+	static getDeclinationAlgorithms() {
 		return [ 'getPointForward' ]
 	}
 

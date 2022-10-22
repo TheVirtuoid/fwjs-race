@@ -332,7 +332,6 @@ export function defineTracks(tracks) {
 					jump.runout
 				],
 			}],
-			debug: true,
 			altDeclination: -.1,
 		},
 	});
@@ -706,7 +705,6 @@ export function defineTracks(tracks) {
 					],
 				}
 			],
-			debug: true,
 			altDeclination: -.1,
 		},
 	});
@@ -734,7 +732,6 @@ export function defineTracks(tracks) {
 					],
 				}
 			],
-			debug: true,
 			altDeclination: -0.06,
 		},
 	});
@@ -871,7 +868,6 @@ export function defineTracks(tracks) {
 					turns: 6,
 				}]
 			}],
-			debug:true,
 		},
 		init() {
 			const theta = (180 + 45) * Math.PI / 180;
@@ -903,7 +899,6 @@ export function defineTracks(tracks) {
 					},
 				]
 			}],
-			debug:true,
 		},
 		init() {
 			const radius = 4;
