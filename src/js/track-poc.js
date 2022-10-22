@@ -101,15 +101,15 @@ const validate = {
 		throw new TypeError(`${objectName}.${memberName} must be a number, 3D vector, or interpolation array`);
 	},
 
-	undefined: function(object, memberName, objectName, excludingMemberName) {
+	undefined: function(object, memberName, objectName, reason) {
 		if (is.defined(object[memberName])) {
-			throw new TypeError(`Cannot specify ${objectName}.${memberName} because ${excludingMemberName} is specified.`);
+			throw new TypeError(`Cannot specify ${objectName}.${memberName} because ${reason}.`);
 		}
 	},
 
 	vector3: function(object, memberName, objectName) {
 		const value = object[memberName];
-		if (is.vector3(value)) return value;
+		if (is.vector3(value)) return new Vector3(value);
 		throw new TypeError(`${objectName}.${memberName} must be a 3D vector`);
 	},
 
@@ -181,6 +181,8 @@ const merge = {
 	},
 	_validSettings: [
 		{ key: 'debug' },
+		{ key: 'debugSegments' },
+		{ key: 'altDeclination' },
 		{ key: 'precision', validator: validate.positiveNumber },
 		{ key: 'trackBank', validator: validate.trackBank, },
 		{ key: 'trackWidth', validator: validate.positiveNumber },
@@ -217,207 +219,295 @@ const trig = {
 	radiansToDegrees: 180 / Math.PI,
 }
 
-const vector = {
-	_defaultTolerance: 0.0001,
-	add: function(u, k, v) {
-		return {
-			x: u.x + k * v.x,
-			y: u.y + k * v.y,
-			z: u.z + k * v.z,
+class Vector {
+
+	coordinates;
+	static #clampTolerance = .001;
+
+	constructor(dimension) {
+		this.coordinates = []
+		if (is.integer(dimension)) {
+			for (let i = 0; i < dimension; i++) this.coordinates[i] = 0;
+		} else {
+			for (let i = 0; i < dimension.length; i++) this.coordinates[i] = dimension[i];
 		}
-	},
-	cross: function(u, v) {
-		return {
-			x: u.y * v.z - u.z * v.y,
-			y: u.z * v.x - u.x * v.z,
-			z: u.x * v.y - u.y * v.x,
+	}
+
+	get dimension() { return this.coordinates.length }
+
+	add(k, v) {
+		return this.#makeVector((i) => this.coordinates[i] + k * v.coordinates[i])
+	}
+	clamp(tolerance) {
+		if (!is.defined(tolerance)) tolerance = Vector.#clampTolerance;
+		for (let i = 0; i < this.dimension; i++) {
+			if (Math.abs(this.coordinates[i]) < tolerance) this.coordinates[i] = 0;
 		}
-	},
-	difference: function(from, to) {
-		return {
-			x: to.x - from.x,
-			y: to.y - from.y,
-			z: to.z - from.z,
-		};
-	},
-	distance: function(u, v) {
-		return vector.length(this.difference(u, v));
-	},
-	dot: function(u, v) {
-		return u.x * v.x + u.y * v.y + u.z * v.z;
-	},
-	down: { x:0, y:-1, z:0 },
-	interpolate: function(u, v, t) {
+		return this;
+	}
+	distance(v) { return this.to(v).length() }
+	dot(v) {
+		return this.#makeSum((i) => this.coordinates[i] * v.coordinates[i]);
+	}
+	interpolate(v, t) {
 		const olt = 1 - t;
-		return {
-			x: olt * u.x + t * v.x,
-			y: olt * u.y + t * v.y,
-			z: olt * u.z + t * v.z,
-		}
-	},
-	forward: { x:0, y:0, z:1 },
-	left: { x:-1, y:0, z:0 },
-	length: function(u) {
-		return Math.sqrt(u.x * u.x + u.y * u.y + u.z * u.z);
-	},
-	midpoint: function(u, v) {
-		return {
-			x: (u.x + v.x) / 2,
-			y: (u.y + v.y) / 2,
-			z: (u.z + v.z) / 2,
-		}
-	},
-	multiply: function(k, u) {
-		return {
-			x: k * u.x,
-			y: k * u.y,
-			z: k * u.z,
-		}
-	},
-	normalize: function(u) {
-		const length = vector.length(u);
-		return {
-			x: u.x / length,
-			y: u.y / length,
-			z: u.z / length,
-		};
-	},
-	right: { x:1, y:0, z:0 },
-	rotate: function(axis, u, angle) {
-		const theta = angle * trig.degreesToRadians;
-		const cosTheta = Math.cos(theta);
-		const sinTheta = Math.sin(theta);
-		let result = vector.multiply(cosTheta, u);
-		result = vector.add(result, sinTheta, vector.cross(axis, u));
-		return vector.add(result, vector.dot(axis, u) * (1 - cosTheta), axis);
-	},
-	sum: function(coeffs, us) {
-		let sum = vector.zero;
-		for (let i = 0; i < coeffs.length; i++) {
-			sum = vector.add(sum, coeffs[i], us[i]);
+		return this.#makeVector((i) => olt * this.coordinates[i] + t * v.coordinates[i])
+	}
+	length() {
+		return Math.sqrt(this.#makeSum((i) => this.coordinates[i] * this.coordinates[i]));
+	}
+	midpoint(v) {
+		return this.#makeVector((i) => (this.coordinates[i] + v.coordinates[i]) / 2)
+	}
+	newHack() {
+		throw new InternalError('Vector.newHack must be overridden')
+	}
+	normalize() {
+		const length = this.length();
+		return this.#makeVector((i) => this.coordinates[i] / length);
+	}
+	scale(k) {
+		return this.#makeVector((i) => k * this.coordinates[i])
+	}
+	to(v) {
+		return this.#makeVector((i) => v.coordinates[i] - this.coordinates[i])
+	}
+	toNormal(v) { return this.to(v).normalize() }
+
+	static scaledSum(vectors, scalars) {
+		let sum = vectors[0].scale(scalars[0]);
+		for (let i = 1; i < scalars.length; i++) {
+			sum = sum.add(scalars[i], vectors[i]);
 		}
 		return sum;
-	},
-	to: function(from, to) { return this.normalize(this.difference(from, to)) },
-	up: { x:0, y:1, z:0 },
-	zero: { x:0, y:0, z:0 },
-};
+	}
 
-const plane = {
-	_defaultTolerance: 0.95,
-	contains: function(plane, vertex, tolerance) {
-		if (!is.defined(tolerance)) tolerance = this._defaultTolerance;
-		return this._getAltitude(plane, vertex) < (1 - tolerance);
-	},
-	create: function(origin, normal) {
-		return {
-			origin: origin,
-			normal: vector.normalize(normal),
-		};
-	},
-	getAltitude: function(plane, vertex) {
-		if (!is.defined(plane.xAxis)) this._setDefaultAxes(plane);
-		return this._getAltitude(plane, vertex);
-	},
-	getAngle: function(plane, vertex) {
-		if (!is.defined(plane.xAxis)) this._setDefaultAxes(plane);
-		const toVertex = this._toVertex(plane, vertex);
-		const x = vector.dot(plane.xAxis, toVertex);
-		const y = vector.dot(plane.yAxis, toVertex);
-		return trig.clampDegrees(Math.atan2(y, x) * trig.radiansToDegrees);
-	},
-	getIntersection: function(a, b) {
+	#makeVector(f) {
+		const result = this.newHack();
+		for (let i = 0; i < result.dimension; i++) result.coordinates[i] = f(i);
+		return result;
+	}
+	#makeSum(f) {
+		let result = 0;
+		for (let i = 0; i < this.dimension; i++) result += f(i);
+		return result;
+	}
+}
 
-		// NOTE: Technically this returns a line in the form of
-		// a point p on the line and a direction d of the line.
-		// This conveniently can be interpreted as describing a
-		// plane with origin p and normal d. We abuse this
-		// by describing the line as an object with members
-		// 'origin' and 'normal', identical to the plane notation.
+class Vector3 extends Vector {
+
+	static #backward = new Vector3(0, 0, -1)
+	static #down = new Vector3(0, -1, 0)
+	static #forward = new Vector3(0, 0, 1)
+	static #left = new Vector3(-1, 0, 0)
+	static #right = new Vector3(1, 0, 0)
+	static #up = new Vector3(0, 1, 0)
+	static #zero = new Vector3(0, 0, 0)
+
+	constructor(x, y, z) {
+		super(3);
+		if (!is.defined(x)) {
+		} else if (x instanceof Vector3) {
+			for (let i = 0; i < 3; i++) this.coordinates[i] = x.coordinates[i];
+		} else if (is.vector3(x)) {
+			this.coordinates[0] = x.x;
+			this.coordinates[1] = x.y;
+			this.coordinates[2] = x.z;
+		} else {
+			this.coordinates[0] = x;
+			this.coordinates[1] = y;
+			this.coordinates[2] = z;
+		}
+	}
+
+	get x() { return this.coordinates[0] }
+	get y() { return this.coordinates[1] }
+	get z() { return this.coordinates[2] }
+
+	static get backward() { return Vector3.#backward }
+	static get down() { return Vector3.#down }
+	static get forward() { return Vector3.#forward }
+	static get left() { return Vector3.#left }
+	static get right() { return Vector3.#right }
+	static get up() { return Vector3.#up }
+	static get zero() { return Vector3.#zero }
+
+	cross(v) {
+		return new Vector3(this.y * v.z - this.z * v.y, this.z * v.x - this.x * v.z, this.x * v.y - this.y * v.x);
+	}
+	newHack() { return new Vector3() }
+	rotate(axis, angle) {
+		if (!(axis instanceof Vector3)) throw new Error('Vector3.rotate: axis is not a Vector3');
+		if (!is.number(angle)) throw new Error('Vector3.rotate: angle is not a number');
+		const theta = angle * trig.degreesToRadians;
+		const cos = Math.cos(theta);
+		const sin = Math.sin(theta);
+		return this.scale(cos).add(sin, axis.cross(this)).add(this.dot(axis) * (1 - cos), axis);
+	}
+}
+
+class CylindricalCoordinate {
+
+	#angle;
+	#height;
+	#radius;
+
+	constructor(radius, angle, height) {
+		this.#radius = radius;
+		this.#angle = angle;
+		this.#height = height;
+	}
+
+	get angle() { return this.#angle }
+	get radius() { return this.#radius }
+	get height() { return this.#height }
+
+	interpolate(other, t) {
+		const olt = 1 - t;
+		return new CylindricalCoordinate(
+			olt * this.#radius + t * other.#radius,
+			olt * this.#angle + t * other.#angle,
+			olt * this.#height + t * other.#height)
+	}
+}
+
+class Line {
+
+	#origin;
+	#normal;
+
+	constructor(origin, normal) {
+		this.#origin = origin;
+		this.#normal = normal.normalize();
+	}
+
+	get normal() { return this.#normal }
+	get origin() { return this.#origin }
+}
+
+class Plane {
+
+	static #defaultTolerance = 0.95;
+
+	#normal;
+	#origin;
+	#xAxis;
+	#yAxis;
+
+	constructor(origin, normal) {
+		this.#origin = origin;
+		this.#normal = normal.normalize();
+	}
+
+	get normal() { return this.#normal }
+	get origin() { return this.#origin }
+	get xAxis() { return this.#xAxis }
+	get yAxis() { return this.#yAxis }
+
+	contains(vertex, tolerance) {
+		if (!is.defined(tolerance)) tolerance = Plane.#defaultTolerance;
+		return this.#getHeight(vertex) < (1 - tolerance);
+	}
+	getCylindricalCoordinate(vertex) {
+		if (!is.defined(this.#xAxis)) this.#setDefaultAxes();
+
+		const toVertex = this.#toVertex(vertex);
+
+		const x = this.#xAxis.dot(toVertex);
+		const y = this.#yAxis.dot(toVertex);
+		const angle = trig.clampDegrees(Math.atan2(y, x) * trig.radiansToDegrees);
+
+		const height = this.#getHeightTo(toVertex);
+		const radius = toVertex.add(-height, this.#normal).length();
+
+		return new CylindricalCoordinate(radius, angle, height)
+	}
+	getIntersection(other, options) {
 
 		// Get the line direction. Normalize should throw an error if the
 		// planes are parallel
-		const direction = vector.normalize(vector.cross(a.normal, b.normal));
+		if (!(other instanceof Plane)) throw new Error('Plane.getIntersection: other is not a Plane');
+		const direction = this.#normal.cross(other.#normal).normalize();
+		const clamp = options && options.clamp;
+		if (clamp) direction.clamp();
 
 		// TODO: Figure out why this works
 		// see https://forum.unity.com/threads/how-to-find-line-of-intersecting-planes.109458/
 
 		// Next is to calculate a point on the line to fix it's position.
-		// This is done by finding a vector from the plane2 [b] location,
+		// This is done by finding a vector from the plane2 [other] location,
 		// moving parallel to it's plane, and intersecting plane1. To
 		// prevent rounding errors, this vector also has to be perpendicular
 		// to lineDirection [ldir]. To get this vector, calculate the cross
-		// product of the normal of plane2 [b] and the lineDirection [ldir].
-		const ldir = vector.cross(b.normal, direction);
+		// product of the normal of plane2 [other] and the lineDirection [ldir].
+		const ldir = other.#normal.cross(direction);
 
-		const numerator = vector.dot(a.normal, ldir);
+		const numerator = this.#normal.dot(ldir);
 
 		// Prevent divide by zero.
-		if (Math.abs(numerator) < .0001) return this._createLine(vector.zero, direction);
+		if (Math.abs(numerator) < .0001) {
+			return new Line(Vector3.zero, direction);
+		} else {
+			const b2a = other.#origin.to(this.#origin);
+			const t = this.#normal.dot(b2a) / numerator;
+			const origin = other.#origin.add(t, ldir);
+			return new Line(origin, direction);
+		}
+	}
+	getHelixAt(cylPoint, options) {
+		if (!is.defined(this.#xAxis)) this.#setDefaultAxes();
 
-		const b2a = vector.add(a.origin, -1, b.origin);
-		const t = vector.dot(a.normal, b2a) / numerator;
-		return this._createLine(vector.add(b.origin, t, ldir), direction);
-	},
-	getPolar: function(plane, radius, degrees, altitude, declination, debug) {
-		if (!is.defined(plane.xAxis)) this._setDefaultAxes(plane);
-
-		const theta = degrees * trig.degreesToRadians;
+		const theta = cylPoint.angle * trig.degreesToRadians;
 		const cos = trig.clampAt0And1(Math.cos(theta));
 		const sin = trig.clampAt0And1(Math.sin(theta));
 
-		const radial = vector.add(vector.multiply(cos, plane.xAxis), sin, plane.yAxis);
-		const point = vector.add(vector.add(plane.origin, radius, radial), altitude, plane.normal);
-		let forward = vector.add(vector.multiply(-sin, plane.xAxis), cos, plane.yAxis);
-		if (debug) console.log('getPolor: declination %f, forward %o', declination, forward);
-		if (Math.abs(declination) > 0.01) {
-			forward = vector.rotate(radial, forward, declination);
-			if (debug) console.log('getPolor: after forward %o', forward);
-		}
+		const radial = this.#xAxis.scale(cos).add(sin, this.#yAxis);
+		const point = this.#origin.add(cylPoint.radius, radial).add(cylPoint.height, this.#normal);
+
+		const forward = options.getForward(this, cos, sin, radial, options);
 
 		return {
 			point: point,
 			forward: forward,
 		}
-	},
-	getRadius: function(plane, vertex) {
-		const altitude = this.getAltitude(plane, vertex);
-		return vector.length(vector.add(this._toVertex(plane, vertex), -altitude, plane.normal));
-	},
-	isParallel: function(a, b, tolerance) {
-		if (!is.defined(tolerance)) tolerance = this._defaultTolerance;
-		return Math.abs(vector.dot(a.normal, b.normal)) >= tolerance;
-	},
-	isSame: function(a, b, tolerance) {
-		return this.isParallel(a, b, tolerance) && this.contains(a, b.origin, tolerance);
-	},
-	setAxes: function(plane, xAxis) {
-		plane.xAxis = vector.normalize(vector.add(xAxis, -vector.dot(xAxis, plane.normal), plane.normal));
-		plane.yAxis = vector.cross(plane.xAxis, plane.normal);
-	},
-	_createLine: function(p, d) {
-		return this.create(p, d);
-	},
-	_getAltitude: function(plane, vertex) {
-		return vector.dot(plane.normal, this._toVertex(plane, vertex));
-	},
-	_setDefaultAxes: function(plane) {
-		if (vector.dot(vector.up, plane.normal) > this._defaultTolerance) {
-			this.setAxes(plane, vector.right);
-		} else if (vector.dot(vector.down, plane.normal) > this._defaultTolerance) {
-			plane.normal = vector.multiply(-1, plane.normal);
-			this.setAxes(plane, vector.right);
+	}
+	isParallel(other, tolerance) {
+		if (!is.defined(tolerance)) tolerance = Plane.#defaultTolerance;
+		const dot = this.#normal.dot(other.#normal);
+		return Math.abs(dot) >= tolerance;
+	}
+	isSame(other, tolerance) {
+		return this.isParallel(other, tolerance) && this.contains(other.#origin, tolerance);
+	}
+	setAxes(xAxis) {
+		if (!(xAxis instanceof Vector3)) throw new Error('Plane.setAxes: xAxis is not a Vector3');
+		this.#xAxis = xAxis.add(-xAxis.dot(this.#normal), this.#normal).normalize();
+		this.#yAxis = this.#xAxis.cross(this.#normal);
+	}
+
+	#getHeight(vertex) {
+		return this.#getHeightTo(this.#toVertex(vertex));
+	}
+	#getHeightTo(toVertex) {
+		return this.#normal.dot(toVertex);
+	}
+	#setDefaultAxes() {
+		if (Vector3.up.dot(this.#normal) > Plane.#defaultTolerance) {
+			this.setAxes(Vector3.right);
+		} else if (Vector3.down.dot(this.#normal) > Plane.#defaultTolerance) {
+			this.#normal = this.#normal.scale(-1);
+			this.setAxes(Vector3.right);
 		} else {
-			console.log('_setDefaultAxes: normal %o, dot up %f, dot down %f',
-				plane.normal,
-				vector.dot(vector.up, plane.normal),
-				vector.dot(vector.down, plane.normal));
-			throw '_setDefaultAxes: not implemented';
+			console.log('Plane.#setDefaultAxes: normal %o, dot up %f, dot down %f',
+				this.#normal,
+				Vector3.up.dot(this.#normal),
+				Vector3.down.dot(this.#normal));
+			throw new Error('Plane.#setDefaultAxes: not implemented');
 		}
-	},
-	_toVertex: function(plane, vertex) {
-		return vector.add(vertex, -1, plane.origin);
-	},
+	}
+	#toVertex(vertex) {
+		return this.#origin.to(vertex);
+	}
 }
 
 const ribbonMgr = {
@@ -427,15 +517,15 @@ const ribbonMgr = {
 	// top.
 
 	add: function(ribbon, bp, vectorFactory) {
-		const left = vector.cross(bp.forward, bp.down);
-		const wall = vector.multiply(-bp.wallHeight, bp.down);
+		const left = bp.forward.cross(bp.down);
+		const wall = bp.down.scale(-bp.wallHeight);
 		const edgeDistance = bp.trackWidth / 2;
-		const leftEdge = vector.add(bp.center, edgeDistance, left);
-		const rightEdge = vector.add(bp.center, -edgeDistance, left);
-		ribbon[0].push(vectorFactory(vector.add(leftEdge, 1, wall)));
+		const leftEdge = bp.center.add(edgeDistance, left);
+		const rightEdge = bp.center.add(-edgeDistance, left);
+		ribbon[0].push(vectorFactory(leftEdge.add(1, wall)));
 		ribbon[1].push(vectorFactory(leftEdge));
 		ribbon[2].push(vectorFactory(rightEdge));
-		ribbon[3].push(vectorFactory(vector.add(rightEdge, 1, wall)));
+		ribbon[3].push(vectorFactory(rightEdge.add(1, wall)));
 	},
 
 	create: function() {
@@ -449,45 +539,44 @@ const bezier = {
 
 		// Compute the Bezier cubic curve points
 		const curve = {
-			points: [
-				sp0.center,
-				vector.add(sp0.center, sp0.forwardWeight, sp0.forward),
-				vector.add(sp1.center, -sp1.backwardWeight, sp1.forward),
-				sp1.center,
-			],
+			points: [],
 			trackBanks: [ bezier._getDown(sp0), bezier._getDown(sp1) ],
 			trackWidths: [ sp0.trackWidth, sp1.trackWidth ],
 			wallHeights: [ sp0.wallHeight, sp1.wallHeight ],
 		}
+		curve.points[0] = sp0.center;
+		curve.points[1] = curve.points[0].add(sp0.forwardWeight, sp0.forward);
+		curve.points[3] = sp1.center;
+		curve.points[2] = curve.points[3].add(-sp1.backwardWeight, sp1.forward);
 
 		// Fill out the curve
 		const bpt0 = bezier._getPoint(curve, 0);
 		const bpt1 = bezier._getPoint(curve, 1);
 		bezier._interpolate(ribbon, curve, 0, 1, bpt0, bpt1, vectorFactory, precision);
 
-		// Return the points array
+		// Return the last point
 		return bpt1;
 	},
 
 	_getDown: function(sp) {
 
 		// We are done if we already have a vector
-		if (is.vector3(sp.trackBank)) return sp.trackBank;
+		if (is.vector3(sp.trackBank)) return new Vector3(sp.trackBank);
 
 		// Compute the true 'down' vector. This must be orthogonal to the forward vector.
 		// Remove any component of the down vector inline with the forward vector.
-		let down = vector.down;
-		const dot = vector.dot(sp.forward, down);
+		let down = Vector3.down;
+		const dot = sp.forward.dot(down);
 		if (Math.abs(dot) > .0001)  {
-			down = vector.normalize(vector.add(down, -dot, sp.forward));
+			down = down.add(-dot, sp.forward);
 		}
 
 		// Rotate the down vector if there is banking
 		if (Math.abs(sp.trackBank) > .0001) {
-			down = vector.rotate(sp.forward, down, sp.trackBank);
+			down = down.rotate(sp.forward, sp.trackBank);
 		}
 
-		return vector.normalize(down);
+		return down.normalize();
 	},
 
 	_getPoint: function(curve, t) {
@@ -495,26 +584,26 @@ const bezier = {
 
 		// Compute the point at t
 		// v(t) = (1-t)^3*p0 + 3*(1-t)^2*t*p1 + 3*(1-t)*t^2*p2 + t^3*p3
-		let coeffs = [olt * olt * olt, 3 * olt * olt * t, 3 * olt * t * t, t * t * t];
-		const center = vector.sum(coeffs, curve.points);
+		const vScalars = [olt * olt * olt, 3 * olt * olt * t, 3 * olt * t * t, t * t * t];
+		const center = Vector3.scaledSum(curve.points, vScalars);
 
 		// Compute the forward vector with is the tangent at t
 		// v'(t) = 3*(1-t)^2*(p1 - p0) + 6*(1-t)*t*(p2-p1) + 3*t^2*(p3-p2).
 		// Note that we normalize this to get a unit vector.
-		coeffs = [3 * olt *olt, 6 * olt * t, 3 * t * t];
-		const deltaPoints = [
-			vector.add(curve.points[1], -1, curve.points[0]),
-			vector.add(curve.points[2], -1, curve.points[1]),
-			vector.add(curve.points[3], -1, curve.points[2]),
+		const dvScalars = [3 * olt * olt, 6 * olt * t, 3 * t * t];
+		const dvPoints = [
+			curve.points[1].add(-1, curve.points[0]),
+			curve.points[2].add(-1, curve.points[1]),
+			curve.points[3].add(-1, curve.points[2]),
 		];
-		const forward = vector.normalize(vector.sum(coeffs, deltaPoints));
+		const forward = Vector3.scaledSum(dvPoints, dvScalars).normalize();
 
 		// Compute the track width and wall height through linear interpolation
 		const trackWidth = olt * curve.trackWidths[0] + t * curve.trackWidths[1];
 		const wallHeight = olt * curve.wallHeights[0] + t * curve.wallHeights[1];
 
 		// Interpolate the down vector
-		const down = vector.normalize(vector.interpolate(curve.trackBanks[0], curve.trackBanks[1], t));
+		const down = curve.trackBanks[0].interpolate(curve.trackBanks[1], t).normalize();
 
 		return {
 			center: center,				// center line position at t
@@ -537,8 +626,8 @@ const bezier = {
 
 		// Calculate the linear and curve midpoints of the current subsection
 		const midtime = (t0 + t1) / 2;
-		const lmp = vector.midpoint(bpt0.center, bpt1.center);	// Linear midpoint
-		const bmp = this._getPoint(curve, midtime);				// Bezier midpoint
+		const lmp = bpt0.center.midpoint(bpt1.center);	// Linear midpoint
+		const bmp = this._getPoint(curve, midtime);		// Bezier midpoint
 
 		// TODO: This precision test is insufficient. It is possible for the curve to pass
 		// through the linear midpoint but the tangent at the midpoint be different (e.g.,
@@ -548,7 +637,7 @@ const bezier = {
 		// to the  ribbon. Otherwise recursively add the sections of the curve
 		// (t0, midtime) and (midtime, t1). Note that the latter eventually adds
 		// the midpoint calcuated here.
-		if (vector.distance(lmp, bmp.center) <= precision) {
+		if (lmp.distance(bmp.center) <= precision) {
 			ribbonMgr.add(ribbon, bpt0, vectorFactory);
 		} else {
 			this._interpolate(ribbon, curve, t0, midtime, bpt0, bmp, vectorFactory, precision);
@@ -560,8 +649,7 @@ const bezier = {
 const pointParser = {
 
 	parse: function(builders, points, rawPoint, parentSettings, name) {
-		const point = this.validate(rawPoint, parentSettings, name);
-		points.push(point);
+		points.push(this.validate(rawPoint, parentSettings, name));
 		if (points.length > 1) builders.push(createBuilder(parentSettings));
 	},
 
@@ -581,7 +669,7 @@ const pointParser = {
 		point.center = validate.vector3(rawPoint, 'center', name);
 
 		// The point must have a forward vector
-		point.forward = vector.normalize(validate.vector3(rawPoint, 'forward', name));
+		point.forward = validate.vector3(rawPoint, 'forward', name).normalize();
 
 		// Get the weights
 		point.forwardWeight = validate.weight(rawPoint, 'forwardWeight', name);
@@ -596,49 +684,30 @@ const spiralParser = {
 	/*--------------------------------------------------------------------------
 	THEORETICAL FOUNDATION
 
+	A spiral section represents a helix with varying radii. If the start and
+	end of the helix are on the same level, the helix degenerates into a
+	planar curve.
+
 	A spiral section has (a) a center of the rotation, (b) a normalized
 	rotation axis, (c) an entry point, (d) an exit point, and (e) a number of
 	full rotations, or turns, between the entry and exit points.
 
+	For now we ignore the direction of rotation, being either clockwise or
+	counterclockwise.
+
 	Let the rotation plane be the plane defined by the center and rotation
-	axis with the plane's normal being the rotation axis.
+	axis with the plane's normal being the rotation axis. The plane also has
+	an arbitrary polar axis analogous to the X coordinate axis in standard
+	Euclidean geometry. The polar axis is orthogonal to the rotation axis.
 
-	Note that the rotation axis, being on one side or the other of the plane,
-	determines if the sprial turns left or right relative to the perceived
-	'up' of the entry point.
+	Hence, the rotation plane dictates the entry and exit points' cylindrical
+	coordinates, being the points' radius, angle, and height. For convenience,
+	the exit point's angle is increased or decreased by 360° times the number
+	of turns.
 
-	Let the rotation plane have an arbitrary 'x' axis or 0° vector,
-	orthogonal to the rotation axis.
-
-	Note that all points projected on the rotation plane can be expressed in
-	polar coordinates [d, θ] where d is the distance of the projection from
-	the center point and θ is the angle off the plane's x axis.
-
-	Let the entry and exit projection points be the projections of the entry
-	and exit points onto the rotation plane.
-
-	Let the entry and exit angles be the angle components of the projection
-	points' polar cooordinates.
-
-	Let the entry and exit radii be the distances of the projection points'
-	polar coordinates.
-
-	Note that the radii do not need to be the same. This allows for the
-	construction of increasing or decreasing radii curves.
-
-	Let the sweep of the spiral being the sum of (a) 360° times the number
-	of turns and (b) the difference between the entry and exit angles in the
-	direction of rotation.
-
-	Let the entry and exit altitudes be the distances of the entry and exit
-	points from the rotation plane. Note that this is the dot product of the
-	points and the rotation axis.
-
-	Note that the altitudes may have the same sign as the spiral does not
-	need to pass through the rotation plane.
-
-	Furthermore, note that if the altitudes are the same, all points on the
-	spiral have the same altitude and the number of turns should be 0.
+	The spiral section then produces a curve, from the entry point to the
+	exit point with intermediate points linearly interpolating between the
+	points' cylindrical coordinates.
 
 	--------------------------------------------------------------------------*/
 
@@ -652,32 +721,32 @@ const spiralParser = {
 	/*--------------------------------------------------------------------------
 	SPECIFICATION
 
-	As stated above, we need these elements to be specified:
-	(a) the rotation center and axis which define the rotation plane
-	(b) the entry and exit angles
-	(c) the entry and exit altitudes
-	(d) the entry and exit radii
-	(e) the number of turns
-	(f) The entry point if the sprial starts the segment.
+	For convenience, define a 'point-forward' to be an object with two members:
+		'vector': object having 'x', 'y', and 'z' keys defining numeric
+			coordinate values
+		'point': a vector defining a point in space
+		'direction': a vector defining a direction
 
-	Note that if the spiral starts a segment, the entry point implicitly
-	supplies the entry angle, altitude, and radius.
+	Using these, define:
+		'center-forward': object with a 'center' point and 'forward' direction
 
+	'center' (required if some situations, illegal in others)
+		If specified, a point setting the center of rotation.
 	'endsAt' (required)
-		If specified, sets the exit point of the spiral. This object
-		must define the 'x', 'y', and 'z' coordinate values of the
-		vector and a 'forward' vector. A 'forwardWeight' is optional.
+		A center-forward defining the exit point and direction of the spiral
+		at that point. A 'forwardWeight' is optional.
 	'rotate' (required)
-		This is either 'left', 'right', or 'up' and determines how the
-		spiral rotates relative to the entry point.
+		This is either 'left', 'right', or 'up' and determines the rotation
+		axis and how the spiral rotates relative to the entry point. The
+		left and right rotations use an upward axis while up uses a rightward
+		axis, relative to the entry point's forward direction.
 	'startsAt' (required if the spiral starts the track segment)
-		This sets the entry point of the spiral. This is illegal if the
-		spiral does not start the segment. This object must define
-		the 'x', 'y', and 'z' coordinate values of the vector and
-		a 'forward' vector.
+		If specified, a center-forward definig the entry point of the spiral.
+		This is illegal if the spiral does not start the segment. Any
+		'forwardWeight' is ignored.
 	'turns' (optional)
-		If specified, this positive integer sets the number of complete
-		rotations in the spiral.
+		A positive integer setting the number of complete rotations in the
+		spiral. If not specified, this is treated as no complete rotations.
 
 	--------------------------------------------------------------------------*/
 
@@ -686,6 +755,8 @@ const spiralParser = {
 		// Create the settings and base spiral specification
 		const settings = merge.settings(parentSettings, rawSpiral, name);
 		const specs = {};
+		if (settings.debug) specs.debug = settings.debug;
+		if (settings.debugSegments) specs.debugSegments = settings.debugSegments;
 
 		// Get either the entry point or the overrideFirstWeight option
 		if (points.length === 0) {
@@ -705,6 +776,7 @@ const spiralParser = {
 		if (rotate !== 'left' && rotate !== 'right' && rotate !== 'up') {
 			throw new RangeError(`${name}.rotate must be either 'left', 'right', or 'up'.`);
 		}
+		specs.rotate = rotate;
 
 		// Get the endsAt
 		specs.endsAt = pointParser.validate(rawSpiral.endsAt, settings, name + '.endsAt');
@@ -714,142 +786,120 @@ const spiralParser = {
 
 		// Now that we have the rotation plane, we can compute the angles,
 		// altitudes, and radii
-		const entry = this._getAltAngleRadius(specs, 'startsAt');
-		const exit = this._getAltAngleRadius(specs, 'endsAt');
+		specs.entry = this._getCylindricalCoordinate(specs, 'startsAt');
+		specs.exit = this._getCylindricalCoordinate(specs, 'endsAt');
 
-		// Set the sweep and declination
-		const { sweep, invertTangent, startAngle, endAngle } = this._getSweep(specs, rotate, turns, entry, exit);
-		const deltaAltitude = exit.altitude - entry.altitude;
-		const declination = Math.abs(deltaAltitude) < .001 ? 0 : (Math.atan2(deltaAltitude, sweep) * trig.radiansToDegrees);
-		if (settings.debug) {
-			console.log('_getSpecs: deltaAltitude %f, sweep %f, declination %f', deltaAltitude, sweep, declination);
+		// Set the sweep
+		const { sweep, endAngle } = this._getSweep(specs, rotate, turns);
+		if (endAngle !== specs.exit.angle) {
+			specs.exit = new CylindricalCoordinate(specs.exit.radius, endAngle, specs.exit.height);
 		}
-		specs.declination = invertTangent ? (180 - declination) : declination;
 		specs.sweep = sweep;
-
-		// Set the interpolation functions
-		specs.altitude = this._getInterpolation(entry.altitude, exit.altitude);
-		specs.angle = this._getInterpolation(startAngle, endAngle);
-		specs.radius = this._getInterpolation(entry.radius, exit.radius);
+		specs.altDeclination = settings.altDeclination;
 
 		// Set the trackBank multiplier
 		specs.trackBank = settings.trackBank;
 		if (rotate === 'left') specs.trackBankMultiplier = 1;
 		else if (rotate === 'right') specs.trackBankMultiplier = -1;
-		else throw '_getSpecs: trackBankMultiplier not implemented';
+		else throw new Error('spiralParser._getSpecs: trackBankMultiplier not implemented');
 
 		// Return the specifications
 		return specs;
 	},
 
-	_getAltAngleRadius: function(specs, memberName) {
-		const p = specs[memberName].center;
-		return {
-			altitude: plane.getAltitude(specs.rotationPlane, p),
-			angle: plane.getAngle(specs.rotationPlane, p),
-			radius: plane.getRadius(specs.rotationPlane, p)
-		};
-	},
-
-	_getInterpolation: function(t0, t1) {
-		const delta = t1 - t0;
-		return Math.abs(delta) < .001 ?
-			(t) => { return t0; } :
-			(t) => { return t0 + t * delta; };
+	_getCylindricalCoordinate: function(specs, memberName) {
+		return specs.rotationPlane.getCylindricalCoordinate(specs[memberName].center)
 	},
 
 	_getRotationAxis: function(specs, rotate) {
-		// TODO: This assumes the rotation axis is either up or up X forward.
+		// TODO: This assumes the rotation axis is either up or forward.
 		// This may not always be the case.
-		if (rotate === 'left' || rotate === 'right') return vector.up;
-		throw '_getRotationAxis: not implemented for non-up axis';
+		if (rotate === 'left' || rotate === 'right') return Vector3.up;
+		throw new Error('_getRotationAxis: not implemented for non-up axis');
 	},
 
 	_getRotationPlane: function(specs, rotate, rawSpiral, name) {
 
 		// Get the entry and exit planes
-		const entryPlane = plane.create(specs.startsAt.center, specs.startsAt.forward);
-		const exitPlane = plane.create(specs.endsAt.center, specs.endsAt.forward);
+		const entryPlane = new Plane(specs.startsAt.center, specs.startsAt.forward);
+		const exitPlane = new Plane(specs.endsAt.center, specs.endsAt.forward);
 
 		// From the condition of the entry and exit planes, plus any
 		// supporting specifications, determine the rotation center and axis
 		let rotCenter, rotAxis;
-		if (plane.isSame(entryPlane, exitPlane)) {
+		if (entryPlane.isSame(exitPlane)) {
 			if (is.defined(rawSpiral.center)) {
 				if (rotate === 'left' || rotate === 'right') {
 					// Center cannot be directly above/below the entry or exit point
 					const center = validate.vector3(rawSpiral, 'center', name);
 					const isAboveBelow = function(plane, point) {
-						const planeUp = vector.normalize(vector.add(vector.up, -vector.dot(vector.up, plane.normal), plane.normal));
-						const toPoint = vector.to(plane.origin, point);
-						const d = vector.dot(planeUp, toPoint);
+						const planeUp = Vector3.up.add(-Vector3.up.dot(plane.normal), plane.normal).normalize();
+						const toPoint = plane.origin.toNormal(point);
+						const d = planeUp.dot(toPoint);
 						return Math.abs(d) > .95;
 					}
 					if (isAboveBelow(entryPlane, center)) {
-						throw `${name}: center and entry points are too close vertically; center must have some offset`;
+						throw new Error(`${name}: center and entry points are too close vertically; center must have some offset`);
 					}
 					if (isAboveBelow(exitPlane, center)) {
-						throw `${name}: center and exit points are too close vertically; center must have some offset`;
+						throw new Error(`${name}: center and exit points are too close vertically; center must have some offset`);
 					}
 					rotCenter = center;
 					rotAxis = this._getRotationAxis(specs, rotate);
 				} else {
-					throw '_getRotationPlane: not implemented, center, rotate up identical entry and exit planes';
+					throw new Error('_getRotationPlane: not implemented, center, rotate up identical entry and exit planes');
 				}
 			} else if (rotate === 'left' || rotate === 'right') {
-				const toEnd = vector.to(entryPlane.origin, exitPlane.origin);
-				const d = vector.dot(vector.up, toEnd);
+				const toEnd = entryPlane.origin.toNormal(exitPlane.origin);
+				const d = Vector3.up.dot(toEnd);
 				if (Math.abs(d) >= .9) {
-					throw `${name}: starting and ending points are too close vertically; center required`;
+					throw new Error(`${name}: starting and ending points are too close vertically; center required`);
 				}
-				rotCenter = vector.midpoint(entryPlane.origin, exitPlane.origin);
+				rotCenter = entryPlane.origin.midpoint(exitPlane.origin);
 				rotAxis = this._getRotationAxis(specs, rotate);
 			} else {
-				throw '_getRotationPlane: not implemented, no center, rotate up identical entry and exit planes';
+				throw new Error('_getRotationPlane: not implemented, no center, rotate up identical entry and exit planes');
 			}
-		} else if (plane.isParallel(entryPlane, exitPlane)) {
+		} else if (entryPlane.isParallel(exitPlane)) {
 			/*const center = validate.vector3(rawSpiral, 'center', name);
 			if (rotate === 'left') {
-				throw '_getRotationPlane: make sure centernot implemented, parallel entry and exit planes';
+				throw new Error('_getRotationPlane: make sure centernot implemented, parallel entry and exit planes');
 			} else if (rotate === 'right') {
 			} else {
 			}*/
-			throw '_getRotationPlane: not implemented, parallel entry and exit planes';
+			throw new Error('_getRotationPlane: not implemented, parallel entry and exit planes');
 		} else {
 			// 'center' is illegal
-			validate.undefined(rawSpiral, 'center', name);
+			validate.undefined(rawSpiral, 'center', name, 'entry and exit planes intersect');
 
 			// Get intersection of the planes, a line, and use this as
 			// the rotation center and axis
-			const line = plane.getIntersection(entryPlane, exitPlane);
+			const line = entryPlane.getIntersection(exitPlane, { clamp: true });
 			rotCenter = line.origin;
 			rotAxis = line.normal;
 		}
 
 		// Return the rotation plane
-		return plane.create(rotCenter, rotAxis);
+		return new Plane(rotCenter, rotAxis);
 	},
 
-	_getSweep: function(specs, rotate, turns, entry, exit) {
+	_getSweep: function(specs, rotate, turns) {
 		const turnsDegrees = turns * 360;
-		let sweep, invertTangent, startAngle = entry.angle, endAngle = exit.angle;
+		const startAngle = specs.entry.angle;
+		let sweep, endAngle = specs.exit.angle;
 		if (rotate === 'left') {
 			if (startAngle > endAngle) endAngle += 360;
 			endAngle += turnsDegrees;
 			sweep = endAngle - startAngle;
-			invertTangent = false;
 		} else if (rotate === 'right') {
 			if (startAngle < endAngle) endAngle -= 360;
 			endAngle -= turnsDegrees;
 			sweep = startAngle - endAngle;
-			invertTangent = true;
 		} else {
-			throw '_setSweep: need to compute sweep up';
+			throw new Error('_setSweep: need to compute sweep up');
 		}
 		return {
 			endAngle: endAngle,
-			invertTangent: invertTangent,
-			startAngle: startAngle,
 			sweep: sweep,
 		}
 	},
@@ -857,46 +907,28 @@ const spiralParser = {
 	/*--------------------------------------------------------------------------
 	IMPLEMENTATION
 
-	TODO: Determine if the rotation direction coefficient is needed. The
-	rotation functions may handle this innately.
+	The _getSpecs function compiles the user specification into an algorithm
+	friendly specification. Hereout, the term specification refers to this
+	algorithm friedly form.
 
-	Note that the rotation direction is either 1 or -1 to reflect,
-	respectively, a counterclockwise or clockwise rotation.
+	'sweep' is the difference between the entry and exit points' angles
+	including 360° times the number of turns. This is always positive.
 
-	First we need a series of parametric functions on t = 0 to 1.
+	As with all good parametric algorithms, the algorithm execute functions
+	providing 0 <= t <= 1, representing an angle of the helix between 0 and
+	sweep.
 
-	Let Sweep(t) return the linearly interpolated sweep between 0 at t = 0
-	and the spiral's sweep at t = 1.
-
-	Let Altitude(t) return the linearly interpolated altitude between the
-	entry altitude at t = 0 and the exit altitude at t = 1.
-
-	Let Radius(t) return the linearly interpolated radius between the entry
-	radius at t = 0 and the exit radius at t = 1.
-
-	Let Angle(t) return the sum of the entry angle and the product of
-	Sweep(t) and rotation direction, normalized to the range [0°, 360°).
-
-	Let PlanarPoint(t) return the point at [Radius(t), Angle(t)].
-
-	Let Point(t) return the sum of PlanarPoint(t) and the product of
-	Altitude(t) and the rotation axis.
-
-	Now let Spiral(u) be a Bezier cubic function to compute the spiral
-	points.
+	Given t, we can now linearly interpolate between the cylindrical
+	coordinates of the entry and exit points. Note that _getSpecs adjusts
+	the angle of the exit point to reflect clockwise or counterwise rotation.
 
 	The current implementation of the Bezier cubic curve for circles
-	requires that a circle be partitioned into 90° segments. The Bezier
-	function Spiral(u) treat u = 0 as 0° and u = 1 as 90°.
+	requires that a circle be partitioned into 90° segments. The entry
+	point is t = 0. Additional points at 90°, 180°, ..., (k-1)90°, where
+	sweep < k90°, are generated. The exit point is also used.
 
-	This requires the top-level algorithm to break the sprial into a series
-	of 90 sections [0°, 90°], [90°, 180°], ..., [(k-1)90°, k90°] where
-	(k-1)90° < the spiral's sweep <= k90°. This requires additional
-	arguments to the Bezier function to allow mapping of u onto the
-	parameteric argument t in the other functions. Also note that the for
-	the last section, even though Point(k90°) is used to determine the
-	the control points of the curve, range of points produced are up to
-	Point(sweep).
+	Note that the Bezier algorithm requires the tangent or forward direction
+	of these intermediate points.
 
 	--------------------------------------------------------------------------*/
 
@@ -905,36 +937,42 @@ const spiralParser = {
 		// Insert the entry point if this is the first point of the segment.
 		// Otherwise patch its forwardWeight if required.
 		if (points.length === 0) points.push(specs.startsAt);
-		let p = points[points.length - 1];
-		p.forwardWeight = specs.radius(0) * this._circleWeight;
+		const p = points[points.length - 1];
+		p.forwardWeight = specs.entry.radius * this._circleWeight;
 		p.trackBank = this._processInterpolationArray(specs.trackBank, 0, specs.trackBankMultiplier);
 
-		// Add the 90° sections
+		// Add the 90° points
 		for (let angle = 90; angle < specs.sweep; angle += 90) {
 			this._addPoint(builders, points, angle / specs.sweep, specs, rawSpiral, parentSettings, name);
 		}
 
 		// Add the last point
-		specs.endsAt.backwardWeight = specs.radius(1) * this._circleWeight;
+		specs.endsAt.backwardWeight = specs.exit.radius * this._circleWeight;
 		specs.endsAt.trackBank = this._processInterpolationArray(specs.trackBank, 1, specs.trackBankMultiplier);
 		points.push(specs.endsAt);
 		builders.push(createBuilder(parentSettings));
 	},
 
 	_addPoint: function(builders, points, t, specs, rawSpiral, parentSettings, name) {
+		const cylPoint = specs.entry.interpolate(specs.exit, t);
+		if (specs.debug) {
+			console.log('spiralParser._addPoint(%f): entry %o, exit %o, interpolated %o',
+				t, specs.entry, specs.exit, cylPoint);
+		}
 
-		const debug = rawSpiral.debug || parentSettings.debug;
-		if (debug) console.log('_addPoint: t %f, specs %o', t, specs);
-		const altitude = specs.altitude(t);
-		const angle = specs.angle(t);
-		const radius = specs.radius(t);
-		const declination = specs.declination;
+		const options = {
+			debug: specs.debug,
+			getForward: this._getPointForward,
+			altDeclination: specs.altDeclination,
+			depth: specs.exit.height - specs.entry.height,
+			rotate: specs.rotate,
+			sweep: specs.sweep,
+		};
+		const polar = specs.rotationPlane.getHelixAt(cylPoint, options);
 
-		const polar = plane.getPolar(specs.rotationPlane, radius, angle, altitude, declination, debug);
-
-		const pointName = `${name}@${angle}`;
+		const pointName = `${name}@${cylPoint.angle}`;
 		const point = merge.settings(parentSettings, rawSpiral, pointName);
-		point.backwardWeight = radius * this._circleWeight;
+		point.backwardWeight = cylPoint.radius * this._circleWeight;
 		point.center = polar.point;
 		point.forward = polar.forward;
 		point.forwardWeight = point.backwardWeight;
@@ -943,6 +981,80 @@ const spiralParser = {
 
 		points.push(point);
 		builders.push(createBuilder(parentSettings));
+	},
+
+	_getPointForward: function(plane, cos, sin, radial, options) {
+		/*
+		Let a left-rotating helix be centered at (0, 0, 0), with radius r,
+		starting at angle θ0 and altitude h0 and ending at angle θ1 and
+		altitude h1. For our purposes, 0 ≤ θ0 < 2π and θ0 < θ1.
+
+		The first point in the helix is (r cos θ0, h0, r sin θ0) and the
+		last is (r cos θ1, h1, r sin θ1). Any point on the helix is provided by:
+			P(θ) = (r cos θ, h0 + (h1 - h0) (θ - θ0) / (θ1 - θ0), r sin θ)
+		where θ0 ≤ θ ≤ θ1.
+
+		To verify, P(θ0)
+			= (r cos θ0, h0 + (h1 - h0) (θ0 - θ0) / (θ1 - θ0), r sin θ0)
+			= (r cos θ0, h0 + (h1 - h0) 0 / (θ1 - θ0), r sin θ0)
+			= (r cos θ0, h0, r sin θ0)
+		and P(θ1)
+			= (r cos θ1, h0 + (h1 - h0) ( θ1 - θ0) / (θ1 - θ0), r sin θ1)
+			= (r cos θ1, h0 + (h1 - h0) 1, r sin θ1)
+			= (r cos θ1, h0 + h1 - h0, r sin θ1)
+			= (r cos θ1, h1, r sin θ1)
+
+		The tangent at an angle is then P’(θ)
+			= (d[r cos θ]/dθ, d[h0 + (h1 - h0) (θ - θ0) / (θ1 - θ0)]/dθ, d[r sin θ]/dθ)
+			= (-r sin θ, dh0/dθ + d[(h1 - h0) θ / (θ1 - θ0)]/dθ - d[(h1 - h0) (-θ0) / (θ1 - θ0)]/dθ, r cos θ)
+			= (-r sin θ, (h1 - h0) / (θ1 - θ0), r cos θ)
+		*/
+
+		if (!is.defined(options.depth)) throw new Error();
+		if (!is.defined(options.rotate)) throw new Error();
+		if (!is.defined(options.sweep)) throw new Error();
+		if (options.debug) {
+			console.log('spiralParser._getPointForward: options %o', options);
+		}
+
+		if (options.rotate !== 'left' && options.rotate !== 'right') {
+			throw new Error(`spiralParser._getPointForward: ${options.rotate} not implemented`);
+		}
+
+		const tangents = [];
+
+		// TODO: The forward vector is not yet correct.
+		//	'appearsToWork' seems to work for turns >= 4 but fails for turns <= 1
+		//	'fromDerivative' seems to work for sweeps < 2π but fails otherwise
+		const absDepth = Math.abs(options.depth);
+		if (absDepth <= 0.1) tangents[1] = Vector3.zero;
+		else {
+
+			// NOTE: This mostly works with
+			const appearsToWork = 1 / options.depth;
+			const fromDerivative = options.depth / (options.sweep * trig.degreesToRadians);
+			const toUse =
+				is.defined(options.altDeclination) ? options.altDeclination :
+				options.sweep <= 360 ? fromDerivative : appearsToWork;
+			if (options.debug) {
+				console.log('\tappearsToWork %f, fromDerivative %f, using %f',
+					appearsToWork, fromDerivative, toUse);
+			}
+			tangents[1] = plane.normal.scale(toUse);
+		}
+
+		if (options.debug) console.log('\tY component %o', tangents[1]);
+
+		const k =
+			options.rotate === 'left' ? 1 :
+			options.rotate === 'right' ? -1 :
+			0;
+		tangents[0] = plane.xAxis.scale(-k * sin);
+		tangents[2] = plane.yAxis.scale(k * cos);
+
+		const forward = Vector3.scaledSum(tangents, [1, 1, 1]).normalize().clamp();
+		if (options.debug) console.log('\tforward %o', forward);
+		return forward;
 	},
 
 	_processInterpolationArray: function(value, t, multiplier) {
@@ -955,7 +1067,7 @@ const spiralParser = {
 				return multiplier * (value[i-1].v * (1 - t) + value[i].v * t);
 			}
 		}
-		throw '_processInterpolationArray: Something went wrong';
+		throw new Error('_processInterpolationArray: Something went wrong');
 	},
 }
 
@@ -1013,7 +1125,7 @@ const straightParser = {
 			startPoint.center = validate.vector3(rawStraight, 'startsAt', name);
 			startPoint.forwardWeight = validate.weight(rawStraight, 'startingWeight', name);
 			if (usesEndsAt) {
-				endPoint.forward = vector.normalize(vector.difference(startPoint.center, endPoint.center));
+				endPoint.forward = startPoint.center.toNormal(endPoint.center);
 				startPoint.forward = endPoint.forward;
 			} else {
 				startPoint.forward = validate.vector3(rawStraight, 'forward', name);;
@@ -1023,10 +1135,10 @@ const straightParser = {
 		// Compute the end point's center and forward
 		if (usesLength) {
 			const length = validate.positiveNumber(rawStraight, 'length', name);
-			endPoint.center = vector.add(startPoint.center, length, startPoint.forward);
+			endPoint.center = startPoint.center.add(length, startPoint.forward);
 			endPoint.forward = startPoint.forward;
 		} else if (!generateStart) {
-			endPoint.forward = vector.normalize(vector.difference(startPoint.center, endPoint.center));
+			endPoint.forward = startPoint.center.toNormal(endPoint.center);
 		}
 
 		// Get the weights
@@ -1093,7 +1205,7 @@ function buildSegment(segment, vectorFactory, parentSettings, isClosed, name) {
 	for (let i = 0; i < segment.points.length; i++) {
 		sectionParser.parse(builders, points, segment.points[i], settings, `${name}.points[${i}]`);
 	}
-	if (settings.debug) {
+	if (settings.debugSegments) {
 		for (let i = 0; i < points.length; i++) console.log('buildSegment: %o', points[i]);
 	}
 
@@ -1140,14 +1252,15 @@ function buildTrack(track, vectorFactory, parentSettings) {
 	return ribbons;
 }
 
-//==========================================================================
-// API
+/*==========================================================================
+API
 
-// specs			a specification object or a json serialization of a
-//					specification object
-// vectorFactory	function to build an application friendly 3D vector,
-//					v = vectorFactory(u) where u has keys x, y, z.
-// settings			application settings for the build
+specs			a specification object or a json serialization of a
+				specification object
+vectorFactory	function to build an application friendly 3D vector,
+				v = vectorFactory(u) where u has keys x, y, z.
+settings		application settings for the build
+*/
 
 const TrackPOC = {
 
@@ -1167,11 +1280,5 @@ const TrackPOC = {
 
 		// Build the ribbons
 		return buildTrack(objSpecs, vectorFactory, settings);
-	},
-
-	vector: {
-		direction: function(from, to) {
-			return vector.normalize(vector.difference(from, to));
-		}
 	},
 }
