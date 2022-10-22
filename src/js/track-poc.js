@@ -16,29 +16,7 @@ import Vector3 from './Vector3.js'
 import Plane from './Plane.js'
 import CylindricalCoordinate from './CylindricalCoordinate.js'
 import merge from './merge.js'
-
-const ribbonMgr = {
-
-	// A ribbon is an array of four arrays of vectors representing the [0] left
-	// wall top, [1] left road edge, [2] right road edge, and [3] right wall
-	// top.
-
-	add: function(ribbon, bp, vectorFactory) {
-		const left = bp.forward.cross(bp.down);
-		const wall = bp.down.scale(-bp.wallHeight);
-		const edgeDistance = bp.trackWidth / 2;
-		const leftEdge = bp.center.add(edgeDistance, left);
-		const rightEdge = bp.center.add(-edgeDistance, left);
-		ribbon[0].push(vectorFactory(leftEdge.add(1, wall)));
-		ribbon[1].push(vectorFactory(leftEdge));
-		ribbon[2].push(vectorFactory(rightEdge));
-		ribbon[3].push(vectorFactory(rightEdge.add(1, wall)));
-	},
-
-	create: function() {
-		return [ [], [], [], [] ];
-	},
-}
+import Ribbon from './Ribbon.js'
 
 const bezier = {
 
@@ -145,7 +123,7 @@ const bezier = {
 		// (t0, midtime) and (midtime, t1). Note that the latter eventually adds
 		// the midpoint calcuated here.
 		if (lmp.distance(bmp.center) <= precision) {
-			ribbonMgr.add(ribbon, bpt0, vectorFactory);
+			ribbon.push(bpt0, vectorFactory);
 		} else {
 			this._interpolate(ribbon, curve, t0, midtime, bpt0, bmp, vectorFactory, precision);
 			this._interpolate(ribbon, curve, midtime, t1, bmp, bpt1, vectorFactory, precision);
@@ -722,7 +700,7 @@ function buildSegment(segment, vectorFactory, parentSettings, isClosed, name) {
 	validate.sizedArray(points, '', name, 2);
 
 	// Loop through the builders, creating curves between them
-	const ribbon = ribbonMgr.create();
+	const ribbon = new Ribbon();
 	let lastPoint = null;
 	for (let i = 0; i < builders.length; i++) {
 		lastPoint = executeBuilder(builders[i], ribbon, points[i], points[i+1], vectorFactory);
@@ -730,10 +708,10 @@ function buildSegment(segment, vectorFactory, parentSettings, isClosed, name) {
 
 	// If this is not a closed segment, add the last point to the ribbon
 	if (!isClosed) {
-		ribbonMgr.add(ribbon, lastPoint, vectorFactory, settings);
+		ribbon.push(lastPoint, vectorFactory, settings);
 	}
 
-	return ribbon;
+	return ribbon.ribbon;
 }
 
 function buildTrack(track, vectorFactory, parentSettings) {
