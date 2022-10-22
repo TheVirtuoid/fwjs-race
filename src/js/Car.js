@@ -122,7 +122,8 @@ export default class Car {
 	#addWheel(args = {}) {
 		const { name, scene, position, wheelName, offset, pivot } = args;
 		const { diameter, height } = this.#defaults.wheel;
-		const wheel = MeshBuilder.CreateCylinder(`${name}-wheel-${wheelName}`, { diameter, height }, scene);
+		//const wheel = MeshBuilder.CreateCylinder(`${name}-wheel-${wheelName}`, { diameter, height }, scene);
+		const wheel = MeshBuilder.CreateSphere(`${name}-wheel-${wheelName}`, { diameter }, scene);
 		wheel.material = new StandardMaterial(`${name}-wheelmat-${wheelName}`, scene);
 		wheel.material.diffuseTexture = new Texture("https://i.imgur.com/JbvoYlB.png", scene);
 		wheel.rotation.x = Math.PI / 2;
@@ -150,7 +151,8 @@ export default class Car {
 		wheelBase.physicsImpostor = new PhysicsImpostor(wheelBase, PhysicsImpostor.CylinderImpostor, { mass: wheelBaseMass, friction: 1, restitution: 0 });
 		wheels.forEach((wheelData) => {
 			const { wheel, pivot } = wheelData;
-			wheel.physicsImpostor = new PhysicsImpostor(wheel, PhysicsImpostor.CylinderImpostor, { mass: wheelMass, friction: 1, restitution: 0 });
+			// wheel.physicsImpostor = new PhysicsImpostor(wheel, PhysicsImpostor.CylinderImpostor, { mass: wheelMass, friction: 1, restitution: 0 });
+			wheel.physicsImpostor = new PhysicsImpostor(wheel, PhysicsImpostor.SphereImpostor, { mass: wheelMass, friction: 1, restitution: 0 });
 			const joint = new HingeJoint({
 				mainPivot: pivot,
 				connectedPivot: new Vector3(0, 0, 0),
