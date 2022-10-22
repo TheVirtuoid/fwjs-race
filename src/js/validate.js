@@ -58,7 +58,7 @@ class validate {
 		const value = object[memberName];
 		if (Vector3.is(value)) return value;
 		if (is.number(value)) return trig.normalizeAngle(value);
-		if (is.array(value)) return validate._interpolationArray(object, memberName, objectName);
+		if (is.array(value)) return validate.#interpolationArray(object, memberName, objectName);
 		throw new TypeError(`${objectName}.${memberName} must be a number, 3D vector, or interpolation array`);
 	}
 
@@ -79,7 +79,6 @@ class validate {
 		return memberName.length === 0 ? object : object[memberName];
 	}
 
-/*
 	static #interpolationArray(object, memberName, objectName) {
 		const value = object[memberName];
 		const name = objectName + '.' + memberName;
@@ -111,7 +110,6 @@ class validate {
 		}
 		return result;
 	}
-*/
 
 	static #resolveName(objectName, memberName) {
 		return memberName.length === 0 ? objectName : (objectName + '.' + memberName);
