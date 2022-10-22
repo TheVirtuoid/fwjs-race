@@ -11,6 +11,7 @@ import {
 import ammo from "ammo.js";
 import is from "./is.js";
 import validate from "./validate.js"
+import trig from './trig.js'
 
 const merge = {
 	default: {
@@ -40,35 +41,6 @@ const merge = {
 		{ key: 'trackWidth', validator: validate.positiveNumber },
 		{ key: 'wallHeight', validator: validate.positiveNumber },
 	],
-}
-
-const trig = {
-	_oneZeroTolerance: .0001,
-	_degreeTolerance: .1,
-	clampAt0And1: function(v, tolerance) {
-		if (!is.defined(tolerance)) tolerance = this._oneZeroTolerance;
-		if (Math.abs(v) < tolerance) return 0;
-		if (Math.abs(v - 1) < tolerance) return 1;
-		if (Math.abs(v + 1) < tolerance) return -1;
-		return v;
-	},
-	clampDegrees: function(d, tolerance) {
-		if (!is.defined(tolerance)) tolerance = this._degreeTolerance;
-		if (d < 0) d += 360;
-		if (d < tolerance) return 0;
-		if (Math.abs(d - 90) < tolerance) return 90;
-		if (Math.abs(d - 180) < tolerance) return 180;
-		if (Math.abs(d - 270) < tolerance) return 270;
-		return d;
-	},
-	degreesToRadians: Math.PI / 180,
-	normalizeAngle: function(angle) {
-		let v = angle % 360;
-		if (v > 180) v -= 360;
-		if (v <= -180) v += 360;
-		return v;
-	},
-	radiansToDegrees: 180 / Math.PI,
 }
 
 class Vector {
