@@ -1,6 +1,6 @@
 import is from "./is.js"
 import StaticClassError from './StaticClassError.js'
-//import Vector3 from './Vector3.js'
+import Vector3 from './Vector3.js'
 
 class validate {
 
