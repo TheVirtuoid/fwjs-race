@@ -183,6 +183,7 @@ const merge = {
 		{ key: 'debug' },
 		{ key: 'debugSegments' },
 		{ key: 'altDeclination' },
+		{ key: 'altDeclinationAlgo' },
 		{ key: 'precision', validator: validate.positiveNumber },
 		{ key: 'trackBank', validator: validate.trackBank, },
 		{ key: 'trackWidth', validator: validate.positiveNumber },
@@ -795,7 +796,9 @@ const spiralParser = {
 			specs.exit = new CylindricalCoordinate(specs.exit.radius, endAngle, specs.exit.height);
 		}
 		specs.sweep = sweep;
-		specs.altDeclination = settings.altDeclination;
+		if (is.number(settings.altDeclination)) specs.altDeclination = settings.altDeclination;
+		else if (is.string(settings.altDeclination)) specs.altDeclination = Number(settings.altDeclination);
+		specs.altDeclinationAlgo = is.string(settings.altDeclinationAlgo) ? settings.altDeclinationAlgo : '_getPointForward';
 
 		// Set the trackBank multiplier
 		specs.trackBank = settings.trackBank;

@@ -25,7 +25,7 @@
 		<!-- Virtuoid -->
 		<script src="/js/track-poc.js"></script>
 
-		<style>
+		<style title="ThisIsMe">
 			html, body {
 				overflow: hidden;
 				width: 100%;
@@ -40,10 +40,6 @@
 				touch-action: none;
 			}
 
-			#track-declination {
-				margin-top:5px;
-			}
-
 			#track-selector-box {
 				border: 2px solid blue;
 				border-radius: 1rem;
@@ -53,6 +49,14 @@
 				position: absolute;
 				top: 1rem;
 				left: 1rem;
+			}
+
+			#track-selector-box > * {
+				margin-top: 5px;
+			}
+
+			#track-selector-box > *:first-child {
+				margin-top: 0px;
 			}
 
 			#track-error {
@@ -68,6 +72,8 @@
 				margin-right: -50%;
 				transform: translate(-50%, -50%);
 			}
+
+			.declination {}
 		</style>
 	</head>
 <body>
@@ -78,9 +84,25 @@
 			<select id="trackMembers"></select>
 			<button type="button" id="go">GO!</button>
 		</div>
-		<div id="track-declination">
+		<div>
+			<label>Enable debugging for:</label>
+			<input type="checkbox" id="debugSegments" member="debugSegments"/>
+			<label for="debugSegments">Segments</label>
+			<input type="checkbox" id="debugGeneral" member="debug"/>
+			<label for="debugGeneral">Other</label>
+		</div>
+		<div class="declination">
 			<label for="altDeclination">Set alternate declination:</label>
 			<input type="number" id="altDeclination" step=".01"/>
+			<button type="button" id="altDeclinationClear">Clear</button>
+			<button type="button" id="altDeclinationReset">Reset</button>
+		</div>
+		<div class="declination">
+			<label for="altDeclinationAlgo">Set declination algorithm:</label>
+			<select id="altDeclinationAlgo">
+				<option value="_getPointForward">Default</option>
+				<option value="_getPointForwardTest">Test</option>
+			</select>
 		</div>
 	</div>
 	<div id="track-renderer">
@@ -115,6 +137,8 @@
 				for (let id of disableOnError) {
 					this._disableOnError.push(document.getElementById(id));
 				}
+				debugDisplay.disable();
+				declinationDisplay.disable();
 			},
 
 			_disable: function(disable) {
@@ -125,34 +149,133 @@
 		}
 
 		//======================================================================
-		// ALT DECLINATION MANAGER
+		// DEBUG MANAGER
 
-		const altDeclinationDisplay = {
+		const debugDisplay = {
+
+			disable: function() {
+				for (let elem of this._elements) {
+					elem.element.disabled = true;
+					elem.element.checked = false;
+				}
+			},
+
+			register: function(track) {
+				this._track = track;
+				for (let elem of this._elements) {
+					elem.element.disabled = false;
+					elem.element.checked = track[elem.member];
+				}
+			},
+
+			init: function(debugIds) {
+				for (let id of debugIds) {
+					const elem = document.getElementById(id);
+					if (!elem) throw new Error('Cannot find debug id ' + id);
+					if (!elem.hasAttribute('member')) throw new Error(`Element ${id} must have a 'member' attribute`);
+
+					this._elements.push({ element: elem, member: elem.getAttribute('member')});
+					elem.disabled = true;
+					elem.checked = false;
+					elem.addEventListener("click", (e) => { this._onClick(e) });
+				}
+			},
+
+			_onClick: function(event) {
+				if (this._track) {
+					const checkbox = event.target;
+					const member = checkbox.getAttribute('member')
+					this._track[member] = checkbox.checked;
+					if (checkbox.checked) tracks.createMesh();
+				}
+			},
+
+			_elements: [],
+		}
+
+		//======================================================================
+		// DECLINATION MANAGER
+
+		const declinationDisplay = {
+
+			disable: function(state = true) {
+				if (this._valueInput) {
+					this._valueInput.disable = state;
+					this._resetButton.disable =  state;
+					this._clearButton.disable = state;
+					this._algoSelector.disable = state;
+				}
+			},
 
 			register: function(track) {
 				if (!track || track.altDeclination === null || track.altDeclination === undefined) {
 					this._track = false;
 				} else {
 					this._track = track;
-					this._input.value = track.altDeclination;
-					console.log(this._input.value, track.altDeclination);
+					this._valueInput.value = track.altDeclination;
 				}
-				this._div.style.display = this._track ? "block" : "none";
+
+				this._styleRule.style = "display:" + (this._track ? "block" : "none");
 			},
 
-			init: function(div, input) {
-				this._div = document.getElementById(div);
-				this._input = document.getElementById(input);
-				this._input.addEventListener("change", () => this._onChange());
+			init: function(styleSheetTitle, styleSelector, input) {
+
+				// Find the style sheet
+				for (let sheet of document.styleSheets) {
+					if (styleSheetTitle === sheet.title) {
+						this._styleSheet = sheet;
+						break;
+					}
+				}
+				if (!this._styleSheet) throw new Error('declinateDisplay.init: Cannot find stylesheet ' + styleSheetTitle);
+
+				// Find the rule
+				if (this._styleSheet) {
+					for (let rule of this._styleSheet.cssRules) {
+						if (rule instanceof CSSStyleRule && rule.selectorText === styleSelector) {
+							this._styleRule = rule;
+							break;
+						}
+					}
+					if (!this._styleRule) throw new Error('declinateDisplay.init: Cannot find selector ' + styleSelector);
+				}
+
+				// Find the user input elements
+				this._valueInput = document.getElementById(input);
+				this._valueInput.addEventListener("change", (e) => this._onChangeValue(e));
+				this._resetButton = document.getElementById(input + "Reset");
+				this._resetButton.addEventListener("click", (e) => this._onReset(e));
+				this._clearButton = document.getElementById(input + "Clear");
+				this._clearButton.addEventListener("click", (e) => this._onClear(e));
+				this._algoSelector = document.getElementById(input + "Algo");
+				this._algoSelector.addEventListener("change", (e) => this._onChangeAlgo(e));
+
+				// Trigger the initial display
 				this.register();
 			},
 
-			_onChange: function() {
-				const value = Number(this._input.value);
+			_onChangeAlgo: function(e) {
+				console.log(e);
+				throw new Error('Not implemented');
+			},
+
+			_onChangeValue: function(e) {
+				console.log(e);
+				const value = Number(this._valueInput.value);
 				if (value != this._track.altDeclination) {
 					this._track.altDeclination = value;
-					tracks._createMesh();
+					tracks.createMesh();
 				}
+			},
+
+			_onClear: function(e) {
+				console.log(e);
+				throw new Error('Not implemented');
+			},
+
+			_onReset: function(e) {
+				console.log(e);
+				throw new Error('Not implemented');
 			},
 		}
 
@@ -241,10 +364,11 @@
 				this._mesh = babylon.destroyMesh(this._mesh);
 			},
 			setButton(id) {
-				document.getElementById(id).addEventListener('click', this._drop);
+				document.getElementById(id).addEventListener('click', (e) => { this._drop(e) });
 			},
 
-			_drop: function() {
+			_drop: function(e) {
+				console.log(e);
 				ball.destroy();
 				const {p0, p1} = tracks.getTrackStart();
 				const t = ball._inset;
@@ -315,14 +439,14 @@
 				this._familySelector = document.getElementById(familyId);
 				this._memberSelector = document.getElementById(membersId);
 				this._familySelector.addEventListener("change", () => this._onFamilyChanged());
-				this._memberSelector.addEventListener("change", () => this._createMesh());
+				this._memberSelector.addEventListener("change", () => this._onMemberChanged());
 			},
 			start: function() {
 				if (!this._familySelector || !this._memberSelector) throw "Must invoke setSelectors first";
 				this._onFamilyChanged();
 			},
 
-			_createMesh: function() {
+			createMesh: function() {
 				ball.destroy();
 				for (let mesh of this._meshes) babylon.destroyMesh(mesh);
 				this._meshes.length = 0;
@@ -332,7 +456,8 @@
 					const track = this._tracks[key];
 					const settings = this._options[key] ? this._options[key] : {};
 
-					altDeclinationDisplay.register(track);
+					debugDisplay.register(track);
+					declinationDisplay.register(track);
 
 					const ribbons = TrackPOC.build(track, (u) => { return new BABYLON.Vector3(u.x, u.y, u.z); }, settings);
 					const ribbon = ribbons[0];
@@ -362,6 +487,7 @@
 					errorDisplay.show(e);
 				}
 			},
+
 			_onFamilyChanged: function() {
 				const key = this._familySelector.value;
 				let firstMatch = -1;
@@ -372,8 +498,9 @@
 					if (match && firstMatch === -1) firstMatch = i;
 				}
 				if (firstMatch !== -1) this._memberSelector.selectedIndex = firstMatch;
-				this._createMesh();
+				this.createMesh();
 			},
+			_onMemberChanged: function() { this.createMesh(); },
 
 			_families: {},
 			_meshes: [],
@@ -1321,10 +1448,16 @@
 
 			// Hook DOM elements
 			errorDisplay.init("track-error", "track-error-text", [ "go" ]);
-			altDeclinationDisplay.init("track-declination", "altDeclination");
-			babylon.setCanvas("renderCanvas");
-			tracks.setSelectors("trackFamilies", "trackMembers");
-			ball.setButton("go");
+			try {
+				declinationDisplay.init("ThisIsMe", ".declination", "altDeclination");
+				debugDisplay.init(['debugGeneral', 'debugSegments']);
+				babylon.setCanvas("renderCanvas");
+				tracks.setSelectors("trackFamilies", "trackMembers");
+				ball.setButton("go");
+			} catch (e) {
+				errorDisplay.show(e);
+				throw e;
+			}
 
 			const asyncEngineCreation = async function() {
 				try {
@@ -1352,7 +1485,7 @@
 			}
 		};
 		initFunction().then(() => { babylon.ready() });
-		window.addEventListener("resize", function () { babylon.resize() });
+		window.addEventListener("resize", babylon.resize());
 	</script>
 </body>
 </html>
