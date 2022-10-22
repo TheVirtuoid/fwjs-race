@@ -1,9 +1,10 @@
 import {
 	AmmoJSPlugin, ArcRotateCamera,
-	Engine, FreeCamera,
-	HemisphericLight, Mesh,
-	MeshBuilder, PhysicsImpostor,
-	Scene, SceneLoader,
+	Engine,
+	HemisphericLight,
+	Mesh, MeshBuilder,
+	PhysicsImpostor,
+	Scene,
 	Vector3 as BabylonVector3,
 } from "@babylonjs/core";
 
@@ -1399,7 +1400,9 @@ const declinationDisplay = {
 				break;
 			}
 		}
-		if (!this._styleSheet) throw new Error('declinateDisplay.init: Cannot find stylesheet ' + styleSheetTitle);
+		if (!this._styleSheet) {
+			throw new Error('declinateDisplay.init: Cannot find stylesheet ' + styleSheetTitle);
+		}
 
 		// Find the rule
 		if (this._styleSheet) {
