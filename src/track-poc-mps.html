@@ -19,7 +19,11 @@
 				touch-action: none;
 			}
 
-			#track-selector {
+			#track-declination {
+				margin-top:5px;
+			}
+
+			#track-selector-box {
 				border: 2px solid blue;
 				border-radius: 1rem;
 				background-color: white;
@@ -46,11 +50,17 @@
 		</style>
 	</head>
 <body>
-	<div id="track-selector">
-		<label for="tracks">Choose a track:</label>
-		<select id="trackFamilies"></select>
-		<select id="trackMembers"></select>
-		<button type="button" id="go">GO!</button>
+	<div id="track-selector-box">
+		<div>
+			<label for="trackFamilies">Choose a track:</label>
+			<select id="trackFamilies"></select>
+			<select id="trackMembers"></select>
+			<button type="button" id="go">GO!</button>
+		</div>
+		<div id="track-declination">
+			<label for="altDeclination">Set alternate declination:</label>
+			<input type="number" id="altDeclination" step=".01"/>
+		</div>
 	</div>
 	<div id="track-renderer">
 		<canvas id="renderCanvas"></canvas>

@@ -12,13 +12,18 @@ import {
 import ammo from "ammo.js";
 import {TrackPOC} from "./track-poc-util";
 
-const displayMgr = {
-	clearError: function() {
+
+//======================================================================
+// ERROR DISPLAY MANAGER
+
+const errorDisplay = {
+	clear: function() {
 		this._trackError.style.display = "none";
 		this._disable(false);
 	},
 
-	showError: function(e) {
+	show: function(e) {
+		console.log(e);
 		this._trackError.style.display = "block";
 		this._trackErrorText.innerText = e.toString();
 		this._disable(true);
@@ -36,6 +41,38 @@ const displayMgr = {
 	_disable: function(disable) {
 		for (let element of this._disableOnError) {
 			element.disabled = disable;
+		}
+	},
+}
+
+//======================================================================
+// ALT DECLINATION MANAGER
+
+const altDeclinationDisplay = {
+
+	register: function(track) {
+		if (!track || track.altDeclination === null || track.altDeclination === undefined) {
+			this._track = false;
+		} else {
+			this._track = track;
+			this._input.value = track.altDeclination;
+			console.log(this._input.value, track.altDeclination);
+		}
+		this._div.style.display = this._track ? "block" : "none";
+	},
+
+	init: function(div, input) {
+		this._div = document.getElementById(div);
+		this._input = document.getElementById(input);
+		this._input.addEventListener("change", () => this._onChange());
+		this.register();
+	},
+
+	_onChange: function() {
+		const value = Number(this._input.value);
+		if (value != this._track.altDeclination) {
+			this._track.altDeclination = value;
+			tracks._createMesh();
 		}
 	},
 }
@@ -77,7 +114,7 @@ const babylon = {
 				30,
 				Vector3.Zero());
 		camera.attachControl(this._canvas, true);
-		const light = new HemisphericLight("hemi", new Vector3(0, 50, 0), this._scene);
+		const light = new HemisphericLight("hemi", new Vector3(0, 50, 0));
 		this._scene.enablePhysics(new Vector3(0, -8.91, 0), new AmmoJSPlugin(true, Ammo));
 		return this._scene;
 	},
@@ -198,8 +235,8 @@ const tracks = {
 	setSelectors: function(familyId, membersId) {
 		this._familySelector = document.getElementById(familyId);
 		this._memberSelector = document.getElementById(membersId);
-		this._familySelector.addEventListener("change", () => { this._onFamilyChanged() });
-		this._memberSelector.addEventListener("change", () => { this._createMesh() });
+		this._familySelector.addEventListener("change", () => this._onFamilyChanged());
+		this._memberSelector.addEventListener("change", () => this._createMesh());
 	},
 	start: function() {
 		if (!this._familySelector || !this._memberSelector) throw "Must invoke setSelectors first";
@@ -215,6 +252,8 @@ const tracks = {
 			const key = this._memberSelector.value;
 			const track = this._tracks[key];
 			const settings = this._options[key] ? this._options[key] : {};
+
+			altDeclinationDisplay.register(track);
 
 			const ribbons = TrackPOC.build(track, (u) => { return new Vector3(u.x, u.y, u.z); }, settings);
 			const ribbon = ribbons[0];
@@ -239,9 +278,9 @@ const tracks = {
 			for (let i = 0; i < ribbons.length; i++) {
 				tracks._meshes.push(babylon.createRibbon(`Segment${i}`, ribbons[i], track.closed, { mass: 0 }));
 			}
-			displayMgr.clearError();
+			errorDisplay.clear();
 		} catch (e) {
-			displayMgr.showError(e);
+			errorDisplay.show(e);
 		}
 	},
 	_onFamilyChanged: function() {
@@ -583,7 +622,7 @@ const defineTracks = function() {
 	});
 	tracks.register({
 		sibling: track2,
-		member: "Using spiral",
+		member: "Using spiral (cheat -.1)",
 		track: {
 			segments: [ jump.launchSegment, {
 				points: [
@@ -600,6 +639,8 @@ const defineTracks = function() {
 					jump.runout
 				],
 			}],
+			debug: true,
+			altDeclination: -.1,
 		},
 	});
 	tracks.register({
@@ -950,29 +991,61 @@ const defineTracks = function() {
 
 	const track6 = tracks.register({
 		family: 'Helix',
-		member: 'Left 360&#176; 4 turns',
-		track: { segments: [ { points: [
-					{
-						type: 'spiral',
-						startsAt: {
-							center: {
-								x: 0,
-								y: 10,
-								z: 0,
+		member: 'Left 360&#176; 4 turns (alt -.1)',
+		track: {
+			segments: [
+				{
+					points: [
+						{
+							type: 'spiral',
+							startsAt: {
+								center: { x: 0, y: 10, z: 0, },
+								forward: posX,
 							},
-							forward: posX,
+							endsAt: {
+								center: zero,
+								forward: posX,
+							},
+							rotate: 'left',
+							turns: 4,
+							center: { x:0, y:0, z:4 },
 						},
-						endsAt: {
-							center: zero,
-							forward: posX,
-						},
-						rotate: 'left',
-						turns: 4,
-						center: { x:0, y:0, z:4 },
-					},
-				]}]},
+					],
+				}
+			],
+			debug: true,
+			altDeclination: -.1,
+		},
 	});
 	tracks.register({
+		sibling: track6,
+		member: 'Left 360&#176; 1 turn (cheat -0.06)',
+		track: {
+			segments: [
+				{
+					points: [
+						{
+							type: 'spiral',
+							startsAt: {
+								center: { x: 0, y: 2, z: 0, },
+								forward: posX,
+							},
+							endsAt: {
+								center: zero,
+								forward: posX,
+							},
+							rotate: 'left',
+							turns: 1,
+							center: { x:0, y:0, z:4 },
+						},
+					],
+				}
+			],
+			debug: true,
+			altDeclination: -0.06,
+		},
+	});
+	const track6r = tracks.register({
 		sibling: track6,
 		member: 'Right 360&#176; 4 turns',
 		init() {
@@ -989,8 +1062,175 @@ const defineTracks = function() {
 								y:-p.center.y,
 								z:-p.center.z
 							},
+						}
+					]}],};
+		},
+	});
+	tracks.register({
+		sibling: track6,
+		member: 'Right 360&#176; 4 turns, 12 high',
+		init() {
+			const p = track6r.track.segments[0].points[0];
+			this.track = { segments: [ { points: [
+						{
+							type: 'spiral',
+							startsAt: {
+								center: {x: p.startsAt.center.x, y: p.startsAt.center.y + 2, z: p.startsAt.center.z},
+								forward: p.startsAt.forward
+							},
+							endsAt: p.endsAt,
+							rotate: p.rotate,
+							turns: p.turns,
+							center: p.center,
+						}
+					]}],};
+		},
+	});
+	tracks.register({
+		sibling: track6,
+		member: 'Left 360&#176; 4 turns up',
+		init() {
+			const p = track6.track.segments[0].points[0];
+			this.track = { segments: [ { points: [
+						{
+							type: 'spiral',
+							startsAt: p.endsAt,
+							endsAt: p.startsAt,
+							rotate: p.rotate,
+							turns: p.turns,
+							center: p.center,
+						}
+					]}],};
+		},
+	});
+	tracks.register({
+		sibling: track6,
+		member: 'Left 90&#176; 6 turns',
+		track: { segments: [ { points: [
+					{
+						type: 'spiral',
+						startsAt: {
+							center: { x: 4, y: 10, z: 0, },
+							forward: posZ,
 						},
-					]}]};
+						endsAt: {
+							center: { x: 0, y: 0, z: 4, },
+							forward: negX,
+						},
+						rotate: 'left',
+						turns: 6,
+					}
+				]}],},
+	});
+	tracks.register({
+		sibling: track6,
+		member: 'Right 180&#176; 6 turns',
+		track: { segments: [ { points: [
+					{
+						type: 'spiral',
+						startsAt: {
+							center: { x: -4, y: 10, z: 0, },
+							forward: posZ,
+						},
+						endsAt: {
+							center: { x: 4, y: 0, z: 0, },
+							forward: negZ,
+						},
+						rotate: 'right',
+						turns: 6,
+					}
+				]}],},
+	});
+	tracks.register({
+		sibling: track6,
+		member: 'Left 270&#176; 6 turns',
+		track: { segments: [ { points: [
+					{
+						type: 'spiral',
+						startsAt: {
+							center: { x: 4, y: 10, z: 0, },
+							forward: posZ,
+						},
+						endsAt: {
+							center: { x: 0, y: 0, z: -4, },
+							forward: posX,
+						},
+						rotate: 'left',
+						turns: 6,
+					}
+				]}],},
+	});
+	tracks.register({
+		sibling: track6,
+		member: 'Right 315&#176; 6 turns (a)',
+		track: {
+			segments: [{
+				points: [{
+					type: 'spiral',
+					startsAt: {
+						center: { x: -4, y: 10, z: 0, },
+						forward: posZ,
+					},
+					endsAt: {
+						forward: { x: -1, y: 0, z: 1 },
+					},
+					rotate: 'right',
+					turns: 6,
+				}]
+			}],
+			debug:true,
+		},
+		init() {
+			const theta = (180 + 45) * Math.PI / 180;
+			const p = this.track.segments[0].points[0];
+			p.endsAt.center = { x: 4 * Math.cos(theta), y: 0, z: 4 * Math.sin(theta) };
+		},
+	});
+	tracks.register({
+		sibling: track6,
+		member: 'Right 315&#176; 6 turns (b)',
+		track: {
+			segments: [{
+				points: [
+					{
+						type: 'spiral',
+						startsAt: {
+							center: { x: -4, y: 10, z: 0, },
+							forward: posZ,
+						},
+						rotate: 'right',
+						turns: 6,
+					},
+					{
+						type: 'spiral',
+						endsAt: {
+							forward: { x: -1, y: 0, z: 1 },
+						},
+						rotate: 'right',
+					},
+				]
+			}],
+			debug:true,
+		},
+		init() {
+			const radius = 4;
+
+			const p0 = this.track.segments[0].points[0];
+			const p1 = this.track.segments[0].points[1];
+
+			const wholeSweep = 315 + 360 * p0.turns;
+			const p1Sweep = 90;
+			const descent = p1Sweep / wholeSweep;
+
+			const theta0 = -45 * Math.PI / 180;
+			const radial0 = { x: Math.cos(theta0), y: 0, z: Math.sin(theta0) }
+			p0.endsAt = {
+				center: { x: radius * radial0.x, y: descent * p0.startsAt.center.y, z: radius * radial0.z },
+				forward: { x: -1, y: -1 / wholeSweep, z: -1},
+			}
+
+			const theta1 = -135 * Math.PI / 180;
+			p1.endsAt.center = { x: radius * Math.cos(theta1), y: 0, z: radius * Math.sin(theta1) };
 		},
 	});
 }
@@ -1001,7 +1241,8 @@ const defineTracks = function() {
 window.initFunction = async function() {
 
 	// Hook DOM elements
-	displayMgr.init("track-error", "track-error-text", [ "go" ]);
+	errorDisplay.init("track-error", "track-error-text", [ "go" ]);
+	altDeclinationDisplay.init("track-declination", "altDeclination");
 	babylon.setCanvas("renderCanvas");
 	tracks.setSelectors("trackFamilies", "trackMembers");
 	ball.setButton("go");
@@ -1028,10 +1269,8 @@ window.initFunction = async function() {
 		defineTracks();
 		tracks.start();
 	} catch (e) {
-		displayMgr.showError(e);
+		errorDisplay.show(e);
 	}
 };
-
-
 initFunction().then(() => { babylon.ready() });
 window.addEventListener("resize", function () { babylon.resize() });
