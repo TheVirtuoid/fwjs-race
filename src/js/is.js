@@ -1,48 +1,49 @@
-const is = {
-	array: function(value) {
+class is {
+	static array(value) {
 		return this.object(value) && this.instance(value, 'Array');
-	},
-	boolean: function(value) {
+	}
+	static boolean(value) {
 		return typeof(value) === 'boolean';
-	},
-	default: function(value) {
+	}
+	static default(value) {
 		return value === null || value === undefined;
-	},
-	defined: function(value) {
+	}
+	static defined(value) {
 		return value !== null && value !== undefined;
-	},
-	function: function(value) {
+	}
+	static function(value) {
 		return typeof(value) === 'function';
-	},
-	instance: function(value, className) {
+	}
+	static instance(value, className) {
 		return value.constructor.toString().indexOf(className) > -1;
-	},
-	integer: function(value) {
+	}
+	static integer(value) {
 		return Number.isInteger(value);
-	},
-	number: function(value) {
+	}
+	static number(value) {
 		return typeof(value) === 'number';
-	},
-	object: function(value) {
+	}
+	static object(value) {
 		return typeof(value) === 'object';
-	},
-	positiveNumber: function(value) {
+	}
+	static positiveNumber(value) {
 		return this.number(value) && value > 0;
-	},
-	string: function(value) {
+	}
+	static string(value) {
 		return typeof(value) === 'string';
-	},
-	vector: function(value, coords) {
+	}
+	static vector(value, coords) {
 		if (!this.object(value)) return false;
 		for (let coord of coords) {
 			if (!this.number(value[coord])) return false;
 		}
 		return true;
-	},
-	vector3: function(value) {
-		return this.vector(value, this._coords3);
-	},
-	_coords3: ['x', 'y', 'z'],
+	}
+	static vector3(value) {
+		return this.vector(value, is.#coords3);
+	}
+
+	static #coords3 = ['x', 'y', 'z'];
 }
 
 export default is;
