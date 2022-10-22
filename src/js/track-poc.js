@@ -1,5 +1,5 @@
 
-const is = {
+export const is = {
 	array: function(value) {
 		return is.object(value) && is.instance(value, 'Array');
 	},
@@ -46,7 +46,7 @@ const is = {
 	_coords3: ['x', 'y', 'z'],
 }
 
-const validate = {
+export const validate = {
 	boolean: function(object, memberName, objectName, defaultValue) {
 		const value = object[memberName];
 		if (is.default(value)) return defaultValue;
@@ -161,7 +161,7 @@ const validate = {
 	},
 }
 
-const merge = {
+export const merge = {
 	default: {
 		precision: .01,
 		trackBank: 0,
@@ -188,7 +188,7 @@ const merge = {
 	],
 }
 
-const trig = {
+export const trig = {
 	_oneZeroTolerance: .0001,
 	_degreeTolerance: .1,
 	clampAt0And1: function(v, tolerance) {
@@ -217,7 +217,7 @@ const trig = {
 	radiansToDegrees: 180 / Math.PI,
 }
 
-const vector = {
+export const vector = {
 	_defaultTolerance: 0.0001,
 	add: function(u, k, v) {
 		return {
@@ -303,7 +303,7 @@ const vector = {
 	zero: { x:0, y:0, z:0 },
 };
 
-const plane = {
+export const plane = {
 	_defaultTolerance: 0.95,
 	contains: function(plane, vertex, tolerance) {
 		if (!is.defined(tolerance)) tolerance = this._defaultTolerance;
@@ -420,7 +420,7 @@ const plane = {
 	},
 }
 
-const ribbonMgr = {
+export const ribbonMgr = {
 
 	// A ribbon is an array of four arrays of vectors representing the [0] left
 	// wall top, [1] left road edge, [2] right road edge, and [3] right wall
@@ -443,7 +443,7 @@ const ribbonMgr = {
 	},
 }
 
-const bezier = {
+export const bezier = {
 
 	build: function(ribbon, sp0, sp1, vectorFactory, precision) {
 
@@ -557,7 +557,7 @@ const bezier = {
 	},
 }
 
-const pointParser = {
+export const pointParser = {
 
 	parse: function(builders, points, rawPoint, parentSettings, name) {
 		const point = this.validate(rawPoint, parentSettings, name);
@@ -591,7 +591,7 @@ const pointParser = {
 	}
 }
 
-const spiralParser = {
+export const spiralParser = {
 
 	/*--------------------------------------------------------------------------
 	THEORETICAL FOUNDATION
@@ -959,7 +959,7 @@ const spiralParser = {
 	},
 }
 
-const straightParser = {
+export const straightParser = {
 
 	parse: function(builders, points, rawStraight, parentSettings, name) {
 
@@ -1040,7 +1040,7 @@ const straightParser = {
 	}
 }
 
-const sectionParser = {
+export const sectionParser = {
 
 	parse: function(builders, points, rawPoint, parentSettings, name) {
 
@@ -1065,17 +1065,17 @@ const sectionParser = {
 	},
 }
 
-function createBuilder(settings) {
+export function createBuilder(settings) {
 	return {
 		precision: settings.precision
 	}
 }
 
-function executeBuilder(builder, ribbon, sp0, sp1, vectorFactory) {
+export function executeBuilder(builder, ribbon, sp0, sp1, vectorFactory) {
 	return bezier.build(ribbon, sp0, sp1, vectorFactory, builder.precision);
 }
 
-function buildSegment(segment, vectorFactory, parentSettings, isClosed, name) {
+export function buildSegment(segment, vectorFactory, parentSettings, isClosed, name) {
 
 	// Segment must be an object
 	validate.object(segment, name);
@@ -1115,7 +1115,7 @@ function buildSegment(segment, vectorFactory, parentSettings, isClosed, name) {
 	return ribbon;
 }
 
-function buildTrack(track, vectorFactory, parentSettings) {
+export function buildTrack(track, vectorFactory, parentSettings) {
 
 	// Create settings
 	const settings = merge.settings(parentSettings, track, 'track');
@@ -1149,7 +1149,7 @@ function buildTrack(track, vectorFactory, parentSettings) {
 //					v = vectorFactory(u) where u has keys x, y, z.
 // settings			application settings for the build
 
-const TrackPOC = {
+export const TrackPOC = {
 
 	build: function(specs, vectorFactory, appSettings = {}) {
 
