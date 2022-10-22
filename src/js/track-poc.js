@@ -13,39 +13,7 @@ import ammo from "ammo.js";
 import { TrackPOC } from './Builder.js'
 import Vector3 from './Vector3.js'
 
-//======================================================================
-// ERROR DISPLAY MANAGER
-
-const errorDisplay = {
-	clear: function() {
-		this._trackError.style.display = "none";
-		this._disable(false);
-	},
-
-	show: function(e) {
-		console.log(e);
-		this._trackError.style.display = "block";
-		this._trackErrorText.innerText = e.toString();
-		this._disable(true);
-	},
-
-	init: function(div, text, disableOnError = []) {
-		this._trackError = document.getElementById(div);
-		this._trackErrorText = document.getElementById(text);
-		this._disableOnError = [];
-		for (let id of disableOnError) {
-			this._disableOnError.push(document.getElementById(id));
-		}
-		debugDisplay.disable();
-		declinationDisplay.disable();
-	},
-
-	_disable: function(disable) {
-		for (let element of this._disableOnError) {
-			element.disabled = disable;
-		}
-	},
-}
+import ErrorDisplay from './ErrorDisplay.js'
 
 //======================================================================
 // DEBUG MANAGER
@@ -385,7 +353,7 @@ const tracks = {
 			}
 			errorDisplay.clear();
 		} catch (e) {
-			errorDisplay.show(e);
+			errorDisplay.showError(e);
 		}
 	},
 
@@ -1340,15 +1308,39 @@ const defineTracks = function() {
 			p1.endsAt.center = { x: radius * Math.cos(theta1), y: 0, z: radius * Math.sin(theta1) };
 		},
 	});
+	const trackError = tracks.register({
+		family: 'Error',
+		member: 'Section name',
+		track: {
+			segments: [
+				{
+					points: [
+						{
+							type: 'oops',
+						},
+					],
+				}
+			],
+			altDeclination: -0.06,
+		},
+	});
 }
 
 //======================================================================
 // WINDOW INITIALIZATION
 
+let errorDisplay;
+
 window.initFunction = async function() {
 
 	// Hook DOM elements
-	errorDisplay.init("track-error", "track-error-text", [ "go" ]);
+	errorDisplay = new ErrorDisplay(
+		'track-error', 'track-error-text',
+		'go',	// Disable ids
+		[		// Disable functions
+			(v) => debugDisplay.disable(v),
+			(v) => declinationDisplay.disable(v)
+		]);
 	try {
 		declinationDisplay.init("ThisIsMe", ".declination", "altDeclination");
 		debugDisplay.init(['debugGeneral', 'debugSegments']);
@@ -1382,7 +1374,7 @@ window.initFunction = async function() {
 		defineTracks();
 		tracks.start();
 	} catch (e) {
-		errorDisplay.show(e);
+		errorDisplay.showError(e);
 	}
 };
 initFunction().then(() => { babylon.ready() });
