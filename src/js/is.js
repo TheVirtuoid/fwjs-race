@@ -1,4 +1,11 @@
+import StaticClassError from './StaticClassError.js';
+
 class is {
+
+	constructor() {
+		throw new StaticClassError('is');
+	}
+
 	static array(value) {
 		return this.object(value) && this.instance(value, 'Array');
 	}
