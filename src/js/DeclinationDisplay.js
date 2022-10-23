@@ -7,7 +7,8 @@ class DeclinationDisplay {
 	#createMesh;
 	#resetButton;
 	#resetValue;
-	#rule;
+	// #rule;
+	#styleSelectorElements;
 	#track;
 	#valueInput;
 
@@ -15,8 +16,16 @@ class DeclinationDisplay {
 
 		this.#createMesh = createMesh;
 
+		/*
+			Instead of changing the style within the stylesheet, we can get all element instances of the styleSelector
+			and apply the hidden class to each when we need it.
+
+			Therefore, I have replaced #rule with #styleSelectorElements;
+
+		 */
+		this.#styleSelectorElements = document.querySelectorAll(styleSelector);
 		// Find the style sheet
-		let targetSheet;
+		/*let targetSheet;
 		for (let sheet of document.styleSheets) {
 			if (styleSheetTitle === sheet.title) {
 				targetSheet = sheet;
@@ -32,7 +41,7 @@ class DeclinationDisplay {
 				break;
 			}
 		}
-		if (!this.#rule) throw new Error('Cannot find selector ' + styleSelector);
+		if (!this.#rule) throw new Error('Cannot find selector ' + styleSelector);*/
 
 		// Find the user input elements
 		this.#valueInput = document.getElementById(input);
@@ -52,7 +61,8 @@ class DeclinationDisplay {
 		}
 
 		this.#track = false;
-		this.#rule.style.display = "none";
+		this.#styleSelectorElements.forEach((element) => element.classList.add('hidden'));
+		// this.#rule.style.display = "none";
 	}
 
 	disable(state) {
@@ -89,10 +99,12 @@ class DeclinationDisplay {
 				algo = 0;
 			}
 			this.#algoSelector.selectedIndex = algo;
-			this.#rule.style.display = "block";
+			this.#styleSelectorElements.forEach((element) => element.classList.remove('hidden'));
+			// this.#rule.style.display = "block";
 		} else {
 			this.#track = false;
-			this.#rule.style.display = "none";
+			this.#styleSelectorElements.forEach((element) => element.classList.add('hidden'));
+			// this.#rule.style.display = "none";
 		}
 	}
 
