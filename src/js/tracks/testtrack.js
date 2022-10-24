@@ -8,7 +8,16 @@ const posZ = Vector3.forward;
 const negZ = Vector3.backward;
 const zero = Vector3.zero;
 
-export function testtrack(tracks) {
+const radiusType = new Map([
+		['tight', 2],
+		['normal', 4],
+		['wide', 8]
+])
+
+const trackWidth = 2;
+const trackRadius = trackWidth * radiusType.get('wide');
+
+export function testTrack(tracks) {
 
 	// See https://spencermortensen.com/articles/bezier-circle/
 	// If we want a closer approximation, we would need to break the
@@ -25,7 +34,7 @@ export function testtrack(tracks) {
 			center: { x:20 , y:15, z:0 }
 		},
 		end: {
-			center: { x:18, y:13, z:0 },
+			center: { x:18, y:13, z:0 }
 		},
 
 		init: function() {
@@ -39,7 +48,8 @@ export function testtrack(tracks) {
 				type: 'straight',
 				endsAt: this.end.center,
 				startsAt: this.start.center,
-				forwardWeight: 1.1
+				forwardWeight: 1.1,
+				trackWidth
 			};
 		},
 	}
@@ -54,10 +64,11 @@ export function testtrack(tracks) {
 					center: { x:0, y:1, z:0 },
 					forward: negX,
 					backwardWeight: 4,
+					trackWidth
 				},
 			],
 		},
-		radius: 8,
+		radius: trackRadius,
 
 		_catchDrop: 0,
 		_gap: 0,
@@ -71,6 +82,7 @@ export function testtrack(tracks) {
 					z: launchEnd.center.z,
 				},
 				forward: negX,
+				trackWidth
 			}
 			this.catchEnd = {
 				center: {
@@ -79,10 +91,12 @@ export function testtrack(tracks) {
 					z: this.catchStart.center.z
 				},
 				forward: negX,
+				trackWidth
 			}
 			this.runout = {
 				type: 'straight',
 				length: 2 * this.radius,
+				trackWidth
 			}
 		},
 	}
@@ -105,27 +119,31 @@ export function testtrack(tracks) {
 		curveEnd: {
 			backwardWeight: circleWeight * jump.radius,
 			forward: posZ,
+			trackWidth
 		},
 		curveLeft: {
 			backwardWeight: circleWeight * jump.radius,
 			forward: posX,
 			forwardWeight: circleWeight * jump.radius,
+			trackWidth
 		},
 		curveStart: {
 			center: jump.catchEnd.center,
 			forward: jump.catchEnd.forward,
 			forwardWeight: circleWeight * jump.radius,
+			trackWidth
 		},
 		curveTop: {
 			backwardWeight: circleWeight * jump.radius,
 			forward: negZ,
 			forwardWeight: circleWeight * jump.radius,
+			trackWidth
 		},
 
 		init: function() {
 			this.curveTop.center = {
 				x: this.curveStart.center.x - jump.radius,
-				y: this.curveStart.center.y - jump.descent / 4,
+				y: this.curveStart.center.y - jump.descent * 2,
 				z: this.curveStart.center.z - jump.radius,
 			}
 			this.curveLeft.center = {
@@ -167,6 +185,7 @@ export function testtrack(tracks) {
 						forward: track2.curveStart.forward,
 						forwardWeight: track2.curveStart.forwardWeight,
 						trackBank: 10,
+						trackWidth
 					},
 					{
 						backwardWeight: track2.curveTop.backwardWeight,
@@ -174,6 +193,7 @@ export function testtrack(tracks) {
 						forward: track2.curveTop.forward,
 						forwardWeight: track2.curveTop.forwardWeight,
 						trackBank: 45,
+						trackWidth
 					},
 /*					{
 						backwardWeight: track2.curveLeft.backwardWeight,
@@ -181,12 +201,14 @@ export function testtrack(tracks) {
 						forward: track2.curveLeft.forward,
 						forwardWeight: track2.curveLeft.forwardWeight,
 						trackBank: 45,
+						trackWidth
 					},
 					{
 						backwardWeight: track2.curveEnd.backwardWeight,
 						center: track2.curveEnd.center,
 						forward: track2.curveEnd.forward,
 						trackBank: 10,
+						trackWidth
 					},*/
 					jump.runout
 				],
@@ -206,6 +228,7 @@ export function testtrack(tracks) {
 						endsAt: {
 							center: track2.curveEnd.center,
 							forward: track2.curveEnd.forward,
+							trackWidth
 						},
 						rotate: 'left',
 					},
@@ -231,6 +254,7 @@ export function testtrack(tracks) {
 						},
 						rotate: 'left',
 						trackBank: parametricBank,
+						trackWidth
 					},
 					jump.runout
 				],

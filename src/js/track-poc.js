@@ -9,6 +9,7 @@ import TrackDisplay from './TrackDisplay.js'
 
 import Ball from './Ball.js'
 import { defineTracks } from './defineTracks.js'
+import {testTrack} from "./tracks/testtrack";
 
 //======================================================================
 // WINDOW INITIALIZATION
@@ -73,6 +74,7 @@ window.initFunction = async function() {
 	// Get tracks
 	try {
 		defineTracks(trackDisplay);
+		testTrack(trackDisplay);
 		trackDisplay.start();
 	} catch (e) {
 		errorDisplay.showError(e);
