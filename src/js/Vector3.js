@@ -1,5 +1,6 @@
 import is from './is.js'
 import Vector from './Vector.js'
+import trig from "./trig";
 
 class Vector3 extends Vector {
 
