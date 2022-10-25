@@ -1,6 +1,6 @@
 import {
-	AmmoJSPlugin, ArcRotateCamera,
-	Engine,
+	AmmoJSPlugin, ArcFollowCamera, ArcRotateCamera,
+	Engine, FollowCamera,
 	HemisphericLight,
 	Mesh, MeshBuilder,
 	PhysicsImpostor,
@@ -16,6 +16,7 @@ class BabylonAdaptor {
 	#engine;
 	#ready;
 	#scene;
+	#camera;
 
 	createDefaultEngine() {
 		if (!this.#canvas) throw new Error("Must invoke setCanvas first");
@@ -45,15 +46,15 @@ class BabylonAdaptor {
 		if (!this.#canvas) throw new Error("Must invoke setCanvas first");
 		if (!this.#engine) throw new Error("Must invoke createDefaultEngine first");
 		this.#scene = new Scene(this.#engine);
-		const camera = new ArcRotateCamera(
-			"Camera",
-			3 * Math.PI / 2,
-			3 * Math.PI / 8,
-			30,
-			Vector3.Zero());
-		camera.attachControl(this.#canvas, true);
+		const camera = new FollowCamera('follow-camera', new Vector3(20, 15, 0), this.#scene);
+		camera.heightOffset = 10;
+		camera.radius = 1;
+		camera.rotationOffset = 0;
+		camera.cameraAcceleration = 0.005;
+		camera.maxCameraSpeed = 10;
 		const light = new HemisphericLight("hemi", new Vector3(0, 50, 0));
 		this.#scene.enablePhysics(new Vector3(0, -8.91, 0), new AmmoJSPlugin());
+		this.#camera = camera;
 		return this.#scene;
 	}
 
@@ -87,6 +88,10 @@ class BabylonAdaptor {
 	resize() { if (this.#engine) this.#engine.resize(); }
 
 	setCanvas(id) { this.#canvas = document.getElementById(id); }
+
+	get camera () {
+		return this.#camera;
+	}
 
 	startRenderLoop() {
 		if (!this.#engine) throw new Error("Must invoke createDefaultEngine first");

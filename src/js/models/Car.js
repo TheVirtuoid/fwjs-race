@@ -44,6 +44,9 @@ export default class Car {
 	#wheelParameters;
 	#defaults;
 	#built;
+	#position;
+	#name;
+	#color;
 
 	constructor(args = {}) {
 		const { scale = 1 } = args;
@@ -75,21 +78,26 @@ export default class Car {
 	}
 
 	build (args = {}) {
-		const { scene, position, name, color } = args;
 		if (!this.#built) {
-			let wheelBase = this.#addWheelBase({ scene, position, name });
-			let wheels = this.#wheelParameters.map((wheel) => {
-				const { wheelName, offset, pivot } = wheel;
-				return this.#addWheel({ name, scene, position, wheelName, offset, pivot });
-			});
-			let chassis = this.#addChassis({ name, scene, position, color });
-			wheelBase.addChild(chassis);
-			({ wheelBase, wheels, chassis } = this.#setPhysics({ wheelBase, wheels, chassis }));
-			this.#chassis = chassis;
-			this.#wheelBase = wheelBase;
-			this.#wheels = wheels;
-			this.#scene = scene;
-			this.#built = true;
+			const { scene: inScene, position: inPosition, name: inName, color: inColor } = args;
+			this.#scene = inScene ?? this.#scene;
+			this.#position = inPosition ?? this.#position;
+			this.#name = inName ?? this.#name;
+			this.#color = inColor ?? this.#color;
+			const [scene, position, name, color] = [this.#scene, this.#position, this.#name, this.#color];
+				let wheelBase = this.#addWheelBase({ scene, position, name });
+				let wheels = this.#wheelParameters.map((wheel) => {
+					const { wheelName, offset, pivot } = wheel;
+					return this.#addWheel({ name, scene, position, wheelName, offset, pivot });
+				});
+				let chassis = this.#addChassis({ name, scene, position, color });
+				wheelBase.addChild(chassis);
+				({ wheelBase, wheels, chassis } = this.#setPhysics({ wheelBase, wheels, chassis }));
+				this.#chassis = chassis;
+				this.#wheelBase = wheelBase;
+				this.#wheels = wheels;
+				this.#scene = scene;
+				this.#built = true;
 		}
 	}
 
@@ -108,6 +116,15 @@ export default class Car {
 			this.#built = false;
 		}
 	}
+
+	get chassis () {
+		return this.#chassis;
+	}
+
+	get height () {
+		return defaults.wheel.height * this.#scale;
+	}
+
 
 	#scaleVector3(vector) {
 		const x = vector.x * this.#scale;

@@ -14,7 +14,7 @@ const radiusType = new Map([
 		['wide', 8]
 ])
 
-const trackWidth = 2;
+const trackWidth = 3;
 const trackRadius = trackWidth * radiusType.get('wide');
 
 export function testTrack(tracks) {
@@ -114,7 +114,8 @@ export function testTrack(tracks) {
 	// Left turn ramp
 
 	const track2 = tracks.register({
-		family: "Test Track",
+		trackId: 'test-track',
+		family: 'Test Track',
 
 		curveEnd: {
 			backwardWeight: circleWeight * jump.radius,

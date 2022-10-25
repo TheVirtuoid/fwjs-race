@@ -1,3 +1,5 @@
+import {Vector3} from "@babylonjs/core";
+
 class Ball {
 
 	// Allow the use to override
@@ -22,7 +24,6 @@ class Ball {
 
 	#drop() {
 		this.destroy();
-
 		const {p0, p1} = this.#tracks.getTrackStart();
 		const t = Ball.inset;
 		const olt = 1 - t;
@@ -33,6 +34,9 @@ class Ball {
 		this.#mesh.position.x = p0.x * t + p1.x * olt;
 		this.#mesh.position.y = p0.y * t + p0.y * olt + Ball.height;
 		this.#mesh.position.z = p0.z * t + p1.z * olt;
+		const { x, y, z } = this.#mesh.position;
+		// this.#gameEngine.camera.setTarget(new Vector3(x, y, z));
+		this.#gameEngine.camera.lockedTarget = this.#mesh;
 	}
 }
 
