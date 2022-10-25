@@ -49,7 +49,6 @@ export function testTrack(tracks) {
 				endsAt: this.end.center,
 				startsAt: this.start.center,
 				forwardWeight: 1.1,
-				trackWidth
 			};
 		},
 	}
@@ -64,7 +63,6 @@ export function testTrack(tracks) {
 					center: { x:0, y:1, z:0 },
 					forward: negX,
 					backwardWeight: 4,
-					trackWidth
 				},
 			],
 		},
@@ -77,12 +75,12 @@ export function testTrack(tracks) {
 			const launchEnd = this.launchSegment.points[this.launchSegment.points.length - 1];
 			this.catchStart = {
 				center: {
-					x: launchEnd.center.x,
-					y: launchEnd.center.y,
+					x: launchEnd.center.x - this.descent / 4,
+					y: launchEnd.center.y - this.descent / 4,
 					z: launchEnd.center.z,
 				},
 				forward: negX,
-				trackWidth
+				backwardWeight: 3,
 			}
 			this.catchEnd = {
 				center: {
@@ -91,12 +89,10 @@ export function testTrack(tracks) {
 					z: this.catchStart.center.z
 				},
 				forward: negX,
-				trackWidth
 			}
 			this.runout = {
 				type: 'straight',
 				length: 2 * this.radius,
-				trackWidth
 			}
 		},
 	}
@@ -120,25 +116,21 @@ export function testTrack(tracks) {
 		curveEnd: {
 			backwardWeight: circleWeight * jump.radius,
 			forward: posZ,
-			trackWidth
 		},
 		curveLeft: {
 			backwardWeight: circleWeight * jump.radius,
 			forward: posX,
 			forwardWeight: circleWeight * jump.radius,
-			trackWidth
 		},
 		curveStart: {
 			center: jump.catchEnd.center,
 			forward: jump.catchEnd.forward,
 			forwardWeight: circleWeight * jump.radius,
-			trackWidth
 		},
 		curveTop: {
 			backwardWeight: circleWeight * jump.radius,
 			forward: negZ,
 			forwardWeight: circleWeight * jump.radius,
-			trackWidth
 		},
 
 		init: function() {
@@ -159,9 +151,10 @@ export function testTrack(tracks) {
 			}
 			this.track = {
 				segments: [
-					jump.launchSegment,
 					{
 						points: [
+							launch.start,
+							launch.end,
 							jump.catchStart,
 							this.curveStart,
 							this.curveTop,
@@ -171,6 +164,7 @@ export function testTrack(tracks) {
 						],
 					},
 				],
+				options: { trackWidth: trackWidth },
 			}
 		},
 	});
