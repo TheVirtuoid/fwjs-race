@@ -1,4 +1,4 @@
-export default class CarOperation {
+export default class CarController {
 
 	#car
 	#gameEngine;

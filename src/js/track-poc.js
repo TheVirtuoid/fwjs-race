@@ -10,6 +10,8 @@ import TrackDisplay from './TrackDisplay.js'
 import Ball from './Ball.js'
 import { defineTracks } from './defineTracks.js'
 import {testTrack} from "./tracks/testtrack";
+import Car from "./models/Car";
+import {Color3} from "@babylonjs/core";
 
 //======================================================================
 // WINDOW INITIALIZATION
@@ -22,6 +24,8 @@ function registerCallback(track) {
 	debugDisplay.register(track);
 	declinationDisplay.register(track);
 }
+
+const car = new Car({ scale: .1, name: 'Greeny', color: new Color3.Green() });
 
 window.initFunction = async function() {
 

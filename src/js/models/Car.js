@@ -49,8 +49,12 @@ export default class Car {
 	#color;
 
 	constructor(args = {}) {
-		const { scale = 1 } = args;
+		const { scale = 1, scene, position, name, color } = args;
 		this.#scale = scale;
+		this.#scene = scene;
+		this.#position = position;
+		this.#name = name;
+		this.#color = color;
 		this.#wheelParameters = wheelParameters.map((wheelParameter) => {
 			let { wheelName, offset, pivot } = wheelParameter;
 			return { wheelName, offset: this.#scaleVector3(offset), pivot: this.#scaleVector3(pivot) };
