@@ -283,8 +283,9 @@ class spiralParser {
 		p.trackBank = this.#processInterpolationArray(specs.trackBank, 0, specs.trackBankMultiplier);
 
 		// Add the 90° points
-		for (let angle = 90; angle < specs.sweep; angle += 90) {
-			this.#addPoint(builders, points, angle / specs.sweep, specs, rawSpiral, parentSettings, name);
+		const parts = Math.ceil(specs.sweep / 90);
+		for (let i = 1; i < parts; i++) {
+			this.#addPoint(builders, points, i / parts, specs, rawSpiral, parentSettings, name);
 		}
 
 		// Add the last point
