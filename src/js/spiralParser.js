@@ -260,15 +260,6 @@ class spiralParser {
 	coordinates of the entry and exit points. Note that #getSpecs adjusts
 	the angle of the exit point to reflect clockwise or counterwise rotation.
 
-	The current implementation of the Bezier cubic curve for circles
-	requires that a circle be partitioned into 90° segments. The entry
-	point is t = 0. Additional points at 90°, 180°, ..., (k-1)90°, where
-	sweep < k90°, are generated. The exit point is also used.
-
-	NOTE: This may change to evenly divided partitions of the helix where no
-	section exceeds 90°. The number of partitions would be
-	Math.ceil(sweep/90) - 1, each with an angle of sweep/Math.ceil(...).
-
 	Note that the Bezier algorithm requires the tangent or forward direction
 	of these intermediate points.
 
