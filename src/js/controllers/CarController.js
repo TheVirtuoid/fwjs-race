@@ -1,3 +1,5 @@
+import {Vector3} from "@babylonjs/core";
+
 export default class CarController {
 
 	#car
@@ -21,10 +23,10 @@ export default class CarController {
 		const t = 0;
 		const olt = 1 - t;
 		const x = p0.x * t + p1.x * olt;
-		const y = p0.y * t + p0.y * olt + this.#car.height;
+		const y = p0.y * t + p0.y * olt - 1;
 		const z = p0.z * t + p1.z * olt;
 
-		this.#car.build({ position: { x, y, z }});
+		this.#car.build({ position: new Vector3( x, y, z ), scene: this.#gameEngine.scene });
 		this.#gameEngine.camera.lockedTarget = this.#car.chassis;
 	}
 }

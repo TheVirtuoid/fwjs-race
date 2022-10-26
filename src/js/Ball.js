@@ -35,8 +35,8 @@ class Ball {
 		this.#mesh.position.y = p0.y * t + p0.y * olt + Ball.height;
 		this.#mesh.position.z = p0.z * t + p1.z * olt;
 		const { x, y, z } = this.#mesh.position;
-		// this.#gameEngine.camera.setTarget(new Vector3(x, y, z));
-		// this.#gameEngine.camera.lockedTarget = this.#mesh;
+		// this.#gameEngine.camera.position(new Vector3(x + 2, y + 2, z + 2));
+		this.#gameEngine.camera.lockedTarget = this.#mesh;
 	}
 }
 

@@ -10,14 +10,14 @@ import {
 const defaults = {
 	wheel: {
 		diameter: 2,
-		height:.5,
-		mass: 10
+		height: 1,
+		mass: 23
 	},
 	wheelBase: {
 		depth: .25,
 		width: 1,
 		height: 2,
-		mass: 1
+		mass: 1302
 	},
 	chassis: {
 		depth: 4,
@@ -47,14 +47,16 @@ export default class Car {
 	#position;
 	#name;
 	#color;
+	#wheelType;
 
 	constructor(args = {}) {
-		const { scale = 1, scene, position, name, color } = args;
+		const { scale = 1, scene, position, name, color, wheelType = 'round' } = args;
 		this.#scale = scale;
 		this.#scene = scene;
 		this.#position = position;
 		this.#name = name;
 		this.#color = color;
+		this.#wheelType = wheelType;
 		this.#wheelParameters = wheelParameters.map((wheelParameter) => {
 			let { wheelName, offset, pivot } = wheelParameter;
 			return { wheelName, offset: this.#scaleVector3(offset), pivot: this.#scaleVector3(pivot) };
@@ -151,8 +153,22 @@ export default class Car {
 	#addWheel(args = {}) {
 		const { name, scene, position, wheelName, offset, pivot } = args;
 		const { diameter, height } = this.#defaults.wheel;
-		//const wheel = MeshBuilder.CreateCylinder(`${name}-wheel-${wheelName}`, { diameter, height }, scene);
-		const wheel = MeshBuilder.CreateSphere(`${name}-wheel-${wheelName}`, { diameter }, scene);
+		let wheel;
+		switch (this.#wheelType) {
+			case 'round':
+				wheel = MeshBuilder.CreateSphere(`${name}-wheel-${wheelName}`, { diameter }, scene);
+				break;
+			case 'ellipse':
+				wheel = MeshBuilder.CreateSphere(`${name}-wheel-${wheelName}`, {
+					diameterX: diameter,
+					diameterY: diameter / 2,
+					diameterZ: diameter
+				}, scene);
+				break;
+			case 'cylinder':
+				wheel = MeshBuilder.CreateCylinder(`${name}-wheel-${wheelName}`, { diameter, height }, scene);
+				break;
+		}
 		wheel.material = new StandardMaterial(`${name}-wheelmat-${wheelName}`, scene);
 		wheel.material.diffuseTexture = new Texture("https://i.imgur.com/JbvoYlB.png", scene);
 		wheel.rotation.x = Math.PI / 2;
@@ -180,8 +196,15 @@ export default class Car {
 		wheelBase.physicsImpostor = new PhysicsImpostor(wheelBase, PhysicsImpostor.CylinderImpostor, { mass: wheelBaseMass, friction: 1, restitution: 0 });
 		wheels.forEach((wheelData) => {
 			const { wheel, pivot } = wheelData;
-			// wheel.physicsImpostor = new PhysicsImpostor(wheel, PhysicsImpostor.CylinderImpostor, { mass: wheelMass, friction: 1, restitution: 0 });
-			wheel.physicsImpostor = new PhysicsImpostor(wheel, PhysicsImpostor.SphereImpostor, { mass: wheelMass, friction: 1, restitution: 0 });
+			switch(this.#wheelType) {
+				case 'round':
+				case 'ellipse':
+					wheel.physicsImpostor = new PhysicsImpostor(wheel, PhysicsImpostor.SphereImpostor, { mass: wheelMass, friction: 3, restitution: 0 });
+					break;
+				case 'cylinder':
+					wheel.physicsImpostor = new PhysicsImpostor(wheel, PhysicsImpostor.CylinderImpostor, { mass: wheelMass, friction: 1, restitution: 0 });
+					break;
+			}
 			const joint = new HingeJoint({
 				mainPivot: pivot,
 				connectedPivot: new Vector3(0, 0, 0),
