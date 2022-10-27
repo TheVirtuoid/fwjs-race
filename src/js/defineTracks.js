@@ -852,7 +852,7 @@ export function defineTracks(tracks) {
 	});
 	tracks.register({
 		sibling: track6,
-		member: 'Right 315&#176; 6 turns (a)',
+		member: 'Right 315&#176; 6 turns',
 		track: {
 			segments: [{
 				points: [{
@@ -873,52 +873,6 @@ export function defineTracks(tracks) {
 			const theta = (180 + 45) * Math.PI / 180;
 			const p = this.track.segments[0].points[0];
 			p.endsAt.center = { x: 4 * Math.cos(theta), y: 0, z: 4 * Math.sin(theta) };
-		},
-	});
-	tracks.register({
-		sibling: track6,
-		member: 'Right 315&#176; 6 turns (b)',
-		track: {
-			segments: [{
-				points: [
-					{
-						type: 'spiral',
-						startsAt: {
-							center: { x: -4, y: 10, z: 0, },
-							forward: posZ,
-						},
-						rotate: 'right',
-						turns: 6,
-					},
-					{
-						type: 'spiral',
-						endsAt: {
-							forward: { x: -1, y: 0, z: 1 },
-						},
-						rotate: 'right',
-					},
-				]
-			}],
-		},
-		init() {
-			const radius = 4;
-
-			const p0 = this.track.segments[0].points[0];
-			const p1 = this.track.segments[0].points[1];
-
-			const wholeSweep = 315 + 360 * p0.turns;
-			const p1Sweep = 90;
-			const descent = p1Sweep / wholeSweep;
-
-			const theta0 = -45 * Math.PI / 180;
-			const radial0 = { x: Math.cos(theta0), y: 0, z: Math.sin(theta0) }
-			p0.endsAt = {
-				center: { x: radius * radial0.x, y: descent * p0.startsAt.center.y, z: radius * radial0.z },
-				forward: { x: -1, y: -1 / wholeSweep, z: -1},
-			}
-
-			const theta1 = -135 * Math.PI / 180;
-			p1.endsAt.center = { x: radius * Math.cos(theta1), y: 0, z: radius * Math.sin(theta1) };
 		},
 	});
 	const trackError = tracks.register({
