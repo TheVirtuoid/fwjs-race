@@ -1,14 +1,16 @@
 import {
-	AmmoJSPlugin, ArcFollowCamera, ArcRotateCamera,
+	AmmoJSPlugin, ArcFollowCamera, ArcRotateCamera, CannonJSPlugin,
 	Engine, FollowCamera,
 	HemisphericLight,
-	Mesh, MeshBuilder,
+	Mesh, MeshBuilder, OimoJSPlugin,
 	PhysicsImpostor,
 	Scene,
 	Vector3,
 } from "@babylonjs/core";
 
 import ammo from "ammo.js";
+// import * as cannon from "cannon";
+// import * as Oimo from "oimo";
 
 class BabylonAdaptor {
 
@@ -64,6 +66,8 @@ class BabylonAdaptor {
 
 		const light = new HemisphericLight("hemi", new Vector3(0, 50, 0));
 		this.#scene.enablePhysics(new Vector3(0, -8.91, 0), new AmmoJSPlugin());
+		// this.#scene.enablePhysics(null, new CannonJSPlugin());
+		// this.#scene.enablePhysics(new Vector3(0, -8.91, 0), new OimoJSPlugin());
 		this.#camera = camera;
 		return this.#scene;
 	}
@@ -88,6 +92,8 @@ class BabylonAdaptor {
 
 	async initializePhysics() {
 		await ammo.bind(window)();
+		// window.CANNON = cannon;
+		// window.OIMO = Oimo;
 	}
 
 	ready() {

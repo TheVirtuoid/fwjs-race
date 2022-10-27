@@ -26,8 +26,8 @@ function registerCallback(track) {
 	declinationDisplay.register(track);
 }
 
-const car = new Car({ scale: .2, name: 'Greeny', color: new Color3.Green(), wheelType: 'cylinder' });
-let carController =
+const car = new Car({ scale: .2, name: 'Greeny', color: new Color3.Green(), wheelType: 'ellipse' });
+let carController;
 
 window.initFunction = async function() {
 

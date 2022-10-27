@@ -71,7 +71,7 @@ class TrackDisplay {
 					`Segment${i}`,
 					ribbons[i],
 					track.closed,
-					{ mass: 0, restitution: 0, friction: 1 }));
+					{ mass: 0, restitution: 0, friction: .2 }));
 			}
 			this.#errorDisplay.clear();
 		} catch (e) {
