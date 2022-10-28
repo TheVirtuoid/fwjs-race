@@ -90,6 +90,9 @@ class Plane {
 			forward: forward,
 		}
 	}
+	getPointAt(x, y, z) {
+		return this.#xAxis.scale(x).add(y, this.#normal).add(z, this.#yAxis);
+	}
 	isParallel(other, tolerance) {
 		if (!is.defined(tolerance)) tolerance = Plane.#defaultTolerance;
 		const dot = this.#normal.dot(other.#normal);

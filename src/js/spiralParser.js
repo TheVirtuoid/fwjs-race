@@ -9,6 +9,10 @@ import trig from './trig.js'
 import validate from './validate.js'
 import Vector3 from './Vector3.js'
 
+// TODO
+// * Create a new class Helix and pass that around instead of a Plane. This
+//		would allow for Plane to get rid of getHelixAt.
+
 class spiralParser {
 
 	constructor() {
@@ -133,7 +137,7 @@ class spiralParser {
 		specs.sweep = sweep;
 		if (is.number(settings.altDeclination)) specs.altDeclination = settings.altDeclination;
 		else if (is.string(settings.altDeclination)) specs.altDeclination = Number(settings.altDeclination);
-		specs.altDeclinationAlgo = is.string(settings.altDeclinationAlgo) ? settings.altDeclinationAlgo : '#getPointForward';
+		specs.altDeclinationAlgo = is.string(settings.altDeclinationAlgo) ? settings.altDeclinationAlgo : 'getPointForward';
 
 		// Set the trackBank multiplier
 		specs.trackBank = settings.trackBank;
@@ -295,19 +299,19 @@ class spiralParser {
 
 		const options = {
 			debug: specs.debug,
-			getForward: this.#getPointForward,
+			getForward: this[specs.altDeclinationAlgo],
 			altDeclination: specs.altDeclination,
 			depth: specs.exit.height - specs.entry.height,
 			rotate: specs.rotate,
 			sweep: specs.sweep,
 		};
-		const polar = specs.rotationPlane.getHelixAt(cylPoint, options);
+		const helixPoint = specs.rotationPlane.getHelixAt(cylPoint, options);
 
 		const pointName = `${name}@${cylPoint.angle}`;
 		const point = merge.settings(parentSettings, rawSpiral, pointName);
 		point.backwardWeight = cylPoint.radius * this.#circleWeight;
-		point.center = polar.point;
-		point.forward = polar.forward;
+		point.center = helixPoint.point;
+		point.forward = helixPoint.forward;
 		point.forwardWeight = point.backwardWeight;
 		point.name = pointName;
 		point.trackBank = this.#processInterpolationArray(specs.trackBank, t, specs.trackBankMultiplier);
@@ -316,7 +320,7 @@ class spiralParser {
 		builders.push(createBuilder(parentSettings));
 	}
 
-	static #getPointForward(plane, cos, sin, radial, options) {
+	static getPointForward(plane, cos, sin, radial, options) {
 		/*
 		Let a left-rotating helix be centered at (0, 0, 0), with radius r,
 		starting at angle θ0 and altitude h0 and ending at angle θ1 and
@@ -351,41 +355,32 @@ class spiralParser {
 		}
 
 		if (options.rotate !== 'left' && options.rotate !== 'right') {
-			throw new Error(`spiralParser.#getPointForward: ${options.rotate} not implemented`);
+			throw new Error(`spiralParser.getPointForward: ${options.rotate} not implemented`);
 		}
 
-		const tangents = [];
-
-		// TODO: The forward vector is not yet correct.
-		//	'appearsToWork' seems to work for turns >= 4 but fails for turns <= 1
-		//	'fromDerivative' seems to work for sweeps < 2π but fails otherwise
-		const absDepth = Math.abs(options.depth);
-		if (absDepth <= 0.1) tangents[1] = Vector3.zero;
+		let height;
+		if (Math.abs(options.depth) <= 0.1) height = 0;
 		else {
-
-			// NOTE: This mostly works with
+			// TODO: The forward vector is not yet correct.
+			//	'appearsToWork' seems to work for turns >= 4 but fails for turns <= 1
+			//	'fromDerivative' seems to work for sweeps < 2π but fails otherwise
 			const appearsToWork = 1 / options.depth;
 			const fromDerivative = options.depth / (options.sweep * trig.degreesToRadians);
-			const toUse =
+			height =
 				is.defined(options.altDeclination) ? options.altDeclination :
 				options.sweep <= 360 ? fromDerivative : appearsToWork;
 			if (options.debug) {
 				console.log('\tappearsToWork %f, fromDerivative %f, using %f',
-					appearsToWork, fromDerivative, toUse);
+					appearsToWork, fromDerivative, height);
 			}
-			tangents[1] = plane.normal.scale(toUse);
 		}
-
-		if (options.debug) console.log('\tY component %o', tangents[1]);
 
 		const k =
 			options.rotate === 'left' ? 1 :
 			options.rotate === 'right' ? -1 :
 			0;
-		tangents[0] = plane.xAxis.scale(-k * sin);
-		tangents[2] = plane.yAxis.scale(k * cos);
 
-		const forward = Vector3.scaledSum(tangents, [1, 1, 1]).normalize().clamp();
+		const forward = plane.getPointAt(-k * sin, height, k * cos).normalize().clamp();
 		if (options.debug) console.log('\tforward %o', forward);
 		return forward;
 	}

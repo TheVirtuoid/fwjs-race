@@ -7,7 +7,6 @@ class DeclinationDisplay {
 	#createMesh;
 	#resetButton;
 	#resetValue;
-	// #rule;
 	#styleSelectorElements;
 	#track;
 	#valueInput;
@@ -15,43 +14,17 @@ class DeclinationDisplay {
 	constructor(styleSheetTitle, styleSelector, input, createMesh) {
 
 		this.#createMesh = createMesh;
-
-		/*
-			Instead of changing the style within the stylesheet, we can get all element instances of the styleSelector
-			and apply the hidden class to each when we need it.
-
-			Therefore, I have replaced #rule with #styleSelectorElements;
-
-		 */
 		this.#styleSelectorElements = document.querySelectorAll(styleSelector);
-		// Find the style sheet
-		/*let targetSheet;
-		for (let sheet of document.styleSheets) {
-			if (styleSheetTitle === sheet.title) {
-				targetSheet = sheet;
-				break;
-			}
-		}
-		if (!targetSheet) throw new Error('Cannot find stylesheet ' + styleSheetTitle);
-
-		// Find the rule
-		for (let rule of targetSheet.cssRules) {
-			if (rule instanceof CSSStyleRule && rule.selectorText === styleSelector) {
-				this.#rule = rule;
-				break;
-			}
-		}
-		if (!this.#rule) throw new Error('Cannot find selector ' + styleSelector);*/
 
 		// Find the user input elements
 		this.#valueInput = document.getElementById(input);
 		this.#valueInput.addEventListener("change", (e) => this.#onChangeValue(e));
 		this.#resetButton = document.getElementById(input + "Reset");
-		this.#resetButton.addEventListener("click", (e) => this.#onReset(e));
+		this.#resetButton.addEventListener("click", (e) => this.#onReset());
 		this.#clearButton = document.getElementById(input + "Clear");
-		this.#clearButton.addEventListener("click", (e) => this.#onClear(e));
+		this.#clearButton.addEventListener("click", (e) => this.#onClear());
 		this.#algoSelector = document.getElementById(input + "Algo");
-		this.#algoSelector.addEventListener("change", (e) => this.#onChangeAlgo(e));
+		this.#algoSelector.addEventListener("change", (e) => this.#onChangeAlgo());
 
 		// Add the algorithms
 		for (let algo of spiralParser.getDeclinationAlgorithms()) {
@@ -62,7 +35,6 @@ class DeclinationDisplay {
 
 		this.#track = false;
 		this.#styleSelectorElements.forEach((element) => element.classList.add('hidden'));
-		// this.#rule.style.display = "none";
 	}
 
 	disable(state) {
@@ -100,11 +72,9 @@ class DeclinationDisplay {
 			}
 			this.#algoSelector.selectedIndex = algo;
 			this.#styleSelectorElements.forEach((element) => element.classList.remove('hidden'));
-			// this.#rule.style.display = "block";
 		} else {
 			this.#track = false;
 			this.#styleSelectorElements.forEach((element) => element.classList.add('hidden'));
-			// this.#rule.style.display = "none";
 		}
 	}
 
@@ -122,7 +92,7 @@ class DeclinationDisplay {
 		throw new Error('Not implemented');
 	}
 
-	#onChangeValue(e) {
+	#onChangeValue() {
 		const value = this.#valueInput.value;
 		if (value != this.#track.altDeclination) {
 			this.#track.altDeclination = value;
@@ -131,11 +101,13 @@ class DeclinationDisplay {
 	}
 
 	#onClear(e) {
-		this.#valueInput.value = '';
+		//this.#valueInput.value = '';
+		throw new Error('Not implemented');
 	}
 
 	#onReset(e) {
-		this.#valueInput.value = this.#resetValue;
+		//this.#valueInput.value = this.#resetValue;
+		throw new Error('Not implemented');
 	}
 }
 
