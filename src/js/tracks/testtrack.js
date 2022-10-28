@@ -14,8 +14,10 @@ const radiusType = new Map([
 		['wide', 8]
 ])
 
-const trackWidth = 3;
+const trackWidth = 4;
 const trackRadius = trackWidth * radiusType.get('wide');
+const beginningTrackSlope = 55;
+const trackRiseRate = Math.tan(beginningTrackSlope * Math.PI / 180);
 
 export function testTrack(tracks) {
 
@@ -34,7 +36,7 @@ export function testTrack(tracks) {
 			center: { x:20 , y:15, z:0 }
 		},
 		end: {
-			center: { x:18, y:13, z:0 }
+			center: { x:18, y:15 - 2 * trackRiseRate, z:0 }
 		},
 
 		init: function() {
@@ -164,7 +166,7 @@ export function testTrack(tracks) {
 						],
 					},
 				],
-				options: { trackWidth: trackWidth },
+				options: { trackWidth },
 			}
 		},
 	});
@@ -172,6 +174,7 @@ export function testTrack(tracks) {
 		sibling: track2,
 		member: "45&#176; bank",
 		track: {
+			options: { trackWidth },
 			segments: [ jump.launchSegment, {
 				points: [
 					jump.catchStart,
@@ -179,16 +182,14 @@ export function testTrack(tracks) {
 						center: track2.curveStart.center,
 						forward: track2.curveStart.forward,
 						forwardWeight: track2.curveStart.forwardWeight,
-						trackBank: 10,
-						trackWidth
+						trackBank: 10
 					},
 					{
 						backwardWeight: track2.curveTop.backwardWeight,
 						center: track2.curveTop.center,
 						forward: track2.curveTop.forward,
 						forwardWeight: track2.curveTop.forwardWeight,
-						trackBank: 45,
-						trackWidth
+						trackBank: 45
 					},
 /*					{
 						backwardWeight: track2.curveLeft.backwardWeight,
@@ -214,6 +215,7 @@ export function testTrack(tracks) {
 		sibling: track2,
 		member: "Using spiral (cheat -.1)",
 		track: {
+			options: { trackWidth },
 			segments: [ jump.launchSegment, {
 				points: [
 					jump.catchStart,
@@ -222,8 +224,7 @@ export function testTrack(tracks) {
 						type: 'spiral',
 						endsAt: {
 							center: track2.curveEnd.center,
-							forward: track2.curveEnd.forward,
-							trackWidth
+							forward: track2.curveEnd.forward
 						},
 						rotate: 'left',
 					},
@@ -249,7 +250,6 @@ export function testTrack(tracks) {
 						},
 						rotate: 'left',
 						trackBank: parametricBank,
-						trackWidth
 					},
 					jump.runout
 				],

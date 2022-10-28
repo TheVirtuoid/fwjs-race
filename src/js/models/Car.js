@@ -131,6 +131,10 @@ export default class Car {
 		return defaults.wheel.height * this.#scale;
 	}
 
+	get wheelBase() {
+		return this.#wheelBase;
+	}
+
 
 	#scaleVector3(vector) {
 		const x = vector.x * this.#scale;
@@ -144,6 +148,7 @@ export default class Car {
 		const { name, scene, position } = args;
 		const { depth, width, height } = this.#defaults.wheelBase;
 		const wheelBase = MeshBuilder.CreateBox(`${name}-wheelbase`, { depth, width, height }, scene);
+		console.log(wheelBase.getBoundingInfo());
 		wheelBase.rotation.x = Math.PI / 2;
 		wheelBase.position = position.clone();
 		wheelBase.isVisible = false;
