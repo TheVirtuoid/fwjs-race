@@ -1,6 +1,7 @@
 import CylindricalCoordinate from './CylindricalCoordinate.js'
 import is from './is.js'
 import Line from './Line.js'
+import NotImplementedError from './errors/NotImplementedError.js'
 import trig from './trig.js'
 import Vector3 from './Vector3.js'
 
@@ -124,7 +125,7 @@ class Plane {
 				this.#normal,
 				Vector3.up.dot(this.#normal),
 				Vector3.down.dot(this.#normal));
-			throw new Error('Plane.#setDefaultAxes: not implemented');
+			throw new NotImplementedError('Plane.#setDefaultAxes');
 		}
 	}
 	#toVertex(vertex) {

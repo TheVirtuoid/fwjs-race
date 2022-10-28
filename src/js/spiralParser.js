@@ -2,6 +2,7 @@ import { createBuilder } from './Builder.js'
 import CylindricalCoordinate from './CylindricalCoordinate.js'
 import is from './is.js'
 import merge from './merge.js'
+import NotImplementedError from './errors/NotImplementedError.js'
 import Plane from './Plane.js'
 import pointParser from './pointParser.js'
 import StaticClassError from './errors/StaticClassError.js'
@@ -143,7 +144,7 @@ class spiralParser {
 		specs.trackBank = settings.trackBank;
 		if (rotate === 'left') specs.trackBankMultiplier = 1;
 		else if (rotate === 'right') specs.trackBankMultiplier = -1;
-		else throw new Error('spiralParser.#getSpecs: trackBankMultiplier not implemented');
+		else throw new NotImplementedError('spiralParser.#getSpecs', `${rotate} trackBankMultiplier`);
 
 		// Return the specifications
 		return specs;
@@ -157,7 +158,7 @@ class spiralParser {
 		// TODO: This assumes the rotation axis is either up or forward.
 		// This may not always be the case.
 		if (rotate === 'left' || rotate === 'right') return Vector3.up;
-		throw new Error('#getRotationAxis: not implemented for non-up axis');
+		throw new NotImplementedError('spiralParser.#getRotationAxis', rotate);
 	}
 
 	static #getRotationPlane(specs, rotate, rawSpiral, name) {
@@ -189,7 +190,7 @@ class spiralParser {
 					rotCenter = center;
 					rotAxis = this.#getRotationAxis(specs, rotate);
 				} else {
-					throw new Error('#getRotationPlane: not implemented, center, rotate up identical entry and exit planes');
+					throw new NotImplementedError('spiralParser.#getRotationPlane',  'center, rotate up identical entry and exit planes');
 				}
 			} else if (rotate === 'left' || rotate === 'right') {
 				const toEnd = entryPlane.origin.toNormal(exitPlane.origin);
@@ -200,16 +201,15 @@ class spiralParser {
 				rotCenter = entryPlane.origin.midpoint(exitPlane.origin);
 				rotAxis = this.#getRotationAxis(specs, rotate);
 			} else {
-				throw new Error('#getRotationPlane: not implemented, no center, rotate up identical entry and exit planes');
+				throw new NotImplementedError('spiralParser.#getRotationPlane', 'no center, rotate up identical entry and exit planes');
 			}
 		} else if (entryPlane.isParallel(exitPlane)) {
 			//const center = Vector3.validate(rawSpiral, 'center', name);
 			//if (rotate === 'left') {
-			//	throw new Error('#getRotationPlane: make sure centernot implemented, parallel entry and exit planes');
 			//} else if (rotate === 'right') {
 			//} else {
 			//}
-			throw new Error('#getRotationPlane: not implemented, parallel entry and exit planes');
+			throw new NotImplementedError('spiralParser.#getRotationPlane', 'parallel entry and exit planes');
 		} else {
 			// 'center' is illegal
 			validate.undefined(rawSpiral, 'center', name, 'entry and exit planes intersect');
@@ -355,7 +355,7 @@ class spiralParser {
 		}
 
 		if (options.rotate !== 'left' && options.rotate !== 'right') {
-			throw new Error(`spiralParser.getPointForward: ${options.rotate} not implemented`);
+			throw new NotImplementedError('spiralParser.getPointForward',  options.rotate);
 		}
 
 		let height;

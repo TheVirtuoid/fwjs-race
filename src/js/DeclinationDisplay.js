@@ -1,3 +1,4 @@
+import NotImplementedError from './errors/NotImplementedError.js'
 import spiralParser from './spiralParser.js'
 
 class DeclinationDisplay {
@@ -89,7 +90,7 @@ class DeclinationDisplay {
 
 	#onChangeAlgo(e) {
 		console.log(e);
-		throw new Error('Not implemented');
+		throw new NotImplementedError('DeclinationDisplay.onChangeAlgo');
 	}
 
 	#onChangeValue() {
@@ -102,12 +103,12 @@ class DeclinationDisplay {
 
 	#onClear(e) {
 		//this.#valueInput.value = '';
-		throw new Error('Not implemented');
+		throw new NotImplementedError('DeclinationDisplay.onClear');
 	}
 
 	#onReset(e) {
 		//this.#valueInput.value = this.#resetValue;
-		throw new Error('Not implemented');
+		throw new NotImplementedError('DeclinationDisplay.onReset');
 	}
 }
 
