@@ -1,4 +1,4 @@
-import StaticClassError from './StaticClassError.js'
+import StaticClassError from './errors/StaticClassError.js'
 import Vector3 from './Vector3.js'
 
 class bezier {
