@@ -332,7 +332,6 @@ export function defineTracks(tracks) {
 					jump.runout
 				],
 			}],
-			altDeclination: -.1,
 		},
 	});
 	tracks.register({
@@ -705,7 +704,6 @@ export function defineTracks(tracks) {
 					],
 				}
 			],
-			altDeclination: -.1,
 		},
 	});
 	tracks.register({
@@ -732,7 +730,6 @@ export function defineTracks(tracks) {
 					],
 				}
 			],
-			altDeclination: -0.06,
 		},
 	});
 	const track6r = tracks.register({
@@ -888,7 +885,6 @@ export function defineTracks(tracks) {
 					],
 				}
 			],
-			altDeclination: -0.06,
 		},
 	});
 }

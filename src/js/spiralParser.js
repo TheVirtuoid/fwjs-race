@@ -130,8 +130,6 @@ class spiralParser {
 			specs.exit = new CylindricalCoordinate(specs.exit.radius, endAngle, specs.exit.height);
 		}
 		specs.sweep = sweep;
-		if (is.number(settings.altDeclination)) specs.altDeclination = settings.altDeclination;
-		else if (is.string(settings.altDeclination)) specs.altDeclination = Number(settings.altDeclination);
 		specs.altDeclinationAlgo = is.string(settings.altDeclinationAlgo) ? settings.altDeclinationAlgo : 'arcollins';
 
 		// Set the trackBank multiplier
@@ -266,7 +264,6 @@ class spiralParser {
 
 		// Create helix object with constant values
 		const helix = {
-			altDeclination: specs.altDeclination,
 			debug: specs.debug,
 			depth: specs.exit.height - specs.entry.height,
 			getForward: this[specs.altDeclinationAlgo],

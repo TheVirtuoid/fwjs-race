@@ -31,7 +31,6 @@ class merge {
 	static #validSettings = [
 		{ key: 'debug' },
 		{ key: 'debugSegments' },
-		{ key: 'altDeclination' },
 		{ key: 'altDeclinationAlgo' },
 		{ key: 'precision', validator: validate.positiveNumber },
 		{ key: 'trackBank', validator: validate.trackBank, },
