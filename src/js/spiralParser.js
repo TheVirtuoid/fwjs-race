@@ -355,7 +355,7 @@ class spiralParser {
 		sinA = Math.sin(A),
 		cosA = Math.cos(A);
 
-		return {x: k*(v.x*cosA - v.y*sinA), y: k*(v.x*sinA + v.y*cosA), z:v.z};
+		return new Vector3(k*(v.x*cosA - v.y*sinA), k*(v.x*sinA + v.y*cosA), v.z);
 	}
 
 	static #getForward(cylPoint, helix) {
