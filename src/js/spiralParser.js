@@ -270,7 +270,7 @@ class spiralParser {
 		// Insert the entry point if this is the first point of the segment.
 		// Otherwise patch its forwardWeight if required.
 		if (points.length === 0) points.push(specs.startsAt);
-		let { forward, weight } = this.#arcollins(specs.entry, helix);
+		let { forward, weight } = this.#getForward(specs.entry, helix);
 		const p = points[points.length - 1];
 		p.forwardWeight = weight;
 		p.trackBank = this.#processInterpolationArray(specs.trackBank, 0, specs.trackBankMultiplier);
@@ -282,7 +282,7 @@ class spiralParser {
 		}
 
 		// Add the last point
-		weight = this.#arcollins(specs.exit, helix).weight;
+		weight = this.#getForward(specs.exit, helix).weight;
 		specs.endsAt.backwardWeight = weight;
 		specs.endsAt.trackBank = this.#processInterpolationArray(specs.trackBank, 1, specs.trackBankMultiplier);
 		points.push(specs.endsAt);
@@ -320,7 +320,7 @@ class spiralParser {
 		const radial = helix.plane.xAxis.scale(cos).add(sin, helix.plane.yAxis);
 		const center = helix.plane.origin.add(cylPoint.radius, radial).add(cylPoint.height, helix.plane.normal);
 
-		const { forward, weight } = this.#arcollins(cylPoint, helix);
+		const { forward, weight } = this.#getForward(cylPoint, helix);
 
 		return { center, forward, weight }
 	}
@@ -344,10 +344,10 @@ class spiralParser {
 		return ["M", b0.x,b0.y,b0.z, "C", b1.x,b1.y,b1.z, b2.x,b2.y,b2.z, b3.x,b3.y,b3.z];
 	}
 
-	static #arcollins(cylPoint, helix) {
+	static #getForward(cylPoint, helix) {
 
 		if (helix.debug) {
-			console.log('spiralParser.#arcollins: cylPoint %o, helix %o', cylPoint, helix);
+			console.log('spiralParser.#getForward: cylPoint %o, helix %o', cylPoint, helix);
 		}
 
 		const arc = spiralParser.#createHelicalArc(cylPoint.radius, helix.pitch, 90);
