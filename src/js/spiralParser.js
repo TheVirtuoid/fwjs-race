@@ -325,6 +325,7 @@ class spiralParser {
 		return { center, forward, weight }
 	}
 
+	// From A R Collins code
 	static #createHelicalArc(r, pitch, incAngle)
 	{
 		// References:
@@ -344,40 +345,47 @@ class spiralParser {
 		return ["M", b0.x,b0.y,b0.z, "C", b1.x,b1.y,b1.z, b2.x,b2.y,b2.z, b3.x,b3.y,b3.z];
 	}
 
+	// Modified from A R Collins code
+	static #XYrotate(k, v, degs)
+	{
+		// rotate a 3D vector around the Z axis
+		var A = Math.PI*degs/180.0,   // radians
+		sinA = Math.sin(A),
+		cosA = Math.cos(A);
+
+		return {x: k*(v.x*cosA - v.y*sinA), y: k*(v.x*sinA + v.y*cosA), z:v.z};
+	}
+
 	static #getForward(cylPoint, helix) {
 
 		if (helix.debug) {
 			console.log('spiralParser.#getForward: cylPoint %o, helix %o', cylPoint, helix);
 		}
 
-		const arc = spiralParser.#createHelicalArc(cylPoint.radius, helix.pitch, 90);
-
-		// TODO: The right rotation calcuation is off
-		const XYrotate = function(k, v, degs)
-		{
-			// rotate a 3D vector around the Z axis
-			var A = Math.PI*degs/180.0,   // radians
-			sinA = Math.sin(A),
-			cosA = Math.cos(A);
-
-			return {x: k*(v.x*cosA - v.y*sinA), y: k*(v.x*sinA + v.y*cosA), z:v.z};
+		// Recalculate the arc if necessary
+		if (!helix.arc || helix.radius != cylPoint.radius) {
+			helix.arc = spiralParser.#createHelicalArc(cylPoint.radius, helix.pitch, 90);
+			helix.radius = cylPoint.radius;
 		}
 
+		// Set k according to left or right rotation
 		const k =
 			helix.rotate === 'left' ? 1 :
 			helix.rotate === 'right' ? -1 :
 			0;
 
+		// Rotate the arc for this point (per A R Collins createHelix)
 		const alpha = cylPoint.angle + 45;
-		let p0 = {x:arc[1], y:arc[2], z:arc[3]};
-		p0 = XYrotate(k, p0, alpha);
-		let p1 = {x:arc[5], y:arc[6], z:arc[7]};
-		p1 = XYrotate(k, p1, alpha);
+		let p0 = {x:helix.arc[1], y:helix.arc[2], z:helix.arc[3]};
+		p0 = this.#XYrotate(k, p0, alpha);
+		let p1 = {x:helix.arc[5], y:helix.arc[6], z:helix.arc[7]};
+		p1 = this.#XYrotate(k, p1, alpha);
 
-		let v01 = new Vector3(p1.x - p0.x, p1.z - p0.z, p1.y - p0.y);
-		const weight = v01.length();
-		const nv01 = v01.normalize();
-		const forward = helix.plane.getVector(nv01).clamp();
+		// Calculate the tangent
+		let tangent = new Vector3(p1.x - p0.x, p1.z - p0.z, p1.y - p0.y);
+		const weight = tangent.length();
+		const unitTangent = tangent.normalize();
+		const forward = helix.plane.getVector(unitTangent).clamp();
 		if (helix.debug) console.log('\tforward %o', forward);
 		return { forward, weight }
 	}
