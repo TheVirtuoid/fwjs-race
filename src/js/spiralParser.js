@@ -284,7 +284,7 @@ class spiralParser {
 		p.forwardWeight = specs.entry.radius * this.#circleWeight;
 		p.trackBank = this.#processInterpolationArray(specs.trackBank, 0, specs.trackBankMultiplier);
 
-		// Add the 90° points
+		// Add the interior points
 		const parts = Math.ceil(specs.sweep / 90);
 		for (let i = 1; i < parts; i++) {
 			this.#addPoint(builders, points, i / parts, specs, helix, rawSpiral, parentSettings, name);
@@ -308,14 +308,15 @@ class spiralParser {
 			radius: cylPoint.radius,
 			theta: cylPoint.angle,
 		};
-		const helixPoint = this.#getHelixAt(cylPoint, options, helix);
+
+		const { center, forward, weight } = this.#getHelixAt(cylPoint, options, helix);
 
 		const pointName = `${name}@${cylPoint.angle}`;
 		const point = merge.settings(parentSettings, rawSpiral, pointName);
-		point.backwardWeight = cylPoint.radius * this.#circleWeight;
-		point.center = helixPoint.point;
-		point.forward = helixPoint.forward;
-		point.forwardWeight = point.backwardWeight;
+		point.backwardWeight = weight;
+		point.center = center;
+		point.forward = forward;
+		point.forwardWeight = weight;
 		point.name = pointName;
 		point.trackBank = this.#processInterpolationArray(specs.trackBank, t, specs.trackBankMultiplier);
 
@@ -329,14 +330,11 @@ class spiralParser {
 		const sin = trig.clampAt0And1(Math.sin(theta));
 
 		const radial = helix.plane.xAxis.scale(cos).add(sin, helix.plane.yAxis);
-		const point = helix.plane.origin.add(cylPoint.radius, radial).add(cylPoint.height, helix.plane.normal);
+		const center = helix.plane.origin.add(cylPoint.radius, radial).add(cylPoint.height, helix.plane.normal);
 
-		const forward = helix.getForward(cos, sin, radial, options, helix);
+		const { forward, weight } = helix.getForward(cos, sin, radial, options, helix);
 
-		return {
-			point: point,
-			forward: forward,
-		}
+		return { center, forward, weight }
 	}
 
 	static getPointForward(cos, sin, radial, options, helix) {
@@ -366,6 +364,7 @@ class spiralParser {
 			= (-r sin θ, (h1 - h0) / (θ1 - θ0), r cos θ)
 		*/
 
+		if (!is.defined(options.radius)) throw new Error();
 		if (!is.defined(helix.depth)) throw new Error();
 		if (!is.defined(helix.rotate)) throw new Error();
 		if (!is.defined(helix.sweep)) throw new Error();
@@ -401,7 +400,7 @@ class spiralParser {
 
 		const forward = helix.plane.getPointAt(-k * sin, height, k * cos).normalize().clamp();
 		if (helix.debug) console.log('\tforward %o', forward);
-		return forward;
+		return { forward, weight: options.radius * spiralParser.#circleWeight }
 	}
 
 	static arcollins(cos, sin, radial, options, helix) {
@@ -596,7 +595,7 @@ class spiralParser {
 		const nv01 = v01.normalize();
 		const forward = helix.plane.getPointAt(nv01).clamp();
 		if (helix.debug) console.log('\tforward %o', forward);
-		return forward;
+		return { forward, weight }
 	}
 
 	static #processInterpolationArray(value, t, multiplier) {
