@@ -339,15 +339,15 @@ class spiralParser {
 		ay = r * Math.sin(alpha);
 
 		return [
-			new Vector3(ax, -ay, -alpha*p),
+			new Vector3(ax, -alpha * p, -ay),
 			new Vector3(
 				(4 * r - ax) / 3,
-				-(r - ax) * (3 * r - ax) / (3 * ay),
-				-p * alpha * (r - ax) * (3 * r - ax) / (ay * (4 * r - ax) * Math.tan(alpha)))
+				-p * alpha * (r - ax) * (3 * r - ax) / (ay * (4 * r - ax) * Math.tan(alpha)),
+				-(r - ax) * (3 * r - ax) / (3 * ay))
 			];
 	}
 
-	// Modified from A R Collins code
+	// Modified from A R Collins code to return a Vector3
 	static #XYrotate(k, v, degs)
 	{
 		// rotate a 3D vector around the Z axis
@@ -355,7 +355,7 @@ class spiralParser {
 		sinA = Math.sin(A),
 		cosA = Math.cos(A);
 
-		return new Vector3(k*(v.x*cosA - v.y*sinA), k*(v.x*sinA + v.y*cosA), v.z);
+		return new Vector3(k* (v.x * cosA - v.z * sinA), v.y, k * (v.x * sinA + v.z * cosA));
 	}
 
 	static #getForward(cylPoint, helix) {
@@ -382,12 +382,10 @@ class spiralParser {
 		const p1 = this.#XYrotate(k, helix.arc[1], alpha);
 
 		// Calculate the tangent
-		let tangent = new Vector3(p1.x - p0.x, p1.z - p0.z, p1.y - p0.y);
-		const weight = tangent.length();
-		const unitTangent = tangent.normalize();
-		const forward = helix.plane.getVector(unitTangent).clamp();
+		let tangent = p0.to(p1);
+		const forward = helix.plane.getVector(tangent.normalize()).clamp();
 		if (helix.debug) console.log('\tforward %o', forward);
-		return { forward, weight }
+		return { forward, weight: tangent.length() }
 	}
 
 	static #processInterpolationArray(value, t, multiplier) {
