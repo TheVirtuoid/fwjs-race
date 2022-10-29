@@ -10,10 +10,6 @@ import trig from './trig.js'
 import validate from './validate.js'
 import Vector3 from './Vector3.js'
 
-// TODO
-// * Create a new class Helix and pass that around instead of a Plane. This
-//		would allow for Plane to get rid of getHelixAt.
-
 class spiralParser {
 
 	constructor() {
@@ -270,6 +266,17 @@ class spiralParser {
 	--------------------------------------------------------------------------*/
 	static #generate(builders, points, specs, rawSpiral, parentSettings, name) {
 
+		const helix = {
+			altDeclination: specs.altDeclination,
+			debug: specs.debug,
+			depth: specs.exit.height - specs.entry.height,
+			getForward: this[specs.altDeclinationAlgo],
+			plane: specs.rotationPlane,
+			rotate: specs.rotate,
+			sweep: specs.sweep,
+		}
+		helix.pitch = helix.depth * 360 / helix.sweep;
+
 		// Insert the entry point if this is the first point of the segment.
 		// Otherwise patch its forwardWeight if required.
 		if (points.length === 0) points.push(specs.startsAt);
@@ -280,7 +287,7 @@ class spiralParser {
 		// Add the 90° points
 		const parts = Math.ceil(specs.sweep / 90);
 		for (let i = 1; i < parts; i++) {
-			this.#addPoint(builders, points, i / parts, specs, rawSpiral, parentSettings, name);
+			this.#addPoint(builders, points, i / parts, specs, helix, rawSpiral, parentSettings, name);
 		}
 
 		// Add the last point
@@ -290,7 +297,7 @@ class spiralParser {
 		builders.push(createBuilder(parentSettings));
 	}
 
-	static #addPoint(builders, points, t, specs, rawSpiral, parentSettings, name) {
+	static #addPoint(builders, points, t, specs, helix, rawSpiral, parentSettings, name) {
 		const cylPoint = specs.entry.interpolate(specs.exit, t);
 		if (specs.debug) {
 			console.log('spiralParser.#addPoint(%f): entry %o, exit %o, interpolated %o',
@@ -298,16 +305,10 @@ class spiralParser {
 		}
 
 		const options = {
-			altDeclination: specs.altDeclination,
-			debug: specs.debug,
-			depth: specs.exit.height - specs.entry.height,
-			getForward: this[specs.altDeclinationAlgo],
 			radius: cylPoint.radius,
-			rotate: specs.rotate,
-			sweep: specs.sweep,
 			theta: cylPoint.angle,
 		};
-		const helixPoint = specs.rotationPlane.getHelixAt(cylPoint, options);
+		const helixPoint = this.#getHelixAt(cylPoint, options, helix);
 
 		const pointName = `${name}@${cylPoint.angle}`;
 		const point = merge.settings(parentSettings, rawSpiral, pointName);
@@ -322,7 +323,23 @@ class spiralParser {
 		builders.push(createBuilder(parentSettings));
 	}
 
-	static getPointForward(plane, cos, sin, radial, options) {
+	static #getHelixAt(cylPoint, options, helix) {
+		const theta = cylPoint.angle * trig.degreesToRadians;
+		const cos = trig.clampAt0And1(Math.cos(theta));
+		const sin = trig.clampAt0And1(Math.sin(theta));
+
+		const radial = helix.plane.xAxis.scale(cos).add(sin, helix.plane.yAxis);
+		const point = helix.plane.origin.add(cylPoint.radius, radial).add(cylPoint.height, helix.plane.normal);
+
+		const forward = helix.getForward(cos, sin, radial, options, helix);
+
+		return {
+			point: point,
+			forward: forward,
+		}
+	}
+
+	static getPointForward(cos, sin, radial, options, helix) {
 		/*
 		Let a left-rotating helix be centered at (0, 0, 0), with radius r,
 		starting at angle θ0 and altitude h0 and ending at angle θ1 and
@@ -349,45 +366,45 @@ class spiralParser {
 			= (-r sin θ, (h1 - h0) / (θ1 - θ0), r cos θ)
 		*/
 
-		if (!is.defined(options.depth)) throw new Error();
-		if (!is.defined(options.rotate)) throw new Error();
-		if (!is.defined(options.sweep)) throw new Error();
-		if (options.debug) {
-			console.log('spiralParser.getPointForward: options %o', options);
+		if (!is.defined(helix.depth)) throw new Error();
+		if (!is.defined(helix.rotate)) throw new Error();
+		if (!is.defined(helix.sweep)) throw new Error();
+		if (helix.debug) {
+			console.log('spiralParser.getPointForward: options %o, helix %o', options, helix);
 		}
 
-		if (options.rotate !== 'left' && options.rotate !== 'right') {
-			throw new NotImplementedError('spiralParser.getPointForward',  options.rotate);
+		if (helix.rotate !== 'left' && helix.rotate !== 'right') {
+			throw new NotImplementedError('spiralParser.getPointForward',  helix.rotate);
 		}
 
 		let height;
-		if (Math.abs(options.depth) <= 0.1) height = 0;
+		if (Math.abs(helix.depth) <= 0.1) height = 0;
 		else {
 			// TODO: The forward vector is not yet correct.
 			//	'appearsToWork' seems to work for turns >= 4 but fails for turns <= 1
 			//	'fromDerivative' seems to work for sweeps < 2π but fails otherwise
-			const appearsToWork = 1 / options.depth;
-			const fromDerivative = options.depth / (options.sweep * trig.degreesToRadians);
+			const appearsToWork = 1 / helix.depth;
+			const fromDerivative = helix.depth / (helix.sweep * trig.degreesToRadians);
 			height =
 				is.defined(options.altDeclination) ? options.altDeclination :
-				options.sweep <= 360 ? fromDerivative : appearsToWork;
-			if (options.debug) {
+				helix.sweep <= 360 ? fromDerivative : appearsToWork;
+			if (helix.debug) {
 				console.log('\tappearsToWork %f, fromDerivative %f, using %f',
 					appearsToWork, fromDerivative, height);
 			}
 		}
 
 		const k =
-			options.rotate === 'left' ? 1 :
-			options.rotate === 'right' ? -1 :
+			helix.rotate === 'left' ? 1 :
+			helix.rotate === 'right' ? -1 :
 			0;
 
-		const forward = plane.getPointAt(-k * sin, height, k * cos).normalize().clamp();
-		if (options.debug) console.log('\tforward %o', forward);
+		const forward = helix.plane.getPointAt(-k * sin, height, k * cos).normalize().clamp();
+		if (helix.debug) console.log('\tforward %o', forward);
 		return forward;
 	}
 
-	static arcollins(plane, cos, sin, radial, options) {
+	static arcollins(cos, sin, radial, options, helix) {
 		/*
 		Code derived from https://2015fallhw.github.io/arcidau/HelixDrawing.html
 		Author: A R Collins
@@ -546,14 +563,13 @@ class spiralParser {
 
 		if (!is.defined(options.radius)) throw new Error();
 		if (!is.defined(options.theta)) throw new Error();
-		if (!is.defined(options.depth)) throw new Error();
-		if (!is.defined(options.sweep)) throw new Error();
-		if (options.debug) {
-			console.log('spiralParser.arcollins: options %o', options);
+		if (!is.defined(helix.depth)) throw new Error();
+		if (!is.defined(helix.sweep)) throw new Error();
+		if (helix.debug) {
+			console.log('spiralParser.arcollins: options %o, helix %o', options, helix);
 		}
 
-		const pitch = options.depth * 360 / options.sweep;
-		const arc = createHelicalArc(options.radius, pitch, 90);
+		const arc = createHelicalArc(options.radius, helix.pitch, 90);
 
 		// TODO: The right rotation calcuation is off
 		const XYrotate = function(v, degs)
@@ -574,11 +590,12 @@ class spiralParser {
 
 		// TODO: Need to patch in weight; #circleWeight * radius is close
 		// but not what this algorithm calculates
-		const v01 = new Vector3(p1.x - p0.x, p1.z - p0.z, p1.y - p0.y);
+		let v01 = new Vector3(p1.x - p0.x, p1.z - p0.z, p1.y - p0.y);
 		const weight = v01.length();
-		let forward = v01.normalize().clamp();
-		if (options.rotate === 'right') forward = forward.scale(-1);
-		if (options.debug) console.log('\tforward %o', forward);
+		if (helix.rotate === 'right') v01 = v01.scale(-1);
+		const nv01 = v01.normalize();
+		const forward = helix.plane.getPointAt(nv01).clamp();
+		if (helix.debug) console.log('\tforward %o', forward);
 		return forward;
 	}
 
