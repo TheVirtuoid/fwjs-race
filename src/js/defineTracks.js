@@ -315,7 +315,7 @@ export function defineTracks(tracks) {
 	});
 	tracks.register({
 		sibling: track2,
-		member: "Using spiral (cheat -.1)",
+		member: "Using spiral",
 		track: {
 			segments: [ jump.launchSegment, {
 				points: [
@@ -682,7 +682,7 @@ export function defineTracks(tracks) {
 
 	const track6 = tracks.register({
 		family: 'Helix',
-		member: 'Left 360&#176; 4 turns (alt -.1)',
+		member: 'Left 360&#176; 4 turns',
 		track: {
 			segments: [
 				{
@@ -708,7 +708,7 @@ export function defineTracks(tracks) {
 	});
 	tracks.register({
 		sibling: track6,
-		member: 'Left 360&#176; 1 turn (cheat -0.06)',
+		member: 'Left 360&#176; 1 turn',
 		track: {
 			segments: [
 				{
