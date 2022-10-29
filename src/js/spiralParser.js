@@ -281,8 +281,9 @@ class spiralParser {
 		// Insert the entry point if this is the first point of the segment.
 		// Otherwise patch its forwardWeight if required.
 		if (points.length === 0) points.push(specs.startsAt);
+		let { forward, weight } = helix.getForward(specs.entry, helix);
 		const p = points[points.length - 1];
-		p.forwardWeight = specs.entry.radius * this.#circleWeight;
+		p.forwardWeight = weight;
 		p.trackBank = this.#processInterpolationArray(specs.trackBank, 0, specs.trackBankMultiplier);
 
 		// Add the interior points
@@ -292,7 +293,8 @@ class spiralParser {
 		}
 
 		// Add the last point
-		specs.endsAt.backwardWeight = specs.exit.radius * this.#circleWeight;
+		weight = helix.getForward(specs.exit, helix).weight;
+		specs.endsAt.backwardWeight = weight;
 		specs.endsAt.trackBank = this.#processInterpolationArray(specs.trackBank, 1, specs.trackBankMultiplier);
 		points.push(specs.endsAt);
 		builders.push(createBuilder(parentSettings));
@@ -329,12 +331,12 @@ class spiralParser {
 		const radial = helix.plane.xAxis.scale(cos).add(sin, helix.plane.yAxis);
 		const center = helix.plane.origin.add(cylPoint.radius, radial).add(cylPoint.height, helix.plane.normal);
 
-		const { forward, weight } = helix.getForward(cos, sin, cylPoint, helix);
+		const { forward, weight } = helix.getForward(cylPoint, helix);
 
 		return { center, forward, weight }
 	}
 
-	static getPointForward(cos, sin, options, helix) {
+	static getPointForward(cylPoint, helix) {
 		/*
 		Let a left-rotating helix be centered at (0, 0, 0), with radius r,
 		starting at angle θ0 and altitude h0 and ending at angle θ1 and
@@ -361,17 +363,21 @@ class spiralParser {
 			= (-r sin θ, (h1 - h0) / (θ1 - θ0), r cos θ)
 		*/
 
-		if (!is.defined(options.radius)) throw new Error();
+		if (!is.defined(cylPoint.radius)) throw new Error();
 		if (!is.defined(helix.depth)) throw new Error();
 		if (!is.defined(helix.rotate)) throw new Error();
 		if (!is.defined(helix.sweep)) throw new Error();
 		if (helix.debug) {
-			console.log('spiralParser.getPointForward: options %o, helix %o', options, helix);
+			console.log('spiralParser.getPointForward: cylPoint %o, helix %o', cylPoint, helix);
 		}
 
 		if (helix.rotate !== 'left' && helix.rotate !== 'right') {
 			throw new NotImplementedError('spiralParser.getPointForward',  helix.rotate);
 		}
+
+		const theta = cylPoint.angle * trig.degreesToRadians;
+		const cos = trig.clampAt0And1(Math.cos(theta));
+		const sin = trig.clampAt0And1(Math.sin(theta));
 
 		let height;
 		if (Math.abs(helix.depth) <= 0.1) height = 0;
@@ -397,10 +403,10 @@ class spiralParser {
 
 		const forward = helix.plane.getVector(-k * sin, height, k * cos).normalize().clamp();
 		if (helix.debug) console.log('\tforward %o', forward);
-		return { forward, weight: options.radius * spiralParser.#circleWeight }
+		return { forward, weight: cylPoint.radius * spiralParser.#circleWeight }
 	}
 
-	static arcollins(cos, sin, options, helix) {
+	static arcollins(cylPoint, helix) {
 		/*
 		Code derived from https://2015fallhw.github.io/arcidau/HelixDrawing.html
 		Author: A R Collins
@@ -557,15 +563,11 @@ class spiralParser {
 		is not true.
 		*/
 
-		if (!is.defined(options.radius)) throw new Error();
-		if (!is.defined(options.angle)) throw new Error();
-		if (!is.defined(helix.depth)) throw new Error();
-		if (!is.defined(helix.sweep)) throw new Error();
 		if (helix.debug) {
-			console.log('spiralParser.arcollins: options %o, helix %o', options, helix);
+			console.log('spiralParser.arcollins: cylPoint %o, helix %o', cylPoint, helix);
 		}
 
-		const arc = createHelicalArc(options.radius, helix.pitch, 90);
+		const arc = createHelicalArc(cylPoint.radius, helix.pitch, 90);
 
 		// TODO: The right rotation calcuation is off
 		const XYrotate = function(v, degs)
@@ -578,7 +580,7 @@ class spiralParser {
 			return {x: v.x*cosA - v.y*sinA, y: v.x*sinA + v.y*cosA, z:v.z};
 		}
 
-		const alpha = options.angle + 45;
+		const alpha = cylPoint.angle + 45;
 		let p0 = {x:arc[1], y:arc[2], z:arc[3]};
 		p0 = XYrotate(p0, alpha);
 		let p1 = {x:arc[5], y:arc[6], z:arc[7]};
