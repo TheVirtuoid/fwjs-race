@@ -304,12 +304,7 @@ class spiralParser {
 				t, specs.entry, specs.exit, cylPoint);
 		}
 
-		const options = {
-			radius: cylPoint.radius,
-			theta: cylPoint.angle,
-		};
-
-		const { center, forward, weight } = this.#getHelixAt(cylPoint, options, helix);
+		const { center, forward, weight } = this.#getHelixAt(cylPoint, helix);
 
 		const pointName = `${name}@${cylPoint.angle}`;
 		const point = merge.settings(parentSettings, rawSpiral, pointName);
@@ -324,7 +319,7 @@ class spiralParser {
 		builders.push(createBuilder(parentSettings));
 	}
 
-	static #getHelixAt(cylPoint, options, helix) {
+	static #getHelixAt(cylPoint, helix) {
 		const theta = cylPoint.angle * trig.degreesToRadians;
 		const cos = trig.clampAt0And1(Math.cos(theta));
 		const sin = trig.clampAt0And1(Math.sin(theta));
@@ -332,7 +327,7 @@ class spiralParser {
 		const radial = helix.plane.xAxis.scale(cos).add(sin, helix.plane.yAxis);
 		const center = helix.plane.origin.add(cylPoint.radius, radial).add(cylPoint.height, helix.plane.normal);
 
-		const { forward, weight } = helix.getForward(cos, sin, radial, options, helix);
+		const { forward, weight } = helix.getForward(cos, sin, radial, cylPoint, helix);
 
 		return { center, forward, weight }
 	}
@@ -385,7 +380,7 @@ class spiralParser {
 			const appearsToWork = 1 / helix.depth;
 			const fromDerivative = helix.depth / (helix.sweep * trig.degreesToRadians);
 			height =
-				is.defined(options.altDeclination) ? options.altDeclination :
+				is.defined(helix.altDeclination) ? helix.altDeclination :
 				helix.sweep <= 360 ? fromDerivative : appearsToWork;
 			if (helix.debug) {
 				console.log('\tappearsToWork %f, fromDerivative %f, using %f',
@@ -561,7 +556,7 @@ class spiralParser {
 		*/
 
 		if (!is.defined(options.radius)) throw new Error();
-		if (!is.defined(options.theta)) throw new Error();
+		if (!is.defined(options.angle)) throw new Error();
 		if (!is.defined(helix.depth)) throw new Error();
 		if (!is.defined(helix.sweep)) throw new Error();
 		if (helix.debug) {
@@ -581,7 +576,7 @@ class spiralParser {
 			return {x: v.x*cosA - v.y*sinA, y: v.x*sinA + v.y*cosA, z:v.z};
 		}
 
-		const alpha = options.theta + 45;
+		const alpha = options.angle + 45;
 		let p0 = {x:arc[1], y:arc[2], z:arc[3]};
 		p0 = XYrotate(p0, alpha);
 		let p1 = {x:arc[5], y:arc[6], z:arc[7]};
