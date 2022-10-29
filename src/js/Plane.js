@@ -80,7 +80,10 @@ class Plane {
 			return new Line(origin, direction);
 		}
 	}
-	getPointAt(x, y, z) {
+	getPoint(x, y, z) {
+		return this.#origin.add(1, getVector(x, y, z))
+	}
+	getVector(x, y, z) {
 		if (!is.defined(this.#xAxis)) this.#setDefaultAxes();
 		return Vector3.is(x) ?
 			this.#xAxis.scale(x.x).add(x.y, this.#normal).add(x.z, this.#yAxis) :

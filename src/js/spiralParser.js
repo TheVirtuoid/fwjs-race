@@ -266,6 +266,7 @@ class spiralParser {
 	--------------------------------------------------------------------------*/
 	static #generate(builders, points, specs, rawSpiral, parentSettings, name) {
 
+		// Create helix object with constant values
 		const helix = {
 			altDeclination: specs.altDeclination,
 			debug: specs.debug,
@@ -324,15 +325,16 @@ class spiralParser {
 		const cos = trig.clampAt0And1(Math.cos(theta));
 		const sin = trig.clampAt0And1(Math.sin(theta));
 
+		const plane = helix.plane;
 		const radial = helix.plane.xAxis.scale(cos).add(sin, helix.plane.yAxis);
 		const center = helix.plane.origin.add(cylPoint.radius, radial).add(cylPoint.height, helix.plane.normal);
 
-		const { forward, weight } = helix.getForward(cos, sin, radial, cylPoint, helix);
+		const { forward, weight } = helix.getForward(cos, sin, cylPoint, helix);
 
 		return { center, forward, weight }
 	}
 
-	static getPointForward(cos, sin, radial, options, helix) {
+	static getPointForward(cos, sin, options, helix) {
 		/*
 		Let a left-rotating helix be centered at (0, 0, 0), with radius r,
 		starting at angle θ0 and altitude h0 and ending at angle θ1 and
@@ -393,12 +395,12 @@ class spiralParser {
 			helix.rotate === 'right' ? -1 :
 			0;
 
-		const forward = helix.plane.getPointAt(-k * sin, height, k * cos).normalize().clamp();
+		const forward = helix.plane.getVector(-k * sin, height, k * cos).normalize().clamp();
 		if (helix.debug) console.log('\tforward %o', forward);
 		return { forward, weight: options.radius * spiralParser.#circleWeight }
 	}
 
-	static arcollins(cos, sin, radial, options, helix) {
+	static arcollins(cos, sin, options, helix) {
 		/*
 		Code derived from https://2015fallhw.github.io/arcidau/HelixDrawing.html
 		Author: A R Collins
@@ -588,7 +590,7 @@ class spiralParser {
 		const weight = v01.length();
 		if (helix.rotate === 'right') v01 = v01.scale(-1);
 		const nv01 = v01.normalize();
-		const forward = helix.plane.getPointAt(nv01).clamp();
+		const forward = helix.plane.getVector(nv01).clamp();
 		if (helix.debug) console.log('\tforward %o', forward);
 		return { forward, weight }
 	}
