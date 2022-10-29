@@ -55,7 +55,7 @@ class spiralParser {
 	}
 
 	static getDeclinationAlgorithms() {
-		return [ 'getPointForward' ]
+		return [ 'getPointForward', 'arcollins' ]
 	}
 
 	static #circleWeight = 0.5519150244935105707435627;
@@ -298,12 +298,14 @@ class spiralParser {
 		}
 
 		const options = {
-			debug: specs.debug,
-			getForward: this[specs.altDeclinationAlgo],
 			altDeclination: specs.altDeclination,
+			debug: specs.debug,
 			depth: specs.exit.height - specs.entry.height,
+			getForward: this[specs.altDeclinationAlgo],
+			radius: cylPoint.radius,
 			rotate: specs.rotate,
 			sweep: specs.sweep,
+			theta: cylPoint.angle,
 		};
 		const helixPoint = specs.rotationPlane.getHelixAt(cylPoint, options);
 
@@ -351,7 +353,7 @@ class spiralParser {
 		if (!is.defined(options.rotate)) throw new Error();
 		if (!is.defined(options.sweep)) throw new Error();
 		if (options.debug) {
-			console.log('spiralParser.#getPointForward: options %o', options);
+			console.log('spiralParser.getPointForward: options %o', options);
 		}
 
 		if (options.rotate !== 'left' && options.rotate !== 'right') {
@@ -381,6 +383,201 @@ class spiralParser {
 			0;
 
 		const forward = plane.getPointAt(-k * sin, height, k * cos).normalize().clamp();
+		if (options.debug) console.log('\tforward %o', forward);
+		return forward;
+	}
+
+	static arcollins(plane, cos, sin, radial, options) {
+		/*
+		Code derived from https://2015fallhw.github.io/arcidau/HelixDrawing.html
+		Author: A R Collins
+		Other references from article:
+			A. Riškus, "Approximation of a Cubic Bézier Curve by Circular Arcs and Vice Versa",
+				Information Technology and Control, 2006
+			Wikipedia article, Bézier spline
+			I. Juhász, "Approximating the helix with rational cubic Bézier curves",
+				Computer-Aided Design, 1995.
+		*/
+
+		//----------------------------------------------------------------------
+		// Start A R Collins code
+		const createHelicalArc = function(r, pitch, incAngle)
+		{
+			// References:
+			// 1. A. Riskus, "Approximation of a Cubic Bezier Curve by Circular Arcs and Vice Versa"
+			// 2. Imre Juhasz, "Approximating the helix with rational cubic Bezier curves"
+
+			var alpha = incAngle*Math.PI/360.0,  // half included angle
+			p = pitch/(2*Math.PI),    // helix height per radian
+			ax = r*Math.cos(alpha),
+			ay = r*Math.sin(alpha),
+			b = p*alpha*(r - ax)*(3*r - ax)/(ay*(4*r - ax)*Math.tan(alpha)),
+			b0 = {x:ax, y:-ay, z:-alpha*p},
+			b1 = {x:(4*r - ax)/3, y:-(r - ax)*(3*r - ax)/(3*ay), z:-b},
+			b2 = {x:(4*r - ax)/3, y:(r - ax)*(3*r - ax)/(3*ay), z:b},
+			b3 = {x:ax, y:ay, z:alpha*p};
+
+			return ["M", b0.x,b0.y,b0.z, "C", b1.x,b1.y,b1.z, b2.x,b2.y,b2.z, b3.x,b3.y,b3.z];
+		}
+
+		const createHelix = function(r, pitch, turns)
+		{
+			var incAngle, arcsPerTurn, nArcs,
+				seg, i,
+				s, c1, c2, e,
+				arcData, arc, helix,
+				alpha, theta, dz;
+
+			function XYrotate(v, degs)
+			{
+				// rotate a 3D vector around the Z axis
+				var A = Math.PI*degs/180.0,   // radians
+				sinA = Math.sin(A),
+				cosA = Math.cos(A);
+
+				return {x: v.x*cosA - v.y*sinA, y: v.x*sinA + v.y*cosA, z:v.z};
+			}
+
+			function Ztranslate(v, d)
+			{
+				// translate a 3D vector along z axis
+				return {x:v.x , y:v.y , z:v.z+d};
+			}
+
+			// find integer number of segments needed with 90<incAngle<120 deg
+			nArcs = turns < 1? Math.ceil(3*turns): Math.floor(4*turns);
+			arcsPerTurn = nArcs/turns;
+			incAngle = 360/arcsPerTurn;
+
+			arcData = createHelicalArc(r, pitch, incAngle);
+			alpha = incAngle/2;
+			dz = pitch/(2*arcsPerTurn);
+			// rotate to 1st quadrant and translate to start in XY plane
+			s = {x:arcData[1], y:arcData[2], z:arcData[3]};
+			s = XYrotate(s, alpha);
+			s = Ztranslate(s, dz);
+			c1 = {x:arcData[5], y:arcData[6], z:arcData[7]};
+			c1 = XYrotate(c1, alpha);
+			c1 = Ztranslate(c1, dz);
+			c2 = {x:arcData[8], y:arcData[9], z:arcData[10]};
+			c2 = XYrotate(c2, alpha);
+			c2 = Ztranslate(c2, dz);
+			e = {x:arcData[11], y:arcData[12], z:arcData[13]};
+			e = XYrotate(e, alpha);
+			e = Ztranslate(e, dz);
+
+			arc = ["M", s.x,s.y,s.z, "C", c1.x,c1.y,c1.z, c2.x,c2.y,c2.z, e.x,e.y,e.z];
+
+			// start helix data array with first segment
+			helix = arc.slice(0);
+			// copy, rotate and translate successive curve segments and append to helix array
+			for (i = 1; i<nArcs; i++)
+			{
+				theta = incAngle*(i % arcsPerTurn);
+				dz = i*pitch/arcsPerTurn;
+
+				c1 = XYrotate({x:arc[5], y:arc[6], z:arc[7]}, theta);
+				c1 = Ztranslate(c1, dz);
+				c2 = XYrotate({x:arc[8], y:arc[9], z:arc[10]}, theta);
+				c2 = Ztranslate(c2, dz);
+				e = XYrotate({x:arc[11], y:arc[12], z:arc[13]}, theta);
+				e = Ztranslate(e, dz);
+
+				helix.push(c1.x,c1.y,c1.z, c2.x,c2.y,c2.z, e.x,e.y,e.z);
+			}
+
+			return helix;
+		}
+		// End A R Collins code
+		//----------------------------------------------------------------------
+
+		/*----------------------------------------------------------------------
+		OBSERVATIONS
+
+		The return value, helix, differs from how this application treats
+		Bezier curves. Here, helix consists of the letter "M", three numbers
+		representing the 3D coordinates of the first point, a "C", and a
+		series of numbers, the count of which is divisible by 9. Each group
+		of three numbers represents a 3D coordinate of a control point and
+		each group of three control points represent a section of the cubic
+		Bezier curve.
+
+		For convenience, imagine a modified helix array by removing the "M"
+		and "C" elements and converting each triplet of numbers into 3D points.
+
+		The curve passes through the first (index 0), fourth, and every third
+		point afterwards. The points on either side of these pass-through
+		points determine the tangent of the curve at the pass-through point.
+		By construction, each pass-through point and its adjacent points are
+		colinear though this is not generally true for all cubic Bezier
+		curves.
+
+		For this application, we treat each helix pass-through point as the
+		center value of a segment point. Let h[k] denote such a pass-through
+		point. If k-1 > 0, then the segment point's backwardWeight is the
+		length of the vector h[k-1] - h[k]. If k+1 < h.length, then the
+		segment point's forward vector is the normalized vector h[k+1] - h[k]
+		and the forwardWeight is the length of h[k+1] - h[k].
+
+		Note that since the application allows the user to specify the forward
+		vectors of the first and last segment points, the constructed curve is
+		not necessarily a true helix at these points.
+
+		The createHelix function takes a radius (r), pitch, and turns of the
+		helix. It calcuates the incAngle determined by turns. The function
+		createHelicalArc takes r, pitch, and incAngle to construct a helical
+		arc between the angles -incAngle/2 and incAngle/2. The createHelix
+		function constructs a new arc by rotation the createHelicalArc arc
+		by incAngle/2 to start the arc at angle 0. The function then produces
+		the helix by copying the angle 0 arc, rotating and changing its height,
+		enough times to form the helix.
+
+		IMPLEMENTATION
+
+		The application supports increasing/decreasing radii helices so
+		the createHelix function cannot be used as is. Instead, we use the
+		function createHelicalArc instead. As done in createHelix, we
+		rotate the arc and take the tangent.
+
+		Note a flaw in earlier implementations was the assumption that the
+		forward and backward weights were fixed for the entire helix. This
+		is not true.
+		*/
+
+		if (!is.defined(options.radius)) throw new Error();
+		if (!is.defined(options.theta)) throw new Error();
+		if (!is.defined(options.depth)) throw new Error();
+		if (!is.defined(options.sweep)) throw new Error();
+		if (options.debug) {
+			console.log('spiralParser.arcollins: options %o', options);
+		}
+
+		const pitch = options.depth * 360 / options.sweep;
+		const arc = createHelicalArc(options.radius, pitch, 90);
+
+		// TODO: The right rotation calcuation is off
+		const XYrotate = function(v, degs)
+		{
+			// rotate a 3D vector around the Z axis
+			var A = Math.PI*degs/180.0,   // radians
+			sinA = Math.sin(A),
+			cosA = Math.cos(A);
+
+			return {x: v.x*cosA - v.y*sinA, y: v.x*sinA + v.y*cosA, z:v.z};
+		}
+
+		const alpha = options.theta + 45;
+		let p0 = {x:arc[1], y:arc[2], z:arc[3]};
+		p0 = XYrotate(p0, alpha);
+		let p1 = {x:arc[5], y:arc[6], z:arc[7]};
+		p1 = XYrotate(p1, alpha);
+
+		// TODO: Need to patch in weight; #circleWeight * radius is close
+		// but not what this algorithm calculates
+		const v01 = new Vector3(p1.x - p0.x, p1.z - p0.z, p1.y - p0.y);
+		const weight = v01.length();
+		let forward = v01.normalize().clamp();
+		if (options.rotate === 'right') forward = forward.scale(-1);
 		if (options.debug) console.log('\tforward %o', forward);
 		return forward;
 	}

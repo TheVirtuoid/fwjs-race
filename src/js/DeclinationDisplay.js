@@ -89,8 +89,11 @@ class DeclinationDisplay {
 	}
 
 	#onChangeAlgo(e) {
-		console.log(e);
-		throw new NotImplementedError('DeclinationDisplay.onChangeAlgo');
+		const value = this.#algoSelector.value;
+		if (value != this.#track.altDeclinationAlgo) {
+			this.#track.altDeclinationAlgo = value;
+			this.#createMesh();
+		}
 	}
 
 	#onChangeValue() {
