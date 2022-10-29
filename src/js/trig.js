@@ -12,9 +12,11 @@ class trig {
 
 	static #degreesToRadians = Math.PI / 180;
 	static #radiansToDegrees = 180 / Math.PI;
+	static #twoPI = 2 * Math.PI;
 
 	static get degreesToRadians() { return trig.#degreesToRadians }
 	static get radiansToDegrees() { return trig.#radiansToDegrees }
+	static get twoPI() { return trig.#twoPI }
 
 	static clampAt0And1(v, tolerance) {
 		if (!is.defined(tolerance)) tolerance = trig.oneZeroTolerance;

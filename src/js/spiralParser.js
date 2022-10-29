@@ -325,31 +325,33 @@ class spiralParser {
 		return { center, forward, weight }
 	}
 
-	// From A R Collins code
+	// Modified from A R Collins code
+	// This now returns just the first two points as Vector3's
 	static #createHelicalArc(r, pitch, incAngle)
 	{
 		// References:
 		// 1. A. Riskus, "Approximation of a Cubic Bezier Curve by Circular Arcs and Vice Versa"
 		// 2. Imre Juhasz, "Approximating the helix with rational cubic Bezier curves"
 
-		var alpha = incAngle*Math.PI/360.0,  // half included angle
-		p = pitch/(2*Math.PI),    // helix height per radian
-		ax = r*Math.cos(alpha),
-		ay = r*Math.sin(alpha),
-		b = p*alpha*(r - ax)*(3*r - ax)/(ay*(4*r - ax)*Math.tan(alpha)),
-		b0 = {x:ax, y:-ay, z:-alpha*p},
-		b1 = {x:(4*r - ax)/3, y:-(r - ax)*(3*r - ax)/(3*ay), z:-b},
-		b2 = {x:(4*r - ax)/3, y:(r - ax)*(3*r - ax)/(3*ay), z:b},
-		b3 = {x:ax, y:ay, z:alpha*p};
+		const alpha = incAngle * Math.PI / 360.0,  // half included angle
+		p = pitch / trig.twoPI,    // helix height per radian
+		ax = r * Math.cos(alpha),
+		ay = r * Math.sin(alpha);
 
-		return ["M", b0.x,b0.y,b0.z, "C", b1.x,b1.y,b1.z, b2.x,b2.y,b2.z, b3.x,b3.y,b3.z];
+		return [
+			new Vector3(ax, -ay, -alpha*p),
+			new Vector3(
+				(4 * r - ax) / 3,
+				-(r - ax) * (3 * r - ax) / (3 * ay),
+				-p * alpha * (r - ax) * (3 * r - ax) / (ay * (4 * r - ax) * Math.tan(alpha)))
+			];
 	}
 
 	// Modified from A R Collins code
 	static #XYrotate(k, v, degs)
 	{
 		// rotate a 3D vector around the Z axis
-		var A = Math.PI*degs/180.0,   // radians
+		const A = degs * trig.degreesToRadians,   // radians
 		sinA = Math.sin(A),
 		cosA = Math.cos(A);
 
@@ -376,10 +378,8 @@ class spiralParser {
 
 		// Rotate the arc for this point (per A R Collins createHelix)
 		const alpha = cylPoint.angle + 45;
-		let p0 = {x:helix.arc[1], y:helix.arc[2], z:helix.arc[3]};
-		p0 = this.#XYrotate(k, p0, alpha);
-		let p1 = {x:helix.arc[5], y:helix.arc[6], z:helix.arc[7]};
-		p1 = this.#XYrotate(k, p1, alpha);
+		const p0 = this.#XYrotate(k, helix.arc[0], alpha);
+		const p1 = this.#XYrotate(k, helix.arc[1], alpha);
 
 		// Calculate the tangent
 		let tangent = new Vector3(p1.x - p0.x, p1.z - p0.z, p1.y - p0.y);
