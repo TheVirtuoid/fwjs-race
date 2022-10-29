@@ -570,27 +570,29 @@ class spiralParser {
 		const arc = createHelicalArc(cylPoint.radius, helix.pitch, 90);
 
 		// TODO: The right rotation calcuation is off
-		const XYrotate = function(v, degs)
+		const XYrotate = function(k, v, degs)
 		{
 			// rotate a 3D vector around the Z axis
 			var A = Math.PI*degs/180.0,   // radians
 			sinA = Math.sin(A),
 			cosA = Math.cos(A);
 
-			return {x: v.x*cosA - v.y*sinA, y: v.x*sinA + v.y*cosA, z:v.z};
+			return {x: k*(v.x*cosA - v.y*sinA), y: k*(v.x*sinA + v.y*cosA), z:v.z};
 		}
+
+		const k =
+			helix.rotate === 'left' ? 1 :
+			helix.rotate === 'right' ? -1 :
+			0;
 
 		const alpha = cylPoint.angle + 45;
 		let p0 = {x:arc[1], y:arc[2], z:arc[3]};
-		p0 = XYrotate(p0, alpha);
+		p0 = XYrotate(k, p0, alpha);
 		let p1 = {x:arc[5], y:arc[6], z:arc[7]};
-		p1 = XYrotate(p1, alpha);
+		p1 = XYrotate(k, p1, alpha);
 
-		// TODO: Need to patch in weight; #circleWeight * radius is close
-		// but not what this algorithm calculates
 		let v01 = new Vector3(p1.x - p0.x, p1.z - p0.z, p1.y - p0.y);
 		const weight = v01.length();
-		if (helix.rotate === 'right') v01 = v01.scale(-1);
 		const nv01 = v01.normalize();
 		const forward = helix.plane.getVector(nv01).clamp();
 		if (helix.debug) console.log('\tforward %o', forward);
