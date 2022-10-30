@@ -26,7 +26,8 @@ function registerCallback(track) {
 	declinationDisplay.register(track);
 }
 
-const car = new Car({ scale: .2, name: 'Greeny', color: new Color3.Green(), wheelType: 'ellipse' });
+const carGreen = new Car({ scale: .2, name: 'Greeny', color: new Color3.Green(), wheelType: 'ellipse' });
+
 let carController;
 
 window.initFunction = async function() {
@@ -55,10 +56,10 @@ window.initFunction = async function() {
 			"trackFamilies", "trackMembers", gameEngine, errorDisplay,
 			() => {
 				ball.destroy();
-				car.junk();
+				carGreen.junk();
 				}, registerCallback);
 		ball = new Ball(gameEngine, trackDisplay, "go");
-		carController = new CarController({ gameEngine, tracks: trackDisplay, car });
+		carController = new CarController({ gameEngine, tracks: trackDisplay, car: carGreen });
 		document.getElementById('go-car').addEventListener('click', carController.placeInGate.bind(carController));
 
 

@@ -39,7 +39,7 @@ class BabylonAdaptor {
 				sideOrientation: Mesh.DOUBLESIDE,
 				closePath: closed,
 			},
-			this._scene);
+			this.#scene);
 		mesh.physicsImpostor = new PhysicsImpostor(mesh, PhysicsImpostor.MeshImpostor, meshOptions, this.#scene);
 		return mesh;
 	}

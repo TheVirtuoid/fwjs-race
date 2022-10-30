@@ -16,8 +16,18 @@ const radiusType = new Map([
 
 const trackWidth = 4;
 const trackRadius = trackWidth * radiusType.get('wide');
-const beginningTrackSlope = 55;
-const trackRiseRate = Math.tan(beginningTrackSlope * Math.PI / 180);
+
+// slope definitions
+const startingGateSlope = 55;
+const startingGateRiseRate = Math.tan(startingGateSlope * Math.PI / 180);
+const startingGateLength = 2;
+
+// first run
+const firstRunSlope = 55;
+const firstRunRiseRate = Math.tan(firstRunSlope * Math.PI / 180);
+const firstRunLength = 40;
+
+const trackStart = { x: 20, y:15, z: 0};
 
 export function testTrack(tracks) {
 
@@ -33,10 +43,14 @@ export function testTrack(tracks) {
 
 	const launch = {
 		start: {
-			center: { x:20 , y:15, z:0 }
+			center: trackStart
 		},
 		end: {
-			center: { x:18, y:15 - 2 * trackRiseRate, z:0 }
+			center: {
+				x: trackStart.x - startingGateLength,
+				y: trackStart.y - startingGateLength * startingGateRiseRate,
+				z: 0
+			}
 		},
 
 		init: function() {
@@ -62,7 +76,7 @@ export function testTrack(tracks) {
 			points: [
 				launch.straight,
 				{
-					center: { x:0, y:1, z:0 },
+					center: { x:-10, y:1, z:0 },
 					forward: negX,
 					backwardWeight: 4,
 				},

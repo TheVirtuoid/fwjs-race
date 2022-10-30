@@ -27,6 +27,8 @@ export default class CarController {
 		const z = p0.z * t + p1.z * olt;
 
 		this.#car.build({ position: new Vector3( x, y, z ), scene: this.#gameEngine.scene });
+		console.log(this.#car.wheelBase.getBoundingInfo());
+		console.log(this.#car.wheelBase.getHierarchyBoundingVectors());
 		this.#gameEngine.camera.lockedTarget = this.#car.chassis;
 	}
 }
