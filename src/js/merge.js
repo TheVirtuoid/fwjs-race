@@ -1,5 +1,5 @@
 import is from './is.js'
-import StaticClassError from './StaticClassError.js'
+import StaticClassError from './errors/StaticClassError.js'
 import validate from './validate.js'
 import Vector3 from './Vector3.js'
 
@@ -31,8 +31,6 @@ class merge {
 	static #validSettings = [
 		{ key: 'debug' },
 		{ key: 'debugSegments' },
-		{ key: 'altDeclination' },
-		{ key: 'altDeclinationAlgo' },
 		{ key: 'precision', validator: validate.positiveNumber },
 		{ key: 'trackBank', validator: validate.trackBank, },
 		{ key: 'trackWidth', validator: validate.positiveNumber },

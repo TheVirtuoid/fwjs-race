@@ -2,9 +2,10 @@ import { createBuilder } from './Builder.js'
 import CylindricalCoordinate from './CylindricalCoordinate.js'
 import is from './is.js'
 import merge from './merge.js'
+import NotImplementedError from './errors/NotImplementedError.js'
 import Plane from './Plane.js'
 import pointParser from './pointParser.js'
-import StaticClassError from './StaticClassError.js'
+import StaticClassError from './errors/StaticClassError.js'
 import trig from './trig.js'
 import validate from './validate.js'
 import Vector3 from './Vector3.js'
@@ -48,12 +49,6 @@ class spiralParser {
 		const specs = this.#getSpecs(points, rawSpiral, parentSettings, name);
 		this.#generate(builders, points, specs, rawSpiral, parentSettings, name);
 	}
-
-	static getDeclinationAlgorithms() {
-		return [ 'getPointForward' ]
-	}
-
-	static #circleWeight = 0.5519150244935105707435627;
 
 	/*--------------------------------------------------------------------------
 	SPECIFICATION
@@ -131,15 +126,12 @@ class spiralParser {
 			specs.exit = new CylindricalCoordinate(specs.exit.radius, endAngle, specs.exit.height);
 		}
 		specs.sweep = sweep;
-		if (is.number(settings.altDeclination)) specs.altDeclination = settings.altDeclination;
-		else if (is.string(settings.altDeclination)) specs.altDeclination = Number(settings.altDeclination);
-		specs.altDeclinationAlgo = is.string(settings.altDeclinationAlgo) ? settings.altDeclinationAlgo : '#getPointForward';
 
 		// Set the trackBank multiplier
 		specs.trackBank = settings.trackBank;
 		if (rotate === 'left') specs.trackBankMultiplier = 1;
 		else if (rotate === 'right') specs.trackBankMultiplier = -1;
-		else throw new Error('spiralParser.#getSpecs: trackBankMultiplier not implemented');
+		else throw new NotImplementedError('spiralParser.#getSpecs', `${rotate} trackBankMultiplier`);
 
 		// Return the specifications
 		return specs;
@@ -153,7 +145,7 @@ class spiralParser {
 		// TODO: This assumes the rotation axis is either up or forward.
 		// This may not always be the case.
 		if (rotate === 'left' || rotate === 'right') return Vector3.up;
-		throw new Error('#getRotationAxis: not implemented for non-up axis');
+		throw new NotImplementedError('spiralParser.#getRotationAxis', rotate);
 	}
 
 	static #getRotationPlane(specs, rotate, rawSpiral, name) {
@@ -185,7 +177,7 @@ class spiralParser {
 					rotCenter = center;
 					rotAxis = this.#getRotationAxis(specs, rotate);
 				} else {
-					throw new Error('#getRotationPlane: not implemented, center, rotate up identical entry and exit planes');
+					throw new NotImplementedError('spiralParser.#getRotationPlane',  'center, rotate up identical entry and exit planes');
 				}
 			} else if (rotate === 'left' || rotate === 'right') {
 				const toEnd = entryPlane.origin.toNormal(exitPlane.origin);
@@ -196,16 +188,15 @@ class spiralParser {
 				rotCenter = entryPlane.origin.midpoint(exitPlane.origin);
 				rotAxis = this.#getRotationAxis(specs, rotate);
 			} else {
-				throw new Error('#getRotationPlane: not implemented, no center, rotate up identical entry and exit planes');
+				throw new NotImplementedError('spiralParser.#getRotationPlane', 'no center, rotate up identical entry and exit planes');
 			}
 		} else if (entryPlane.isParallel(exitPlane)) {
 			//const center = Vector3.validate(rawSpiral, 'center', name);
 			//if (rotate === 'left') {
-			//	throw new Error('#getRotationPlane: make sure centernot implemented, parallel entry and exit planes');
 			//} else if (rotate === 'right') {
 			//} else {
 			//}
-			throw new Error('#getRotationPlane: not implemented, parallel entry and exit planes');
+			throw new NotImplementedError('spiralParser.#getRotationPlane', 'parallel entry and exit planes');
 		} else {
 			// 'center' is illegal
 			validate.undefined(rawSpiral, 'center', name, 'entry and exit planes intersect');
@@ -266,49 +257,53 @@ class spiralParser {
 	--------------------------------------------------------------------------*/
 	static #generate(builders, points, specs, rawSpiral, parentSettings, name) {
 
+		// Create helix object with constant values
+		const helix = {
+			debug: specs.debug,
+			depth: specs.exit.height - specs.entry.height,
+			plane: specs.rotationPlane,
+			rotate: specs.rotate,
+			sweep: specs.sweep,
+		}
+		helix.pitch = helix.depth * 360 / helix.sweep;
+
 		// Insert the entry point if this is the first point of the segment.
 		// Otherwise patch its forwardWeight if required.
 		if (points.length === 0) points.push(specs.startsAt);
+		let { forward, weight } = this.#getForward(specs.entry, helix);
 		const p = points[points.length - 1];
-		p.forwardWeight = specs.entry.radius * this.#circleWeight;
+		p.forwardWeight = weight;
 		p.trackBank = this.#processInterpolationArray(specs.trackBank, 0, specs.trackBankMultiplier);
 
-		// Add the 90° points
+		// Add the interior points
 		const parts = Math.ceil(specs.sweep / 90);
 		for (let i = 1; i < parts; i++) {
-			this.#addPoint(builders, points, i / parts, specs, rawSpiral, parentSettings, name);
+			this.#addPoint(builders, points, i / parts, specs, helix, rawSpiral, parentSettings, name);
 		}
 
 		// Add the last point
-		specs.endsAt.backwardWeight = specs.exit.radius * this.#circleWeight;
+		weight = this.#getForward(specs.exit, helix).weight;
+		specs.endsAt.backwardWeight = weight;
 		specs.endsAt.trackBank = this.#processInterpolationArray(specs.trackBank, 1, specs.trackBankMultiplier);
 		points.push(specs.endsAt);
 		builders.push(createBuilder(parentSettings));
 	}
 
-	static #addPoint(builders, points, t, specs, rawSpiral, parentSettings, name) {
+	static #addPoint(builders, points, t, specs, helix, rawSpiral, parentSettings, name) {
 		const cylPoint = specs.entry.interpolate(specs.exit, t);
 		if (specs.debug) {
 			console.log('spiralParser.#addPoint(%f): entry %o, exit %o, interpolated %o',
 				t, specs.entry, specs.exit, cylPoint);
 		}
 
-		const options = {
-			debug: specs.debug,
-			getForward: this.#getPointForward,
-			altDeclination: specs.altDeclination,
-			depth: specs.exit.height - specs.entry.height,
-			rotate: specs.rotate,
-			sweep: specs.sweep,
-		};
-		const polar = specs.rotationPlane.getHelixAt(cylPoint, options);
+		const { center, forward, weight } = this.#getHelixAt(cylPoint, helix);
 
 		const pointName = `${name}@${cylPoint.angle}`;
 		const point = merge.settings(parentSettings, rawSpiral, pointName);
-		point.backwardWeight = cylPoint.radius * this.#circleWeight;
-		point.center = polar.point;
-		point.forward = polar.forward;
-		point.forwardWeight = point.backwardWeight;
+		point.backwardWeight = weight;
+		point.center = center;
+		point.forward = forward;
+		point.forwardWeight = weight;
 		point.name = pointName;
 		point.trackBank = this.#processInterpolationArray(specs.trackBank, t, specs.trackBankMultiplier);
 
@@ -316,78 +311,81 @@ class spiralParser {
 		builders.push(createBuilder(parentSettings));
 	}
 
-	static #getPointForward(plane, cos, sin, radial, options) {
-		/*
-		Let a left-rotating helix be centered at (0, 0, 0), with radius r,
-		starting at angle θ0 and altitude h0 and ending at angle θ1 and
-		altitude h1. For our purposes, 0 ≤ θ0 < 2π and θ0 < θ1.
+	static #getHelixAt(cylPoint, helix) {
+		const theta = cylPoint.angle * trig.degreesToRadians;
+		const cos = trig.clampAt0And1(Math.cos(theta));
+		const sin = trig.clampAt0And1(Math.sin(theta));
 
-		The first point in the helix is (r cos θ0, h0, r sin θ0) and the
-		last is (r cos θ1, h1, r sin θ1). Any point on the helix is provided by:
-			P(θ) = (r cos θ, h0 + (h1 - h0) (θ - θ0) / (θ1 - θ0), r sin θ)
-		where θ0 ≤ θ ≤ θ1.
+		const plane = helix.plane;
+		const radial = helix.plane.xAxis.scale(cos).add(sin, helix.plane.yAxis);
+		const center = helix.plane.origin.add(cylPoint.radius, radial).add(cylPoint.height, helix.plane.normal);
 
-		To verify, P(θ0)
-			= (r cos θ0, h0 + (h1 - h0) (θ0 - θ0) / (θ1 - θ0), r sin θ0)
-			= (r cos θ0, h0 + (h1 - h0) 0 / (θ1 - θ0), r sin θ0)
-			= (r cos θ0, h0, r sin θ0)
-		and P(θ1)
-			= (r cos θ1, h0 + (h1 - h0) ( θ1 - θ0) / (θ1 - θ0), r sin θ1)
-			= (r cos θ1, h0 + (h1 - h0) 1, r sin θ1)
-			= (r cos θ1, h0 + h1 - h0, r sin θ1)
-			= (r cos θ1, h1, r sin θ1)
+		const { forward, weight } = this.#getForward(cylPoint, helix);
 
-		The tangent at an angle is then P’(θ)
-			= (d[r cos θ]/dθ, d[h0 + (h1 - h0) (θ - θ0) / (θ1 - θ0)]/dθ, d[r sin θ]/dθ)
-			= (-r sin θ, dh0/dθ + d[(h1 - h0) θ / (θ1 - θ0)]/dθ - d[(h1 - h0) (-θ0) / (θ1 - θ0)]/dθ, r cos θ)
-			= (-r sin θ, (h1 - h0) / (θ1 - θ0), r cos θ)
-		*/
+		return { center, forward, weight }
+	}
 
-		if (!is.defined(options.depth)) throw new Error();
-		if (!is.defined(options.rotate)) throw new Error();
-		if (!is.defined(options.sweep)) throw new Error();
-		if (options.debug) {
-			console.log('spiralParser.#getPointForward: options %o', options);
+	// Modified from A R Collins code
+	// This now returns just the first two points as Vector3's
+	static #createHelicalArc(r, pitch, incAngle)
+	{
+		// References:
+		// 1. A. Riskus, "Approximation of a Cubic Bezier Curve by Circular Arcs and Vice Versa"
+		// 2. Imre Juhasz, "Approximating the helix with rational cubic Bezier curves"
+
+		const alpha = incAngle * Math.PI / 360.0,  // half included angle
+		p = pitch / trig.twoPI,    // helix height per radian
+		ax = r * Math.cos(alpha),
+		ay = r * Math.sin(alpha);
+
+		return [
+			new Vector3(ax, -alpha * p, -ay),
+			new Vector3(
+				(4 * r - ax) / 3,
+				-p * alpha * (r - ax) * (3 * r - ax) / (ay * (4 * r - ax) * Math.tan(alpha)),
+				-(r - ax) * (3 * r - ax) / (3 * ay))
+			];
+	}
+
+	// Modified from A R Collins code to return a Vector3
+	static #XYrotate(k, v, degs)
+	{
+		// rotate a 3D vector around the Z axis
+		const A = degs * trig.degreesToRadians,   // radians
+		sinA = Math.sin(A),
+		cosA = Math.cos(A);
+
+		return new Vector3(k* (v.x * cosA - v.z * sinA), v.y, k * (v.x * sinA + v.z * cosA));
+	}
+
+	static #getForward(cylPoint, helix) {
+
+		if (helix.debug) {
+			console.log('spiralParser.#getForward: cylPoint %o, helix %o', cylPoint, helix);
 		}
 
-		if (options.rotate !== 'left' && options.rotate !== 'right') {
-			throw new Error(`spiralParser.#getPointForward: ${options.rotate} not implemented`);
+		// Recalculate the arc if necessary
+		if (!helix.arc || helix.radius != cylPoint.radius) {
+			helix.arc = spiralParser.#createHelicalArc(cylPoint.radius, helix.pitch, 90);
+			helix.radius = cylPoint.radius;
 		}
 
-		const tangents = [];
-
-		// TODO: The forward vector is not yet correct.
-		//	'appearsToWork' seems to work for turns >= 4 but fails for turns <= 1
-		//	'fromDerivative' seems to work for sweeps < 2π but fails otherwise
-		const absDepth = Math.abs(options.depth);
-		if (absDepth <= 0.1) tangents[1] = Vector3.zero;
-		else {
-
-			// NOTE: This mostly works with
-			const appearsToWork = 1 / options.depth;
-			const fromDerivative = options.depth / (options.sweep * trig.degreesToRadians);
-			const toUse =
-				is.defined(options.altDeclination) ? options.altDeclination :
-				options.sweep <= 360 ? fromDerivative : appearsToWork;
-			if (options.debug) {
-				console.log('\tappearsToWork %f, fromDerivative %f, using %f',
-					appearsToWork, fromDerivative, toUse);
-			}
-			tangents[1] = plane.normal.scale(toUse);
-		}
-
-		if (options.debug) console.log('\tY component %o', tangents[1]);
-
+		// Set k according to left or right rotation
 		const k =
-			options.rotate === 'left' ? 1 :
-			options.rotate === 'right' ? -1 :
+			helix.rotate === 'left' ? 1 :
+			helix.rotate === 'right' ? -1 :
 			0;
-		tangents[0] = plane.xAxis.scale(-k * sin);
-		tangents[2] = plane.yAxis.scale(k * cos);
 
-		const forward = Vector3.scaledSum(tangents, [1, 1, 1]).normalize().clamp();
-		if (options.debug) console.log('\tforward %o', forward);
-		return forward;
+		// Rotate the arc for this point (per A R Collins createHelix)
+		const alpha = cylPoint.angle + 45;
+		const p0 = this.#XYrotate(k, helix.arc[0], alpha);
+		const p1 = this.#XYrotate(k, helix.arc[1], alpha);
+
+		// Calculate the tangent
+		let tangent = p0.to(p1);
+		const forward = helix.plane.getVector(tangent.normalize()).clamp();
+		if (helix.debug) console.log('\tforward %o', forward);
+		return { forward, weight: tangent.length() }
 	}
 
 	static #processInterpolationArray(value, t, multiplier) {
@@ -405,3 +403,157 @@ class spiralParser {
 }
 
 export default spiralParser
+
+/*==============================================================================
+
+ATTRIBUTION AND DISCUSSION FOR getPointForward
+
+Code derived from https://2015fallhw.github.io/arcidau/HelixDrawing.html
+Author: A R Collins
+Other references from article:
+	A. Riškus, "Approximation of a Cubic Bézier Curve by Circular Arcs and Vice Versa",
+		Information Technology and Control, 2006
+	Wikipedia article, Bézier spline
+	I. Juhász, "Approximating the helix with rational cubic Bézier curves",
+		Computer-Aided Design, 1995.
+
+ORIGINAL CODE
+
+createHelicalArc = function(r, pitch, incAngle)
+{
+	// References:
+	// 1. A. Riskus, "Approximation of a Cubic Bezier Curve by Circular Arcs and Vice Versa"
+	// 2. Imre Juhasz, "Approximating the helix with rational cubic Bezier curves"
+
+	var alpha = incAngle*Math.PI/360.0,  // half included angle
+	p = pitch/(2*Math.PI),    // helix height per radian
+	ax = r*Math.cos(alpha),
+	ay = r*Math.sin(alpha),
+	b = p*alpha*(r - ax)*(3*r - ax)/(ay*(4*r - ax)*Math.tan(alpha)),
+	b0 = {x:ax, y:-ay, z:-alpha*p},
+	b1 = {x:(4*r - ax)/3, y:-(r - ax)*(3*r - ax)/(3*ay), z:-b},
+	b2 = {x:(4*r - ax)/3, y:(r - ax)*(3*r - ax)/(3*ay), z:b},
+	b3 = {x:ax, y:ay, z:alpha*p};
+
+	return ["M", b0.x,b0.y,b0.z, "C", b1.x,b1.y,b1.z, b2.x,b2.y,b2.z, b3.x,b3.y,b3.z];
+}
+
+createHelix = function(r, pitch, turns)
+{
+	var incAngle, arcsPerTurn, nArcs,
+		seg, i,
+		s, c1, c2, e,
+		arcData, arc, helix,
+		alpha, theta, dz;
+
+	function XYrotate(v, degs)
+	{
+		// rotate a 3D vector around the Z axis
+		var A = Math.PI*degs/180.0,   // radians
+		sinA = Math.sin(A),
+		cosA = Math.cos(A);
+
+		return {x: v.x*cosA - v.y*sinA, y: v.x*sinA + v.y*cosA, z:v.z};
+	}
+
+	function Ztranslate(v, d)
+	{
+		// translate a 3D vector along z axis
+		return {x:v.x , y:v.y , z:v.z+d};
+	}
+
+	// find integer number of segments needed with 90<incAngle<120 deg
+	nArcs = turns < 1? Math.ceil(3*turns): Math.floor(4*turns);
+	arcsPerTurn = nArcs/turns;
+	incAngle = 360/arcsPerTurn;
+
+	arcData = createHelicalArc(r, pitch, incAngle);
+	alpha = incAngle/2;
+	dz = pitch/(2*arcsPerTurn);
+	// rotate to 1st quadrant and translate to start in XY plane
+	s = {x:arcData[1], y:arcData[2], z:arcData[3]};
+	s = XYrotate(s, alpha);
+	s = Ztranslate(s, dz);
+	c1 = {x:arcData[5], y:arcData[6], z:arcData[7]};
+	c1 = XYrotate(c1, alpha);
+	c1 = Ztranslate(c1, dz);
+	c2 = {x:arcData[8], y:arcData[9], z:arcData[10]};
+	c2 = XYrotate(c2, alpha);
+	c2 = Ztranslate(c2, dz);
+	e = {x:arcData[11], y:arcData[12], z:arcData[13]};
+	e = XYrotate(e, alpha);
+	e = Ztranslate(e, dz);
+
+	arc = ["M", s.x,s.y,s.z, "C", c1.x,c1.y,c1.z, c2.x,c2.y,c2.z, e.x,e.y,e.z];
+
+	// start helix data array with first segment
+	helix = arc.slice(0);
+	// copy, rotate and translate successive curve segments and append to helix array
+	for (i = 1; i<nArcs; i++)
+	{
+		theta = incAngle*(i % arcsPerTurn);
+		dz = i*pitch/arcsPerTurn;
+
+		c1 = XYrotate({x:arc[5], y:arc[6], z:arc[7]}, theta);
+		c1 = Ztranslate(c1, dz);
+		c2 = XYrotate({x:arc[8], y:arc[9], z:arc[10]}, theta);
+		c2 = Ztranslate(c2, dz);
+		e = XYrotate({x:arc[11], y:arc[12], z:arc[13]}, theta);
+		e = Ztranslate(e, dz);
+
+		helix.push(c1.x,c1.y,c1.z, c2.x,c2.y,c2.z, e.x,e.y,e.z);
+	}
+
+	return helix;
+}
+
+ANALYSIS
+
+The return value of the function createHelix differs from how this
+application treats Bezier curves. Here, helix consists of the letter
+"M", three numbers representing the 3D coordinates of the first point,
+a "C", and a series of numbers, the count of which is divisible by 9.
+Each group of three numbers represents a 3D coordinate of a control
+point and each group of three control points represent a section of
+the cubic Bezier curve.
+
+For convenience, imagine a modified helix array by removing the "M"
+and "C" elements and converting each triplet of numbers into 3D points.
+
+The curve passes through the first (index 0), fourth, and every third
+point afterwards. The points on either side of these pass-through
+points determine the tangent of the curve at the pass-through point.
+By construction, each pass-through point and its adjacent points are
+colinear though this is not generally true for all cubic Bezier
+curves.
+
+For this application, we treat each helix pass-through point as the
+center value of a segment point. Let h[k] denote such a pass-through
+point. If k-1 > 0, then the segment point's backwardWeight is the
+length of the vector h[k-1] - h[k]. If k+1 < h.length, then the
+segment point's forward vector is the normalized vector h[k+1] - h[k]
+and the forwardWeight is the length of h[k+1] - h[k].
+
+Note that since the application allows the user to specify the forward
+vectors of the first and last segment points, the constructed curve is
+not necessarily a true helix at these points.
+
+The createHelix function takes a radius (r), pitch, and turns of the
+helix. It calcuates the incAngle determined by turns. The function
+createHelicalArc takes r, pitch, and incAngle to construct a helical
+arc between the angles -incAngle/2 and incAngle/2. The createHelix
+function constructs a new arc by rotation the createHelicalArc arc
+by incAngle/2 to start the arc at angle 0. The function then produces
+the helix by copying the angle 0 arc, rotating and changing its height,
+enough times to form the helix.
+
+IMPLEMENTATION
+
+The application supports increasing/decreasing radii helices so
+the createHelix function cannot be used as is. Instead, we use just
+the function createHelicalArc instead. As done in createHelix, we
+rotate the arc and take the tangent. The length of the tangent determines
+the weights at that point and the normalize tangent is the forward
+vector.
+
+*/

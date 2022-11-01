@@ -3,7 +3,6 @@ import { TrackPOC } from './Builder.js'
 import BabylonAdapter from './BabylonAdapter.js'
 
 import DebugDisplay from './DebugDisplay.js'
-import DeclinationDisplay from './DeclinationDisplay.js'
 import ErrorDisplay from './ErrorDisplay.js'
 import TrackDisplay from './TrackDisplay.js'
 
@@ -18,12 +17,11 @@ import CarController from "./controllers/CarController";
 // WINDOW INITIALIZATION
 
 let gameEngine;
-let errorDisplay, debugDisplay, declinationDisplay;
+let errorDisplay, debugDisplay;
 let trackDisplay, ball;
 
 function registerCallback(track) {
 	debugDisplay.register(track);
-	declinationDisplay.register(track);
 }
 
 const carGreen = new Car({ scale: .2, name: 'Greeny', color: new Color3.Green(), wheelType: 'ellipse' });
@@ -38,12 +36,8 @@ window.initFunction = async function() {
 		'go',	// Disable ids
 		[		// Disable functions
 			(v) => debugDisplay.disable(v),
-			(v) => declinationDisplay.disable(v)
 		]);
 	try {
-		declinationDisplay = new DeclinationDisplay(
-			"ThisIsMe", ".declination", "altDeclination",
-			() => trackDisplay.createMesh());
 		debugDisplay = new DebugDisplay(
 			['debugGeneral', 'debugSegments'],
 			() => trackDisplay.createMesh());

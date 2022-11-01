@@ -1,4 +1,4 @@
-import StaticClassError from './StaticClassError.js';
+import StaticClassError from './errors/StaticClassError.js';
 
 class is {
 

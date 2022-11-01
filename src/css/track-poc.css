@@ -45,9 +45,6 @@ html, body {
 	transform: translate(-50%, -50%);
 }
 
-.declination {}
-
-/* adding hidden so we can better show/hide elements */
 .hidden {
 	display: none;
 }

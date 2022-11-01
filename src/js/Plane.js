@@ -1,6 +1,7 @@
 import CylindricalCoordinate from './CylindricalCoordinate.js'
 import is from './is.js'
 import Line from './Line.js'
+import NotImplementedError from './errors/NotImplementedError.js'
 import trig from './trig.js'
 import Vector3 from './Vector3.js'
 
@@ -20,8 +21,14 @@ class Plane {
 
 	get normal() { return this.#normal }
 	get origin() { return this.#origin }
-	get xAxis() { return this.#xAxis }
-	get yAxis() { return this.#yAxis }
+	get xAxis() {
+		if (!is.defined(this.#xAxis)) this.#setDefaultAxes();
+		return this.#xAxis
+	}
+	get yAxis() {
+		if (!is.defined(this.#xAxis)) this.#setDefaultAxes();
+		return this.#yAxis
+	}
 
 	contains(vertex, tolerance) {
 		if (!is.defined(tolerance)) tolerance = Plane.#defaultTolerance;
@@ -73,22 +80,14 @@ class Plane {
 			return new Line(origin, direction);
 		}
 	}
-	getHelixAt(cylPoint, options) {
+	getPoint(x, y, z) {
+		return this.#origin.add(1, getVector(x, y, z))
+	}
+	getVector(x, y, z) {
 		if (!is.defined(this.#xAxis)) this.#setDefaultAxes();
-
-		const theta = cylPoint.angle * trig.degreesToRadians;
-		const cos = trig.clampAt0And1(Math.cos(theta));
-		const sin = trig.clampAt0And1(Math.sin(theta));
-
-		const radial = this.#xAxis.scale(cos).add(sin, this.#yAxis);
-		const point = this.#origin.add(cylPoint.radius, radial).add(cylPoint.height, this.#normal);
-
-		const forward = options.getForward(this, cos, sin, radial, options);
-
-		return {
-			point: point,
-			forward: forward,
-		}
+		return Vector3.is(x) ?
+			this.#xAxis.scale(x.x).add(x.y, this.#normal).add(x.z, this.#yAxis) :
+			this.#xAxis.scale(x).add(y, this.#normal).add(z, this.#yAxis);
 	}
 	isParallel(other, tolerance) {
 		if (!is.defined(tolerance)) tolerance = Plane.#defaultTolerance;
@@ -121,7 +120,7 @@ class Plane {
 				this.#normal,
 				Vector3.up.dot(this.#normal),
 				Vector3.down.dot(this.#normal));
-			throw new Error('Plane.#setDefaultAxes: not implemented');
+			throw new NotImplementedError('Plane.#setDefaultAxes');
 		}
 	}
 	#toVertex(vertex) {

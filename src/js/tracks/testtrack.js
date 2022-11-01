@@ -258,7 +258,6 @@ export function testTrack(tracks) {
 					jump.runout
 				],
 			}],
-			altDeclination: -.1,
 		},
 	});
 	tracks.register({
