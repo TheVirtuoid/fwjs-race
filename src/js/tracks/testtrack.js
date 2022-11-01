@@ -1,4 +1,5 @@
 import Vector3 from '../Vector3.js'
+import startingGate from "./pieces/startingGate";
 
 const posX = Vector3.right;
 const negX = Vector3.left;
@@ -41,6 +42,7 @@ export function testTrack(tracks) {
 	//----------------------------------------------------------------------
 	// Common launch and jump points
 
+
 	const launch = {
 		start: {
 			center: trackStart
@@ -70,6 +72,17 @@ export function testTrack(tracks) {
 	}
 	launch.init();
 
+/*	const launch = startingGate({
+		slope: startingGateSlope,
+		startingPosition: trackStart,
+		cars: [
+			{ length: 1 },
+			{ length: 1 },
+			{ length: 1 },
+			{ length: 1 }
+		]
+	});*/
+
 	const jump = {
 		descent: 1,
 		launchSegment: {
@@ -78,7 +91,7 @@ export function testTrack(tracks) {
 				{
 					center: { x:-10, y:1, z:0 },
 					forward: negX,
-					backwardWeight: 4,
+					backwardWeight: 1,
 				},
 			],
 		},
