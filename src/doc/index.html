@@ -6,21 +6,305 @@
     <meta name="viewport" content="width=device-width,initial-scale=1.0">
     <meta name="Description" content="Fun With JavaScript Race Game - Presented by TheVirtuoid">
     <link rel="icon" href="/img/fwjs-race.ico">
-    <title>Fun With JavaScript - Race Game</title>
+    <title>Fun With JavaScript - Track POC Documentation</title>
 </head>
 <body>
 <section id="davenport">
     <header>
-        <h1>Race Game</h1>
-        <aside>Brought to you by <a href="https://www.funwithjavascript.com" rel="noreferrer">Fun With JavaScript</a></aside>
+        <h1>Track POC Documentation</h1>
     </header>
     <main>
-        <canvas id="world" touch-action="none"></canvas>
+		<p id="top">
+		The Track POC branch is an experimental branch to explore the use
+		of cubic <a href="#bezierCurves">Bézier curves</a> to construct a
+		track for the <abbr title="Fun With JavaScript">FWJS</abbr> Race Game.
+		</p><p>
+		This documentation has two sections, &quot;<a href="#APIandSpecs">API
+		and Specifications</a>&quot; and &quot;<a href="#sectionElements">Section
+		Elements</a>&quot;. The &quot;API and Specifications&quot; section
+		discusses how to build and specify a track and &quot;Section Elements&quot;
+		details the track sections elements used to construct the track.
+		</p><p>
+		<b>NOTE:</b> The intent is for this for this system to work regardless
+		of what game engine the web page uses. This presents a problem with
+		vector/vertex axis conventions. Some engines use the 'y' axis as the
+		vertical axis and others use the 'z' axis. This system <b><em>will
+		eventually</em></b> use the 'z' axis as the vertical axis to remain consistent
+		with standard geometric usage. See <a href="#vectorFactory">Vector Factory</a>
+		and <a href="#yIsVertical">yIsVertical</a> for details.
+		</p>
+		<h1 id="APIandSpecs">API and Specifications</h1>
+		<p>The API and track specifications are related as the API takes a
+		track specification and may override some default values used to
+		build the track.</p>
+		<h2 id="TrackPOC">The TrackPOC API</h2>
+		<p>
+		The script &quot;Builder.js&quot; exports one symbol, the function <b>TrackPOC</b>.
+		</p>
+		<code>const ribbons = TrackPOC(track, vectorFactory, settings);</code>
+		<ul>
+			<li>
+				<b>track</b> is the <a href="#trackSpecs">track specification</a>
+			</li><li>
+				<b>vectorFactory</b> is a function that produces game engine vertices
+				(see <a href="#vectorFactory">Vector Factory</a> for details)
+			</li><li>
+				<b>settings</b> is an optional object with various options (see <a
+				href="#settings">Univeral Settings</a>)
+			</li><li>
+				<b>ribbons</b> is an array of arrays, each element array
+				representing a part, or <em>segent</em> of the track.
+				Each segment array holds four arrays of engine vertices defining
+				the track.
+				The first array holds the vertices of the top of the left wall,
+				the second array the vertices of the left edge of the roadway,
+				the third array those of right edge of the roadway,
+				and the last holding the top of the right wall.
+			</li>
+		</ul>
+		<h3 id="vectorFactory">Vector Factory</h3>
+		<p>
+		The argument <b>vectorFactory</b> is a function that converts internal
+		3D vertices into game engine vertices.
+		</p>
+		<code>const v = vectorFactory(x, y, z);</code>
+		<ul>
+			<li>
+				<b>x</b> is the internal x-axis coordinate
+			</li><li>
+				<b>y</b> is the internal y-axis coordinate
+			</li><li>
+				<b>z</b> is the internal z-axis coordinate
+			</li><li>
+				<b>v</b> is the corresponding game engine vector
+			</li>
+		</ul>
+		<p>
+			<b>NOTE:</b> Various game engines use the y-axis as the
+			vertical axis while others use the z-axis. Currently TrackPOC
+			uses the y-axis as the vertical axis <em>but will eventually
+			use the z-axis</em>. This will happen once the setting
+			<a href="#yIsVertical">yIsVertical</a> is implemented.
+		</p>
+		<h2 id="settings">Universal Settings</h2>
+		<p>
+			There are various settings and options that can be passed into
+			the <a href="#TrackPOC">TrackPOC</a> function or added to the
+			various parts of the <a href="trackSpecs">track specification</a>.
+		</p><p>
+			All settings are optional. Some settings are illegal is certain
+			context.
+		</p><p>
+			If left unset, the TrackPOC provides default values. Otherwise
+			any settings in the a <a href="#trackDetail">track</a> overrides
+			the corresponding setting from TrackPOC, settings in a <a
+			href="#segmentDetail">segment</a> override the track, and finally
+			settings in a <a href="#sectionDetail">section</a> overrides the segment.
+			The hierarchy ends here as the section uses these settings to
+			build the vertices for the track.
+		</p>
+		<p>The universal settings and options are:
+		<ul>
+			<li>
+				<b>debug</b> enables debug information to be sent to the
+				console log (default <b>false</b>)
+			</li><li>
+				<b>debugSegments</b> enabled debug information about the
+				segment construction to be sent to the console log (default
+				<b>false</b>)
+			</li><li>
+				<b>precision</b> sets the precision required for construction
+				of the <a href="#bezierCurves">Bézier curve</a>, with lower
+				values generating more vertices; recursively, if the distance
+				between two computed vertices is greater than this value,
+				a new point is generated between these points (default <b>0.01</b>)
+			</li><li>
+				<b>trackBank</b> is the track bank of the section; see
+				<a href="#trackBank">Track Bank</a> for details (default
+				<b>no bank</b>)
+			</li><li>
+				<b>trackWidth</b> is the width of the track at the section
+				(default <b>1</b>)
+			</li><li>
+				<b>wallHeight</b> is the height of the wall at the secion
+				(default <b>0.5</b>)
+			</li><li id="yIsVertical">
+				<b>yIsVertical</b>, if true, causes TrackPOC to treat the
+				y-axis of the <b><em>specification vertices and vectors</em></b>
+				as the vertical axis; <b>IMPORTANT:</b> this does not affect
+				the TrackPOC argument <a href="#vectorFactory">vectorFactory</a>
+				(default: <b>false</b>) <b>NOT IMPLEMENTED!</b>
+			</li>
+		</ul>
+		</p>
+		<h3 id="trackBank">Track Bank</h3>
+		<p>
+			The <b>trackBank</b> setting affects the banking of the track in the
+			section. There are multiple ways to define the banking:
+		</p>
+		<ul>
+			<li>
+				a number representing the amount of banking in degrees, rotating
+				the track cross section around the point's <a href="#forward">
+				forward</a> vector,
+			</li><li>
+				a vector representing the desired <em>down</em> vector of the track,
+				rotating the track cross section around the point's <a href="#forward">
+				forward</a> vector until the downside of the track aligns with
+				the assigned vector,
+			</li><li>
+				an array of number pairs, the first number representing the
+				parametric <b><em>t</em></b> value (see <a href="#bezierCurves">
+				Bézier Curves</a> for details) and the second number representing
+				the amount of banking in degrees, and
+			</li><li>
+				<b>[NOT IMPLEMENTED]</b> an array of number-vector tuples, the
+				number representing the parametric <b><em>t</em></b> value
+				(see <a href="#bezierCurves">Bézier Curves</a> for details) and
+				the vector representing the desired <em>down</em> vector of the track.
+			</li>
+		</ul>
+		<p>
+			The array forms are valid only for the <a href="#spiralElement">spiral</a>
+			and <a href="#straightElement">straight</a> sections.
+		</p>
+		<p>
+			When determining the banking between a <a href="#pointElement">point</a>
+			and its adjacent section, TrackPOC linearly interpolates between the
+			point and the appropriate endpoint of the adjacent section.
+		</p>
+		<h2 id="trackSpecs">Track Specifications</h2>
+		<p>
+			Overall, the track specification consists of a single
+			<a href="#trackDetails">track</a> object. Each track object contains
+			one or more <a href="#segmentDetails">segment</a> objects. Multiple
+			segments allow for disjoint tracks, allow such features as a jump.
+			Each segment contains one or more <a href="#sectionElements">section
+			elements</a> (with the exception of a single <a href="#pointElement">point</a>)
+			that define the track for that segment.
+		</p>
+		<h3 id="trackDetails">Track Details</h3>
+		<p>
+			The application passes the track object into the <a href="#TrackPOC">
+			TrackPOC</a> function as its first argument. In addition to the
+			<a href="#settings">universal settings</a>, the track object can,
+			and in some causes must, contain these additional members.
+		</p>
+		<ul>
+			<li>
+				<b>closed</b>, if true and there is only one element in
+				<b>segments</b>, builds track between the last and first
+				<a href="#sectionElements">section elements</a> of the segment
+			</li><li>
+				<b>segments</b> <em>(required)</em> is a array of one or
+				more <a href="#segmentDetails">segment</a> objects
+			</li>
+		</ul>
+		<p>
+			Note that the <a href="#TrackPOC">TrackPOC</a> function returns
+			an array with the same number of elements as in the <b>segments</b>
+			member.
+		</p>
+		<h3 id="segmentDetails">Segment Details</h3>
+		<p>
+			A segment is a continuous piece of track. It consists of
+			one or more <a href="#sectionElements">section elements</a>. In
+			addition to the <a href="#settings">universal settings</a>,
+			the segment object can, and in some causes must, contain these
+			additional members.
+		</p>
+		<ul>
+			<li>
+				<b>points</b> <em>(required)</em> is a array of one or
+				more <a href="#sectionElements">section element</a> objects; this
+				array cannot hold only point <a href="#pointElement">
+				point element</a>
+			</li>
+		</ul>
+		<h1 id="sectionElements">Section Elements</h1>
+		<p>
+			Section elements define the center line of the track.
+			They are the input to the <a href="#bezierCurve">Bézier
+			curve</a> algorithm and so contain many technical details.
+			Following is a list of support section elements.
+		</p>
+		<ul>
+			<li>
+				a <a href="#pointElement">point</a> representing a
+				single endpoint of a Bézier curve,
+			</li><li>
+				a <a href="#spiralElement">spiral</a> representing a
+				spiral or helix with optionally changing radii, and
+			</li><li>
+				a <a href="#straightElement">straight</a> representing
+				a track of a given length.
+			</li>
+		</ul>
+		<h2 id="bezierCurves">How Bézier Curves Are Used</h2>
+		<p>
+			A cubic Bézier curve is a spline curve, starting at a point
+			P<sub>0</sub>, ending at a point P<sub>3</sub>, and with interior
+			control points P<sub>1</sub> and P<sub>2</sub>. The line
+			segment from P<sub>0</sub> to P<sub>1</sub>
+			is tangent to the produced curve at P<sub>0</sub>. Likewise,
+			the line segment from P<sub>3</sub> to P<sub>2</sub>
+			is tangent to the produced curve at P<sub>3</sub>. Furthermore,
+			the longer the line segment, the closer the curve approaches the
+			line segment.
+		</p><p>
+			Note that the curve passes through the interior points only if
+			all four points are colinear.
+		</p><p>
+			The cubic Bézier curve can be, and usually is, expressed as a
+			parametric equation of a variable 0 &le; <em>t</em> &le; 1,
+			specifically a point at <em>t</em> given by
+			B(<em>t</em>) =
+				(1-<em>t</em>)<sup>3</sup>P<sub>0</sub> +
+				3(1-<em>t</em>)<sup>2</sup><em>t</em>P<sub>1</sub> +
+				3(1-<em>t</em>)<em>t</em><sup>2</sup>P<sub>2</sub> +
+				<em>t</em><sup>3</sup>P<sub>3</sub>.
+		</p><p>
+			Note that this <em>t</em> is the same as the first number in
+			the array form of <a href="#trackBank">track banking</a>.
+		</p><p>
+			Consider two conjoined curves defined by P<sub>0</sub>&hellip;
+			P<sub>2</sub>P<sub>3</sub>P<sub>4</sub>&hellip;P<sub>7</sub>.
+			Because P<sub>2</sub> and P<sub>4</sub> determine the tangents
+			of the curve at P<sub>3</sub>, the curve is continuous at P<sub>3</sub>
+			only if P<sub>2</sub>, P<sub>3</sub>, and P<sub>4</sub> are colinear.
+		</p><p>
+			<b>INSERT DEMO HERE</b>
+		</p><p>
+			Since we want the track to be continuous, we use a <a href="#forward">
+			forward</a> unit vector to determine one tangent to an endpoint
+			and use it inverse as the opposite tangent. Furthermore, we use
+			a <a href="#forwardWeight">forward weight</a> to determine the
+			position of the forward interior point (i.e., P<sub>n+1</sub> =
+			P<sub>n</sub> + <em>f</em>F, where <em>f</em> is the forward weight
+			and F is the forward vector at P<sub>n</sub>). Likewise, we use a
+			<a href="#backwordWeight">backward weight</a> to determine the
+			position of the backward interior point (i.e., P<sub>n-1</sub> =
+			P<sub>n</sub> - <em>b</em>F, where <em>b</em> is the backward weight
+			and F is the forward vector at P<sub>n</sub>).
+		</p><p>
+			<b>INSERT DEMO HERE</b>
+		</p><p>
+			Note that it is still possible to create a track that is discontinuous
+			at an endpoint. The endpoint must be the last point of one segment
+			and the first point in the next segment. If the endpoint, expressed
+			as different objects, have different forward vectors, the track
+			will be discontinuous.
+		</p>
+		<h2 id="pointElement">Point Element</h2>
+		<p>TBD</p>
+		<h2 id="spiralElement">Spiral Element</h2>
+		<p>TBD</p>
+		<h2 id="straightElement">Straight Element</h2>
+		<p>TBD</p>
     </main>
     <footer>
         <p>&copy; 2022 Michael P. Smith a.k.a. TheVirtuoid. Free to use!</p>
     </footer>
 </section>
 </body>
-<script src="/js/fwjs-race.js" type="module"></script>
 </html>
