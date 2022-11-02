@@ -48,15 +48,17 @@ export default class Car {
 	#name;
 	#color;
 	#wheelType;
+	#rotate;
 
 	constructor(args = {}) {
-		const { scale = 1, scene, position, name, color, wheelType = 'round' } = args;
+		const { scale = 1, scene, position, name, color, wheelType = 'round', rotate = 0 }= args;
 		this.#scale = scale;
 		this.#scene = scene;
 		this.#position = position;
 		this.#name = name;
 		this.#color = color;
 		this.#wheelType = wheelType;
+		this.#rotate = rotate * Math.PI / 180;
 		this.#wheelParameters = wheelParameters.map((wheelParameter) => {
 			let { wheelName, offset, pivot } = wheelParameter;
 			return { wheelName, offset: this.#scaleVector3(offset), pivot: this.#scaleVector3(pivot) };
@@ -85,25 +87,27 @@ export default class Car {
 
 	build (args = {}) {
 		if (!this.#built) {
-			const { scene: inScene, position: inPosition, name: inName, color: inColor } = args;
+			const { scene: inScene, position: inPosition, name: inName, color: inColor, rotate: inRotate } = args;
 			this.#scene = inScene ?? this.#scene;
 			this.#position = inPosition ?? this.#position;
 			this.#name = inName ?? this.#name;
 			this.#color = inColor ?? this.#color;
-			const [scene, position, name, color] = [this.#scene, this.#position, this.#name, this.#color];
-				let wheelBase = this.#addWheelBase({ scene, position, name });
-				let wheels = this.#wheelParameters.map((wheel) => {
-					const { wheelName, offset, pivot } = wheel;
-					return this.#addWheel({ name, scene, position, wheelName, offset, pivot });
-				});
-				let chassis = this.#addChassis({ name, scene, position, color });
-				wheelBase.addChild(chassis);
-				({ wheelBase, wheels, chassis } = this.#setPhysics({ wheelBase, wheels, chassis }));
-				this.#chassis = chassis;
-				this.#wheelBase = wheelBase;
-				this.#wheels = wheels;
-				this.#scene = scene;
-				this.#built = true;
+			this.#rotate = inRotate ? inRotate * Math.PI / 180 : this.#rotate;
+			const [scene, position, name, color, rotate] = [this.#scene, this.#position, this.#name, this.#color, this.#rotate];
+			let wheelBase = this.#addWheelBase({ scene, position, name });
+			let wheels = this.#wheelParameters.map((wheel) => {
+				const { wheelName, offset, pivot } = wheel;
+				return this.#addWheel({ name, scene, position, wheelName, offset, pivot });
+			});
+			let chassis = this.#addChassis({ name, scene, position, color });
+			wheelBase.addChild(chassis);
+			wheelBase.rotate(new Vector3(0, 1, 0), rotate);
+			({ wheelBase, wheels, chassis } = this.#setPhysics({ wheelBase, wheels, chassis }));
+			this.#chassis = chassis;
+			this.#wheelBase = wheelBase;
+			this.#wheels = wheels;
+			this.#scene = scene;
+			this.#built = true;
 		}
 	}
 
@@ -129,6 +133,10 @@ export default class Car {
 
 	get height () {
 		return defaults.wheel.height * this.#scale;
+	}
+
+	get width () {
+		return defaults.chassis.depth * this.#scale + defaults.wheel.diameter * this.#scale;
 	}
 
 	get wheelBase() {

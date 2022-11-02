@@ -31,7 +31,7 @@ const firstRunLength = 40;
 
 const trackStart = { x: 20, y:15, z: 0};
 
-export function testTrack(tracks, cars) {
+export function testTrack(tracks, cars, scene) {
 
 	// See https://spencermortensen.com/articles/bezier-circle/
 	// If we want a closer approximation, we would need to break the
@@ -46,10 +46,11 @@ export function testTrack(tracks, cars) {
 	const gate = startingGate({
 		slope: startingGateSlope,
 		startingPosition: trackStart,
-		cars
+		cars,
+		scene
 	});
 
-	console.log(gate.track.end);
+/*	console.log(gate.track.end);
 
 	const firstRunStart = { center: gate.track.end.center };
 	const firstRunEnd = {
@@ -60,7 +61,7 @@ export function testTrack(tracks, cars) {
 		}
 	}
 	const firstRun = new Straight({ start: firstRunStart, end: firstRunEnd, forwardWeight: 1.1 });
-	console.log(firstRun);
+	console.log(firstRun);*/
 
 	const jump = {
 		descent: 1,
@@ -68,8 +69,8 @@ export function testTrack(tracks, cars) {
 			points: [
 				gate.track.toObject(),
 				{
-					// center: { x:-10, y:1, z:0 },
-					center: firstRun.end.center,
+					center: { x:-10, y:1, z:0 },
+					// center: firstRun.end.center,
 					forward: negX,
 					backwardWeight: 1,
 				},
@@ -143,14 +144,11 @@ export function testTrack(tracks, cars) {
 		},
 
 		init: function() {
-			this.curveStart.center.y -= jump.descent * 10;
 			this.curveTop.center = {
 				x: this.curveStart.center.x - jump.radius,
-				y: this.curveStart.center.y - jump.descent * 20,
+				y: this.curveStart.center.y - jump.descent * 4,
 				z: this.curveStart.center.z - jump.radius,
 			}
-			this.curveTop.trackBank = 23;
-			this.curveStart.trackBank = 45;
 			this.curveLeft.center = {
 				x: this.curveTop.center.x + jump.radius,
 				y: this.curveTop.center.y - jump.descent / 4,
@@ -162,6 +160,7 @@ export function testTrack(tracks, cars) {
 				z: this.curveLeft.center.z + jump.radius
 			}
 			this.track = {
+				gate,
 				segments: [
 					{
 						points: [
@@ -169,7 +168,7 @@ export function testTrack(tracks, cars) {
 							gate.track.end,
 								//firstRun.start,
 								//firstRun.end,
-							// jump.catchStart,
+							jump.catchStart,
 							this.curveStart,
 							this.curveTop,
 							// this.curveLeft,

@@ -59,7 +59,13 @@ window.initFunction = async function() {
 				}, registerCallback);
 		ball = new Ball(gameEngine, trackDisplay, "go");
 		document.getElementById('go-car').addEventListener('click', () => {
-			console.log('not sure yet what to do here!!!')
+			const selectedTrack = trackDisplay.getSelectedTrack();
+			selectedTrack.gate.dropCars();
+			gameEngine.camera.lockedTarget = cars[0].chassis;
+		});
+		document.getElementById('start').addEventListener('click', () => {
+			const selectedTrack = trackDisplay.getSelectedTrack();
+			selectedTrack.gate.startRace();
 		});
 
 
@@ -87,7 +93,7 @@ window.initFunction = async function() {
 	// Get tracks
 	try {
 		// defineTracks(trackDisplay);
-		testTrack(trackDisplay, cars);
+		testTrack(trackDisplay, cars, window.scene);
 		trackDisplay.start();
 	} catch (e) {
 		errorDisplay.showError(e);

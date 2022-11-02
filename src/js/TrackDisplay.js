@@ -156,6 +156,10 @@ class TrackDisplay {
 
 	#onMemberChanged() { this.createMesh() }
 
+	getSelectedTrack() {
+		return this.#tracks[this.#memberSelector.value];
+	}
+
 	static #removeSpaces(value) { return value.replace(/\s/g, '') }
 }
 
