@@ -24,9 +24,14 @@ function registerCallback(track) {
 	debugDisplay.register(track);
 }
 
-const carGreen = new Car({ scale: .2, name: 'Greeny', color: new Color3.Green(), wheelType: 'ellipse' });
+const carScale = .2
 
-let carController;
+const cars = [
+	new Car({ scale: carScale, name: 'Green Ghost', color: new Color3.Green(), wheelType: 'ellipse' }),
+	new Car({ scale: carScale, name: 'Red Devil', color: new Color3.Red(), wheelType: 'ellipse' }),
+	new Car({ scale: carScale, name: 'Yellow Belly', color: new Color3.Yellow(), wheelType: 'ellipse' }),
+	new Car({ scale: carScale, name: 'Am I Blue', color: new Color3.Blue(), wheelType: 'ellipse' }),
+]
 
 window.initFunction = async function() {
 
@@ -50,11 +55,12 @@ window.initFunction = async function() {
 			"trackFamilies", "trackMembers", gameEngine, errorDisplay,
 			() => {
 				ball.destroy();
-				carGreen.junk();
+				cars.forEach((car) => car.junk());
 				}, registerCallback);
 		ball = new Ball(gameEngine, trackDisplay, "go");
-		carController = new CarController({ gameEngine, tracks: trackDisplay, car: carGreen });
-		document.getElementById('go-car').addEventListener('click', carController.placeInGate.bind(carController));
+		document.getElementById('go-car').addEventListener('click', () => {
+			console.log('not sure yet what to do here!!!')
+		});
 
 
 	} catch (e) {
@@ -80,8 +86,8 @@ window.initFunction = async function() {
 
 	// Get tracks
 	try {
-		defineTracks(trackDisplay);
-		testTrack(trackDisplay);
+		// defineTracks(trackDisplay);
+		testTrack(trackDisplay, cars);
 		trackDisplay.start();
 	} catch (e) {
 		errorDisplay.showError(e);

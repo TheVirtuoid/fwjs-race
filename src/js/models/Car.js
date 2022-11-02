@@ -135,6 +135,10 @@ export default class Car {
 		return this.#wheelBase;
 	}
 
+	get length () {
+		return defaults.chassis.width * this.#scale;
+	}
+
 
 	#scaleVector3(vector) {
 		const x = vector.x * this.#scale;

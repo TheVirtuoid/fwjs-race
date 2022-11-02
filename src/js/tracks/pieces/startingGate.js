@@ -1,3 +1,5 @@
+import Straight from "./Straight";
+
 export default (args) => {
 	const { slope, startingPosition, cars } = args;
 
@@ -25,21 +27,9 @@ export default (args) => {
 		}
 	}
 
-	start.forward = {
-		x: end.center.x - start.center.x,
-		y: end.center.y - start.center.y,
-		z: end.center.z - start.center.z,
-	};
+	const gate = {};
+	gate.track = new Straight({ start, end, forwardWeight: 1.1 });
 
-	end.forward = start.forward;
-
-	const straight = {
-		type: 'straight',
-		endsAt: end.center,
-		startsAt: start.center,
-		// forwardWeight: 1.1,
-	}
-
-	return { start, end, straight }
+	return gate;
 }
 

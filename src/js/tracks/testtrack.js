@@ -1,5 +1,6 @@
 import Vector3 from '../Vector3.js'
 import startingGate from "./pieces/startingGate";
+import Straight from "./pieces/Straight";
 
 const posX = Vector3.right;
 const negX = Vector3.left;
@@ -19,18 +20,18 @@ const trackWidth = 4;
 const trackRadius = trackWidth * radiusType.get('wide');
 
 // slope definitions
-const startingGateSlope = 55;
+const startingGateSlope = 40;
 const startingGateRiseRate = Math.tan(startingGateSlope * Math.PI / 180);
 const startingGateLength = 2;
 
 // first run
-const firstRunSlope = 55;
+const firstRunSlope = 40;
 const firstRunRiseRate = Math.tan(firstRunSlope * Math.PI / 180);
 const firstRunLength = 40;
 
 const trackStart = { x: 20, y:15, z: 0};
 
-export function testTrack(tracks) {
+export function testTrack(tracks, cars) {
 
 	// See https://spencermortensen.com/articles/bezier-circle/
 	// If we want a closer approximation, we would need to break the
@@ -42,54 +43,33 @@ export function testTrack(tracks) {
 	//----------------------------------------------------------------------
 	// Common launch and jump points
 
-
-	const launch = {
-		start: {
-			center: trackStart
-		},
-		end: {
-			center: {
-				x: trackStart.x - startingGateLength,
-				y: trackStart.y - startingGateLength * startingGateRiseRate,
-				z: 0
-			}
-		},
-
-		init: function() {
-			this.start.forward = {
-				x: this.end.center.x - this.start.center.x,
-				y: this.end.center.y - this.start.center.y,
-				z: this.end.center.z - this.start.center.z,
-			};
-			this.end.forward = this.start.forward;
-			this.straight = {
-				type: 'straight',
-				endsAt: this.end.center,
-				startsAt: this.start.center,
-				forwardWeight: 1.1,
-			};
-		},
-	}
-	launch.init();
-
-/*	const launch = startingGate({
+	const gate = startingGate({
 		slope: startingGateSlope,
 		startingPosition: trackStart,
-		cars: [
-			{ length: 1 },
-			{ length: 1 },
-			{ length: 1 },
-			{ length: 1 }
-		]
-	});*/
+		cars
+	});
+
+	console.log(gate.track.end);
+
+	const firstRunStart = { center: gate.track.end.center };
+	const firstRunEnd = {
+		center: {
+			x: firstRunStart.center.x - firstRunLength,
+			y: firstRunStart.center.y - firstRunLength * firstRunRiseRate,
+			z: firstRunStart.center.z
+		}
+	}
+	const firstRun = new Straight({ start: firstRunStart, end: firstRunEnd, forwardWeight: 1.1 });
+	console.log(firstRun);
 
 	const jump = {
 		descent: 1,
 		launchSegment: {
 			points: [
-				launch.straight,
+				gate.track.toObject(),
 				{
-					center: { x:-10, y:1, z:0 },
+					// center: { x:-10, y:1, z:0 },
+					center: firstRun.end.center,
 					forward: negX,
 					backwardWeight: 1,
 				},
@@ -163,11 +143,14 @@ export function testTrack(tracks) {
 		},
 
 		init: function() {
+			this.curveStart.center.y -= jump.descent * 10;
 			this.curveTop.center = {
 				x: this.curveStart.center.x - jump.radius,
-				y: this.curveStart.center.y - jump.descent * 2,
+				y: this.curveStart.center.y - jump.descent * 20,
 				z: this.curveStart.center.z - jump.radius,
 			}
+			this.curveTop.trackBank = 23;
+			this.curveStart.trackBank = 45;
 			this.curveLeft.center = {
 				x: this.curveTop.center.x + jump.radius,
 				y: this.curveTop.center.y - jump.descent / 4,
@@ -182,9 +165,11 @@ export function testTrack(tracks) {
 				segments: [
 					{
 						points: [
-							launch.start,
-							launch.end,
-							jump.catchStart,
+							gate.track.start,
+							gate.track.end,
+								//firstRun.start,
+								//firstRun.end,
+							// jump.catchStart,
 							this.curveStart,
 							this.curveTop,
 							// this.curveLeft,
