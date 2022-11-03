@@ -23,7 +23,7 @@ class MedianRibbon extends Ribbon {
 		const laneWidth = widthLessMedians / lanes;
 		const inset = lane * laneWidth + this.#medianIndex * bp.medianWidth;
 
-		const leftMedianRoadEdge = leftEdge.add(-inset, left);
+		const leftMedianRoadEdge = leftRoadEdge.add(-inset, left);
 		const leftMedianWallTop = leftMedianRoadEdge.add(1, wall);
 		this.ribbon[0].push(vectorFactory(leftMedianRoadEdge));
 		this.ribbon[1].push(vectorFactory(leftMedianWallTop));

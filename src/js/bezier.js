@@ -12,7 +12,8 @@ class bezier {
 		// Compute the Bezier cubic curve points
 		const curve = {
 			points: [],
-			trackBanks: [ bezier.#getDown(sp0), bezier.#getDown(sp1) ],
+			medianWidths: [ sp0.medianWidth, sp1.medianWidth ],
+			trackBanks: [ bezier.getDown(sp0), bezier.getDown(sp1) ],
 			trackWidths: [ sp0.trackWidth, sp1.trackWidth ],
 			wallHeights: [ sp0.wallHeight, sp1.wallHeight ],
 		}
@@ -30,7 +31,7 @@ class bezier {
 		return bpt1;
 	}
 
-	static #getDown(sp) {
+	static getDown(sp) {
 
 		// We are done if we already have a vector
 		if (Vector3.is(sp.trackBank)) return new Vector3(sp.trackBank);
@@ -73,6 +74,7 @@ class bezier {
 		// Compute the track width and wall height through linear interpolation
 		const trackWidth = olt * curve.trackWidths[0] + t * curve.trackWidths[1];
 		const wallHeight = olt * curve.wallHeights[0] + t * curve.wallHeights[1];
+		const medianWidth = olt * curve.medianWidths[0] + t * curve.medianWidths[1];
 
 		// Interpolate the down vector
 		const down = curve.trackBanks[0].interpolate(curve.trackBanks[1], t).normalize();
@@ -81,6 +83,7 @@ class bezier {
 			center: center,				// center line position at t
 			down: down,					// Down vector at t
 			forward: forward,			// Forward vector at t
+			medianWidth: medianWidth,
 			trackWidth: trackWidth,
 			wallHeight: wallHeight,
 		};

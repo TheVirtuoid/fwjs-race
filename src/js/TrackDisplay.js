@@ -80,7 +80,7 @@ class TrackDisplay {
 				for (let j = 0; j < trackSegment.medians.length; j++) {
 					this.#meshes.push(this.#gameEngine.createRibbon(
 						`Segment${i}.median${j}`,
-						trackSegment.median[j],
+						trackSegment.medians[j].ribbon,
 						track.closed,
 						{ mass: 0 }));
 				}
