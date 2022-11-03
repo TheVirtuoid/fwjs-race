@@ -3,15 +3,15 @@ import TrackRibbon from "./TrackRibbon.js"
 
 class TrackSegment {
 
-	#lanes
 	#medianIndex
 	#medians
+	#sectionMedians
 	#track
 
 	constructor() {
 		this.#track = new TrackRibbon();
 		this.#medians = [];
-		this.#lanes = false;
+		this.#sectionMedians = 0;
 	}
 
 	get medians() { return this.#medians }
@@ -19,16 +19,21 @@ class TrackSegment {
 
 	addMedians(entryPoint, exitPoint) {
 		if (entryPoint.lanes > 1 && entryPoint.lanes === exitPoint.lanes) {
-			this.#lanes = entryPoint.lanes;
+			this.#sectionMedians = entryPoint.lanes - 1;
 			this.#medianIndex = this.#medians.length;
-			for (let i = 1; i < entryPoint.lanes; i++) this.#medians.push(new MedianRibbon());
+			for (let i = 0; i < this.#sectionMedians; i++) {
+				this.#medians.push(new MedianRibbon(i, this.#sectionMedians));
+			}
 		} else {
-			this.#lanes = 1;
+			this.#sectionMedians = 0;
 		}
 	}
 
 	push(bp, vectorFactory) {
 		this.#track.push(bp, vectorFactory);
+		for (let i = 0; i < this.#sectionMedians; i++) {
+			this.#medians[this.#medianIndex + i].push(bp, vectorFactory);
+		}
 	}
 }
 
