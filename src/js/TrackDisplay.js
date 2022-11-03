@@ -48,8 +48,8 @@ class TrackDisplay {
 				(u) => { return this.#gameEngine.createVector(u) },
 				settings);
 			const ribbon = ribbons[0];
-			const leftRoad = ribbon[1];
-			const rightRoad = ribbon[2];
+			const leftRoad = ribbon.leftRoadEdge;
+			const rightRoad = ribbon.rightRoadEdge;
 			const p0left = leftRoad[0];
 			const p0right = rightRoad[0];
 			const p1left = leftRoad[1];

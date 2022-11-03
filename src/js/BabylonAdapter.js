@@ -32,7 +32,12 @@ class BabylonAdaptor {
 		const mesh = MeshBuilder.CreateRibbon(
 			name,
 			{
-				pathArray: ribbon,
+				pathArray: [
+					ribbon.leftWallTop,
+					ribbon.leftRoadEdge,
+					ribbon.rightRoadEdge,
+					ribbon.rightWallTop
+				],
 				sideOrientation: Mesh.DOUBLESIDE,
 				closePath: closed,
 			},
