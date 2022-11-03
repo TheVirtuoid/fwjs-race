@@ -1,4 +1,4 @@
-import Ribbon from "./Ribbon.js"
+import TrackRibbon from "./TrackRibbon.js"
 
 class TrackSegment {
 
@@ -6,7 +6,7 @@ class TrackSegment {
 	#track
 
 	constructor() {
-		this.#track = new Ribbon();
+		this.#track = new TrackRibbon();
 		this.#medians = [];
 	}
 

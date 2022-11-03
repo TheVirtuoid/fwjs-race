@@ -72,7 +72,6 @@ class TrackDisplay {
 			// Produce the track
 			for (let i = 0; i < trackSegments.length; i++) {
 				const trackSegment = trackSegments[i];
-				console.log(trackSegment, trackSegment.track, trackSegment.track.ribbon);
 				this.#meshes.push(this.#gameEngine.createRibbon(
 					`Segment${i}`,
 					trackSegment.track.ribbon,
