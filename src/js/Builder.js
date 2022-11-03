@@ -44,6 +44,7 @@ function buildSegment(segment, vectorFactory, parentSettings, isClosed, name) {
 	const trackSegment = new TrackSegment();
 	let lastPoint = null;
 	for (let i = 0; i < builders.length; i++) {
+		trackSegment.addMedians(points[i], points[i+1]);
 		lastPoint = executeBuilder(builders[i], trackSegment, points[i], points[i+1], vectorFactory);
 	}
 
