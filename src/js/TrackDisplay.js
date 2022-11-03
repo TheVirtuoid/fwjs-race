@@ -41,15 +41,17 @@ class TrackDisplay {
 			const track = this.#tracks[key];
 			const settings = track.options ? track.options : {};
 
+			// Produce the track segments
 			this.#registerCallback(track);
-
-			const ribbons = TrackPOC(
+			const trackSegments = TrackPOC(
 				track,
 				(u) => { return this.#gameEngine.createVector(u) },
 				settings);
-			const ribbon = ribbons[0];
-			const leftRoad = ribbon.leftRoadEdge;
-			const rightRoad = ribbon.rightRoadEdge;
+
+			// Save the start location
+			const trackSegment = trackSegments[0];
+			const leftRoad = trackSegment.track.ribbon[1];
+			const rightRoad = trackSegment.track.ribbon[2];
 			const p0left = leftRoad[0];
 			const p0right = rightRoad[0];
 			const p1left = leftRoad[1];
@@ -66,17 +68,20 @@ class TrackDisplay {
 					z: (p1left.z + p1right.z) / 2,
 				},
 			}
-			for (let i = 0; i < ribbons.length; i++) {
-				const ribbon = ribbons[i];
+
+			// Produce the track
+			for (let i = 0; i < trackSegments.length; i++) {
+				const trackSegment = trackSegments[i];
+				console.log(trackSegment, trackSegment.track, trackSegment.track.ribbon);
 				this.#meshes.push(this.#gameEngine.createRibbon(
 					`Segment${i}`,
-					ribbon,
+					trackSegment.track.ribbon,
 					track.closed,
 					{ mass: 0 }));
-				for (let j = 0; j < ribbon.medians.length; j++) {
+				for (let j = 0; j < trackSegment.medians.length; j++) {
 					this.#meshes.push(this.#gameEngine.createRibbon(
 						`Segment${i}.median${j}`,
-						ribbon.median[j],
+						trackSegment.median[j],
 						track.closed,
 						{ mass: 0 }));
 				}

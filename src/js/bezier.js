@@ -7,7 +7,7 @@ class bezier {
 		throw new StaticClassError('bezier')
 	}
 
-	static build(ribbon, sp0, sp1, vectorFactory, precision) {
+	static build(trackSegment, sp0, sp1, vectorFactory, precision) {
 
 		// Compute the Bezier cubic curve points
 		const curve = {
@@ -24,7 +24,7 @@ class bezier {
 		// Fill out the curve
 		const bpt0 = bezier.#getPoint(curve, 0);
 		const bpt1 = bezier.#getPoint(curve, 1);
-		bezier.#interpolate(ribbon, curve, 0, 1, bpt0, bpt1, vectorFactory, precision);
+		bezier.#interpolate(trackSegment, curve, 0, 1, bpt0, bpt1, vectorFactory, precision);
 
 		// Return the last point
 		return bpt1;
@@ -87,14 +87,14 @@ class bezier {
 	}
 
 	// Generate the Bezier cubic curve between t0 and t1
-	static #interpolate(ribbon, curve, t0, t1, bpt0, bpt1, vectorFactory, precision) {
+	static #interpolate(trackSegment, curve, t0, t1, bpt0, bpt1, vectorFactory, precision) {
 
 		// NOTE: A cubic Bezier curve generates points, or slices in our case,
 		// p0, ..., pn where p0 is the point at t0 and pn is the point at t1.
 		// However, for consecutive curves c and d, the last point of c is the
 		// same as the first point of d. To avoid duplication of points in the
-		// ribbon, this routine only adds points p0, ..., pn-1. Note that same
-		// holds for contiguous sections of a curve.
+		// track segment, this routine only adds points p0, ..., pn-1. Note that
+		// same holds for contiguous sections of a curve.
 
 		// Calculate the linear and curve midpoints of the current subsection
 		const midtime = (t0 + t1) / 2;
@@ -106,14 +106,14 @@ class bezier {
 		// an 'S' curve passing through the midpoint).
 
 		// If the linear midpoint is close enough to the curve midpoint, add bmp0
-		// to the  ribbon. Otherwise recursively add the sections of the curve
+		// to the  track segment. Otherwise recursively add the sections of the curve
 		// (t0, midtime) and (midtime, t1). Note that the latter eventually adds
 		// the midpoint calcuated here.
 		if (lmp.distance(bmp.center) <= precision) {
-			ribbon.push(bpt0, vectorFactory);
+			trackSegment.push(bpt0, vectorFactory);
 		} else {
-			bezier.#interpolate(ribbon, curve, t0, midtime, bpt0, bmp, vectorFactory, precision);
-			bezier.#interpolate(ribbon, curve, midtime, t1, bmp, bpt1, vectorFactory, precision);
+			bezier.#interpolate(trackSegment, curve, t0, midtime, bpt0, bmp, vectorFactory, precision);
+			bezier.#interpolate(trackSegment, curve, midtime, t1, bmp, bpt1, vectorFactory, precision);
 		}
 	}
 }

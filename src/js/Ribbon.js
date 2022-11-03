@@ -1,20 +1,9 @@
-
 class Ribbon {
-
-	// A ribbon is an array of four arrays of vectors representing the [0] left
-	// wall top, [1] left road edge, [2] right road edge, and [3] right wall
-	// top.
 
 	#ribbon
 
 	constructor() {
-		this.#ribbon = {
-			leftWallTop: [],
-			leftRoadEdge: [],
-			rightRoadEdge: [],
-			rightWallTop: [],
-			medians: [],
-		}
+		this.#ribbon = [ [], [], [], [] ]
 	}
 
 	get ribbon() { return this.#ribbon }
@@ -25,10 +14,10 @@ class Ribbon {
 		const edgeDistance = bp.trackWidth / 2;
 		const leftEdge = bp.center.add(edgeDistance, left);
 		const rightEdge = bp.center.add(-edgeDistance, left);
-		this.#ribbon.leftWallTop.push(vectorFactory(leftEdge.add(1, wall)));
-		this.#ribbon.leftRoadEdge.push(vectorFactory(leftEdge));
-		this.#ribbon.rightRoadEdge.push(vectorFactory(rightEdge));
-		this.#ribbon.rightWallTop.push(vectorFactory(rightEdge.add(1, wall)));
+		this.#ribbon[0].push(vectorFactory(leftEdge.add(1, wall)));
+		this.#ribbon[1].push(vectorFactory(leftEdge));
+		this.#ribbon[2].push(vectorFactory(rightEdge));
+		this.#ribbon[3].push(vectorFactory(rightEdge.add(1, wall)));
 	}
 }
 

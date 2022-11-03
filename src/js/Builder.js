@@ -1,7 +1,7 @@
 import bezier from './bezier.js'
 import is from './is.js'
 import merge from './merge.js'
-import Ribbon from './Ribbon.js'
+import TrackSegment from './TrackSegment.js'
 import sectionParser from './sectionParser.js'
 import validate from './validate.js'
 
@@ -11,8 +11,8 @@ export function createBuilder(settings) {
 	}
 }
 
-function executeBuilder(builder, ribbon, sp0, sp1, vectorFactory) {
-	return bezier.build(ribbon, sp0, sp1, vectorFactory, builder.precision);
+function executeBuilder(builder, trackSegment, sp0, sp1, vectorFactory) {
+	return bezier.build(trackSegment, sp0, sp1, vectorFactory, builder.precision);
 }
 
 function buildSegment(segment, vectorFactory, parentSettings, isClosed, name) {
@@ -41,18 +41,18 @@ function buildSegment(segment, vectorFactory, parentSettings, isClosed, name) {
 	validate.sizedArray(points, '', name, 2);
 
 	// Loop through the builders, creating curves between them
-	const ribbon = new Ribbon();
+	const trackSegment = new TrackSegment();
 	let lastPoint = null;
 	for (let i = 0; i < builders.length; i++) {
-		lastPoint = executeBuilder(builders[i], ribbon, points[i], points[i+1], vectorFactory);
+		lastPoint = executeBuilder(builders[i], trackSegment, points[i], points[i+1], vectorFactory);
 	}
 
-	// If this is not a closed segment, add the last point to the ribbon
+	// If this is not a closed segment, add the last point to the track segment
 	if (!isClosed) {
-		ribbon.push(lastPoint, vectorFactory, settings);
+		trackSegment.push(lastPoint, vectorFactory, settings);
 	}
 
-	return ribbon.ribbon;
+	return trackSegment;
 }
 
 function buildTrack(track, vectorFactory, parentSettings) {
@@ -67,17 +67,16 @@ function buildTrack(track, vectorFactory, parentSettings) {
 	const isClosed = track.segments.length == 1 && track.closed;
 
 	// Loop through the segments
-	const ribbons = [];
+	const trackSegments = [];
 	for (let i = 0; i < track.segments.length; i++) {
-		const ribbon = buildSegment(
+		trackSegments.push(buildSegment(
 			track.segments[i],
 			vectorFactory,
 			settings,
 			isClosed,
-			'track.segments[' + i.toString() + ']');
-		ribbons[i] = ribbon;
+			'track.segments[' + i.toString() + ']'));
 	}
-	return ribbons;
+	return trackSegments;
 }
 
 export function TrackPOC(specs, vectorFactory, appSettings = {}) {
