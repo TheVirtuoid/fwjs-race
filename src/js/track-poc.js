@@ -11,7 +11,7 @@ import { defineTracks } from './defineTracks.js'
 import {testTrack} from "./tracks/testtrack";
 import Car from "./models/Car";
 import {Color3} from "@babylonjs/core";
-import CarController from "./controllers/CarController";
+import Car2 from "./models/Car2";
 
 //======================================================================
 // WINDOW INITIALIZATION
@@ -24,13 +24,13 @@ function registerCallback(track) {
 	debugDisplay.register(track);
 }
 
-const carScale = .2
+const carScale = .25
 
 const cars = [
-	new Car({ scale: carScale, name: 'Green Ghost', color: new Color3.Green(), wheelType: 'ellipse' }),
-	new Car({ scale: carScale, name: 'Red Devil', color: new Color3.Red(), wheelType: 'ellipse' }),
-	new Car({ scale: carScale, name: 'Yellow Belly', color: new Color3.Yellow(), wheelType: 'ellipse' }),
-	new Car({ scale: carScale, name: 'Am I Blue', color: new Color3.Blue(), wheelType: 'ellipse' }),
+	new Car2({ scale: carScale, name: 'Green Ghost', color: new Color3.Green(), wheelType: 'ellipse' }),
+	new Car2({ scale: carScale, name: 'Red Devil', color: new Color3.Red(), wheelType: 'ellipse' }),
+	new Car2({ scale: carScale, name: 'Yellow Belly', color: new Color3.Yellow(), wheelType: 'ellipse' }),
+	new Car2({ scale: carScale, name: 'Am I Blue', color: new Color3.Blue(), wheelType: 'ellipse' }),
 ]
 
 window.initFunction = async function() {
