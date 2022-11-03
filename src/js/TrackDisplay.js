@@ -67,11 +67,19 @@ class TrackDisplay {
 				},
 			}
 			for (let i = 0; i < ribbons.length; i++) {
+				const ribbon = ribbons[i];
 				this.#meshes.push(this.#gameEngine.createRibbon(
 					`Segment${i}`,
-					ribbons[i],
+					ribbon,
 					track.closed,
 					{ mass: 0 }));
+				for (let j = 0; j < ribbon.medians.length; j++) {
+					this.#meshes.push(this.#gameEngine.createRibbon(
+						`Segment${i}.median${j}`,
+						ribbon.median[j],
+						track.closed,
+						{ mass: 0 }));
+				}
 			}
 			this.#errorDisplay.clear();
 		} catch (e) {
