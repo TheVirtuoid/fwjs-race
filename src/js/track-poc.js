@@ -1,5 +1,3 @@
-import { TrackPOC } from './Builder.js'
-
 import BabylonAdapter from './BabylonAdapter.js'
 
 import DebugDisplay from './DebugDisplay.js'
