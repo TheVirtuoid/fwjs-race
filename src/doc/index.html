@@ -130,7 +130,7 @@
 				<p>
 					There are various settings and options that can be passed into
 					the <a href="#TrackPOC">TrackPOC</a> function or added to the
-					various parts of the <a href="trackSpecs">track specification</a>.
+					various parts of the <a href="#trackSpecs">track specification</a>.
 				</p><p>
 					All settings are optional. Some settings are illegal is certain
 					context.
@@ -282,7 +282,8 @@
 			<p>
 				A <b>section</b> is a part of a segment consisting of an <b>
 				entry point</b> and an <b>exit point</b> that generates one
-				of more <a href="bezierCurve">Bézier curves</a>.
+				of more <a href="#bezierCurve">Bézier curves</a>. These points
+				conform to <a href="#pointElement">point elements</a>.
 				<b>Section elements</b> define these points. These also lie
 				on the center line of the track.
 				Following is a list of support section elements.
@@ -362,7 +363,7 @@
 				<h2 id="pointElement">Point Element</h2>
 				<p>
 				A <b>point element</b> represents a single endpoint of a
-				<a href="bezierCurve">Bézier curve</a>. Since all Bézier curves
+				<a href="#bezierCurve">Bézier curve</a>. Since all Bézier curves
 				require two endpoints, a <a href="#segmentDetails">segment</a>
 				cannot contain just a single point element.
 				</p><p>
@@ -390,6 +391,9 @@
 						vector used when the point is an entry point of a section
 					</li>
 				</ul>
+				<p>
+					<b>INSERT DEMO HERE</b>
+				</p>
 				<h2 id="spiralElement">Spiral Element</h2>
 				<p>
 					A <b>spiral element</b> represents a curve, starting at its
@@ -411,10 +415,19 @@
 					<a href="#TrackPOC">TrackPOC</a> function may throw an exception
 					in some configuations.
 				</p><p>
+					The entry point of a spiral element is contextual. If the spiral
+					is the first element of a segment, the <b>startAt</b> defines the
+					entry point. Otherwise the entry point of the spiral is the exit
+					point of the prior section in the segment.
+				</p><p>
 					The algorithm attempts to determine the center of the spiral. It
 					cannot do this if the forward vectors of the entry and exit points
 					are the same or are opposite. If so, the <b>center</b> setting
 					is required.
+				</p><p>
+					Note that the <b>forwardWeight</b> of the entry point and the
+					<b>backwardWeight</b> of the exit point are overridden by the
+					algorithm. This is to preserve the smoothness of the spiral.
 				</p><p>
 					In addition to the <a href="#settings">universal settings</a>,
 					the spiral element also has these settings.
@@ -445,8 +458,67 @@
 					<b>rotate</b>, and even the existance of <b>rotate</b>, is not well
 					designed. These may change.
 				</p>
+				<p>
+					<b>INSERT DEMO HERE</b>
+				</p>
 				<h2 id="straightElement">Straight Element</h2>
-				<p>TBD</p>
+				<p>
+					A <b>straight element</b> represents a straight section proceeding
+					evenly from its entry point to its exit point.
+					The general <b>direction</b> of the straight is the
+					vector from the entry point's center to that of the exit point.
+					The determination of
+					the entry and exit points and the form of the section is contextual.
+				</p><p>
+					If the straight has a prior section, the entry point is the exit point
+					of the prior section.
+				</p><p>
+					Otherwise the <b>startAt</b>
+					setting defines the center of the entry point. If the <b>endsAt</b>
+					setting is given, the entry point's forward vector is the computed as
+					the vector from entry to the exit points; otherwise the <b>forward</b>
+					setting decides the entry point's forward vector.
+				</p><p>
+					The exit point may be defined in two different ways. If the
+					<b>length</b> setting is used, the exit point is the entry point's
+					center vertex plus <b>length</b> times the entry point's forward
+					vector. Otherwise the <b>endsAt</b> setting determines the exit point's
+					center. The exit point's forward vector is the direction of the straight
+					as given above.
+				</p><p>
+					In addition to the <a href="#settings">universal settings</a>,
+					the spiral element also has these settings.
+				</p>
+				<ul>
+					<li>
+						<b>backwardWeight</b> (default 1) sets the exit point's backward weight;
+						note this is effective only if the entry and exit point's forward vectors
+						differ and provides a counterbalance to <b>startingWeight</b>
+					</li><li>
+						<b>endsAt</b> (required if <b>length</b> is not provided) sets the
+						exit point's center
+					</li><li>
+						<b>forward</b> (required if both <b>startsAt</b> and <b>length</b> are provided)
+						sets the entry point's forward vector
+					</li><li>
+						<b>forwardWeight</b> (default 1) sets the exit point's forward weight
+					</li><li>
+						<b>length</b> (required if <b>endsAt</b> is not provided) sets the
+						exit point's center as a function of the entry point's center vertex
+						and forward vector (see above)
+					</li><li>
+						<b>startingWeight</b> (default 1; used only if <b>startsAt</b>
+						is defined) sets the forward weight of the entry point; this
+						is effective only if the entry point's forward vector is not
+						the direction of the straight
+					</li><li>
+						<b>startsAt</b> (required if the element is the first in its
+						segment; illegal otherwise) sets the center of the entry point
+					</li>
+				</ul>
+				<p>
+					<b>INSERT DEMO HERE</b>
+				</p>
 			</div>
 		</div>
     </main>
