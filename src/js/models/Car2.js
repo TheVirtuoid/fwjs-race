@@ -64,6 +64,8 @@ export default class Car2 {
 	#color;
 	#wheelType;
 	#rotate;
+	#distanceTravelled;
+	#previousPosition;
 
 	constructor(args = {}) {
 		const { scale = 1, scene, position, name, color, wheelType = 'ellipse', rotate = 0 }= args;
@@ -104,6 +106,7 @@ export default class Car2 {
 			}
 		}
 		this.#built = false;
+		this.#distanceTravelled = 0;
 	}
 
 	build (args = {}) {
@@ -132,6 +135,8 @@ export default class Car2 {
 			this.#scene = scene;
 			this.#box = box;
 			this.#built = true;
+			this.#distanceTravelled = 0;
+			this.#previousPosition = this.#wheelBase.position;
 		}
 	}
 
@@ -148,6 +153,7 @@ export default class Car2 {
 			});
 			this.#wheels = [];
 			this.#built = false;
+			this.#distanceTravelled = 0;
 		}
 	}
 
@@ -169,6 +175,29 @@ export default class Car2 {
 
 	get length () {
 		return defaults.chassis.width * this.#scale;
+	}
+
+	get name () {
+		return this.#name;
+	}
+
+	get position () {
+		return this.#wheelBase.position;
+	}
+
+	get distanceTravelled () {
+		return this.#distanceTravelled;
+	}
+
+	setDistanceTravelled() {
+		if (this.#built) {
+			this.#distanceTravelled += Vector3.Distance(this.#previousPosition, this.#wheelBase.position);
+			this.#previousPosition = this.#wheelBase.position;
+		}
+	}
+
+	resetDistanceTravelled(distance = 0) {
+		this.#distanceTravelled = distance;
 	}
 
 

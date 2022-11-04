@@ -87,7 +87,7 @@ window.initFunction = async function() {
 
 	await gameEngine.initializePhysics();
 
-	gameEngine.startRenderLoop();
+	gameEngine.startRenderLoop(renderLoopCallback);
 	window.scene = gameEngine.createScene();
 
 	// Get tracks
@@ -99,5 +99,18 @@ window.initFunction = async function() {
 		errorDisplay.showError(e);
 	}
 };
+const leaderBoard = document.getElementById('leader-board');
+const renderLoopCallback = () => {
+	const list = cars.map((car) => {
+		car.setDistanceTravelled();
+		return { name: car.name, distance: car.distanceTravelled, element: `<li>${car.name}: ${car.distanceTravelled.toFixed(3)}</li>` };
+	});
+	list.sort((a, b) => b.distance - a.distance);
+	while(leaderBoard.firstChild) {
+		leaderBoard.removeChild(leaderBoard.firstChild);
+	}
+	leaderBoard.insertAdjacentHTML('afterbegin', list.map((li) => li.element).join(''));
+}
+
 initFunction().then(() => { gameEngine.ready() });
 window.addEventListener("resize", gameEngine.resize());

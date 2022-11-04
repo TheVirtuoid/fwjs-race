@@ -113,11 +113,14 @@ class BabylonAdaptor {
 		return this.#scene;
 	}
 
-	startRenderLoop() {
+	startRenderLoop(callback) {
 		if (!this.#engine) throw new Error("Must invoke createDefaultEngine first");
 		this.#engine.runRenderLoop(() => {
 			if (this.#ready && this.#scene.activeCamera) {
 				this.#scene.render();
+				if (typeof callback === 'function') {
+					callback();
+				}
 			}
 		});
 	}

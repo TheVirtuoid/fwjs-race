@@ -48,6 +48,10 @@ export default (args) => {
 	};
 
 	const startRace = () => {
+		cars.forEach((car, index) => {
+			const distance = index <= 1 ? 0 : Vector3.Distance(car.position, cars[index - 2].position) * -1;
+			car.resetDistanceTravelled(distance);
+		});
 		gateBack.position.y -= 1;
 		gateFront.position.y -= 1;
 	}
