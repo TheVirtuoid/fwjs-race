@@ -25,6 +25,7 @@
 					<a href="#vectorFactory" class="toc toch3">Vector Factory</a><br/>
 				<a href="#settings" class="toc toch2">Universal Settings</a><br/>
 					<a href="#yIsVertical" class="toc toch3">yIsVertical</a><br/>
+					<a href="#lanes" class="toc toch3">Lanes</a><br/>
 					<a href="#trackBank" class="toc toch3">Track Bank</a><br/>
 				<a href="#trackSpecs" class="toc toch2">Track Specifications</a><br/>
 					<a href="#trackDetails" class="toc toch3">Track Details</a><br/>
@@ -34,7 +35,8 @@
 				<a href="#pointElement" class="toc toch2">Point Element</a><br/>
 				<a href="#spiralElement" class="toc toch2">Spiral Element</a><br/>
 				<a href="#straightElement" class="toc toch2 toclast">Straight Element</a><br/>
-		</div><div id="main-content">
+		</div>
+		<div id="main-content">
 			<p id="top">
 			The Track POC branch is an experimental branch to explore the use
 			of cubic <a href="#bezierCurves">Bézier curves</a> to construct a
@@ -137,6 +139,12 @@
 						segment construction to be sent to the console log (default
 						<b>false</b>)
 					</li><li>
+						<b>lanes</b> sets the number of lanes to generate; see
+						<a href="#lanes">Lanes</a> for details (default <b>1</b>)
+					</li><li>
+						<b>medianWidth</b> sets the width of a lane divider; see
+						<a href="#lanes">Lanes</a> for details (default <b>0.01</b>)
+					</li><li>
 						<b>precision</b> sets the precision required for construction
 						of the <a href="#bezierCurves">Bézier curve</a>, with lower
 						values generating more vertices; recursively, if the distance
@@ -161,6 +169,16 @@
 					</li>
 				</ul>
 				<div class="indent3">
+					<h3 id="lanes">Lanes</h3>
+					<p>
+					The <b>lanes</b> setting sets the number of lanes in a
+					<a href="#sectionElements">section</a> of track. If <b>lanes</b>
+					is the same number in both the entry and exit points of a section
+					and <b>lanes</b> is more than 1, <a href="#TrackPOC">TrackPOC</a>
+					generates lane dividers along the section. The width of the dividers
+					is linearly interpolated between the <b>medianWidth</b> of the entry
+					point and that of the exit point.
+					</p>
 					<h3 id="trackBank">Track Bank</h3>
 					<p>
 						The <b>trackBank</b> setting affects the banking of the track in the
