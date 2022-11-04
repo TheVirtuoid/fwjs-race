@@ -20,6 +20,7 @@
     <main>
 		<div id="toc">
 			<a href="#top" class="toc toch1">Top</a><br/>
+				<a href="#terms" class="toc toch2">Terms</a><br/>
 			<a href="#APIandSpecs" class="toc toch1">API and Specifications</a><br/>
 				<a href="#TrackPOC" class="toc toch2">The TrackPOC Function</a><br/>
 					<a href="#vectorFactory" class="toc toch3">Vector Factory</a><br/>
@@ -56,6 +57,14 @@
 			with standard geometric usage. See <a href="#vectorFactory">Vector Factory</a>
 			and <a href="#yIsVertical">yIsVertical</a> for details.
 			</p>
+			<div class="indent2">
+				<h2 id="terms">Terms</h2>
+				<p>
+					Throughout, <b>vertex</b> means a point in space while <b>vector</b>
+					means a direction in space. Both are represented by Euclidean coordinates
+					but their interpretaion differ.
+				</p>
+			</div>
 			<h1 id="APIandSpecs">API and Specifications</h1>
 			<p>The API and track specifications are related as the API takes a
 			track specification and may override some default values used to
@@ -132,40 +141,38 @@
 				</p>
 				<ul>
 					<li>
-						<b>debug</b> enables debug information to be sent to the
-						console log (default <b>false</b>)
+						<b>debug</b> (default false) enables debug information to be sent to the
+						console log
 					</li><li>
-						<b>debugSegments</b> enabled debug information about the
-						segment construction to be sent to the console log (default
-						<b>false</b>)
+						<b>debugSegments</b> (default false) enabled debug information about the
+						segment construction to be sent to the console log
 					</li><li>
-						<b>lanes</b> sets the number of lanes to generate; see
-						<a href="#lanes">Lanes</a> for details (default <b>1</b>)
+						<b>lanes</b> (default 1) sets the number of lanes to generate; see
+						<a href="#lanes">Lanes</a> for details
 					</li><li>
-						<b>medianWidth</b> sets the width of a lane divider; see
-						<a href="#lanes">Lanes</a> for details (default <b>0.01</b>)
+						<b>medianWidth</b> (default 0.01) sets the width of a lane divider; see
+						<a href="#lanes">Lanes</a> for details
 					</li><li>
-						<b>precision</b> sets the precision required for construction
+						<b>precision</b> (default 0.01) sets the precision required for construction
 						of the <a href="#bezierCurves">Bézier curve</a>, with lower
 						values generating more vertices; recursively, if the distance
 						between two computed vertices is greater than this value,
-						a new point is generated between these points (default <b>0.01</b>)
+						a new point is generated between these points
 					</li><li>
-						<b>trackBank</b> is the track bank of the section; see
-						<a href="#trackBank">Track Bank</a> for details (default
-						<b>no bank</b>)
+						<b>trackBank</b> (default 0)is the track bank of the section element; see
+						<a href="#trackBank">Track Bank</a> for details
 					</li><li>
-						<b>trackWidth</b> is the width of the track at the section
-						(default <b>1</b>)
+						<b>trackWidth</b> (default 1) is the width of the track at the section
+						element
 					</li><li>
-						<b>wallHeight</b> is the height of the wall at the secion
-						(default <b>0.5</b>)
+						<b>wallHeight</b> (default 0.5) is the height of the wall at the secion
+						element
 					</li><li id="yIsVertical">
-						<b>yIsVertical</b>, if true, causes TrackPOC to treat the
+						<b>yIsVertical</b> (default false), if true, causes TrackPOC to treat the
 						y-axis of the <b><em>specification vertices and vectors</em></b>
 						as the vertical axis; <b>IMPORTANT:</b> this does not affect
 						the TrackPOC argument <a href="#vectorFactory">vectorFactory</a>
-						(default: <b>false</b>) <b>NOT IMPLEMENTED!</b>
+						<b>NOT IMPLEMENTED!</b>
 					</li>
 				</ul>
 				<div class="indent3">
@@ -235,11 +242,11 @@
 					</p>
 					<ul>
 						<li>
-							<b>closed</b>, if true and there is only one element in
-							<b>segments</b>, builds track between the last and first
+							<b>closed</b> (default false), if true and there is only one
+							element in <b>segments</b>, builds track between the last and first
 							<a href="#sectionElements">section elements</a> of the segment
 						</li><li>
-							<b>segments</b> <em>(required)</em> is a array of one or
+							<b>segments</b> (required) is a array of one or
 							more <a href="#segmentDetails">segment</a> objects
 						</li>
 					</ul>
@@ -258,7 +265,7 @@
 					</p>
 					<ul>
 						<li>
-							<b>points</b> <em>(required)</em> is a array of one or
+							<b>points</b> (required) is a array of one or
 							more <a href="#sectionElements">section element</a> objects; this
 							array cannot hold only point <a href="#pointElement">
 							point element</a>
@@ -268,9 +275,11 @@
 			</div>
 			<h1 id="sectionElements">Section Elements</h1>
 			<p>
-				Section elements define the center line of the track.
-				They are the input to the <a href="#bezierCurve">Bézier
-				curve</a> algorithm and so contain many technical details.
+				A <b>section</b> is a part of a segment consisting of an <b>
+				entry point</b> and an <b>exit point</b> that generates one
+				of more <a href="bezierCurve">Bézier curves</a>.
+				<b>Section elements</b> define these points. These also lie
+				on the center line of the track.
 				Following is a list of support section elements.
 			</p>
 			<ul>
@@ -346,7 +355,36 @@
 					will be discontinuous.
 				</p>
 				<h2 id="pointElement">Point Element</h2>
-				<p>TBD</p>
+				<p>
+				A <b>point element</b> represents a single endpoint of a
+				<a href="bezierCurve">Bézier curve</a>. Since all Bézier curves
+				require two endpoints, a <a href="#segmentDetails">segment</a>
+				cannot contain just a single point element.
+				</p><p>
+					A point ignores the <b>precision</b> setting and
+					<a href="#TrackPOC">TrackPOC</a> throws an exception if <b>precision</b>
+					is specified directly in the point element.
+				</p><p>
+					In addition to the other <a href="#settings">universal settings</a>,
+					a point element also uses these settings.
+				</p>
+				<ul>
+					<li>
+						<b>backwardWeight</b> (default 1) is the weight of the inverse
+						<b>forward</b>
+						vector used when the point is an exit point of a section
+					</li><li>
+						<b>center</b> (required) is the vertex which the
+						Bézier curve passes through
+					</li><li>
+						<b>forward</b> (required) is the vector determing
+						the tangent at the point; this is normalized so the length
+						of the vector is ignored
+					</li><li>
+						<b>forwardWeight</b> (default 1) is the weight of the <b>forward</b>
+						vector used when the point is an entry point of a section
+					</li>
+				</ul>
 				<h2 id="spiralElement">Spiral Element</h2>
 				<p>TBD</p>
 				<h2 id="straightElement">Straight Element</h2>
