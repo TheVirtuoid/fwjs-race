@@ -10,6 +10,8 @@ class merge {
 	}
 
 	static default = {
+		lanes: 1,
+		medianWidth: .01,
 		precision: .01,
 		trackBank: 0,
 		trackWidth: 1,
@@ -25,17 +27,27 @@ class merge {
 					overrideSettings[vs.key];
 			}
 		}
+		this.#postValidate(mergedSettings, name);
 		return mergedSettings;
 	}
 
 	static #validSettings = [
 		{ key: 'debug' },
 		{ key: 'debugSegments' },
+		{ key: 'lanes', validator: validate.positiveInteger },
+		{ key: 'medianWidth', validator: validate.positiveNumber },
 		{ key: 'precision', validator: validate.positiveNumber },
 		{ key: 'trackBank', validator: validate.trackBank, },
 		{ key: 'trackWidth', validator: validate.positiveNumber },
 		{ key: 'wallHeight', validator: validate.positiveNumber },
 	]
+
+	static #postValidate(settings, name) {
+		if (settings.medianWidth >= settings.trackWidth) {
+			const msg = `${name}: medianWidth (${settings.medianWidth} cannot exceed trackWidth ${settings.medianWidth}`
+			throw new RangeError(msg);
+		}
+	}
 }
 
 export default merge

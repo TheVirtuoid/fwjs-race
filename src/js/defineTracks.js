@@ -194,7 +194,7 @@ export function defineTracks(tracks) {
 			}
 		},
 	});
-	tracks.register({
+	const track1b = tracks.register({
 		sibling: track1,
 		member: "Alternate straight",
 		track: {
@@ -207,6 +207,52 @@ export function defineTracks(tracks) {
 							forward: launch.end.forward,
 							length: 1.004987562112089,
 							forwardWeight: 1.1
+						},
+						track1.runoutStart,
+						track1a.runoutStraight,
+					],
+				},
+			],
+		},
+	});
+	tracks.register({
+		sibling: track1,
+		member: "Straight with full length lanes",
+		track: {
+			lanes: 2,
+			medianWidth: .05,
+			segments: [
+				{
+					points: [
+						{
+							type: 'straight',
+							startsAt: launch.end.center,
+							forward: launch.end.forward,
+							length: 1.004987562112089,
+							forwardWeight: 1.1
+						},
+						track1.runoutStart,
+						track1a.runoutStraight,
+					],
+				},
+			],
+		},
+	});
+	tracks.register({
+		sibling: track1,
+		member: "Straight with only launch lanes",
+		track: {
+			segments: [
+				{
+					points: [
+						{
+							type: 'straight',
+							startsAt: launch.end.center,
+							forward: launch.end.forward,
+							length: 1.004987562112089,
+							forwardWeight: 1.1,
+							lanes: 2,
+							medianWidth: .05,
 						},
 						track1.runoutStart,
 						track1a.runoutStraight,

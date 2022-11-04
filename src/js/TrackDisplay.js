@@ -41,15 +41,17 @@ class TrackDisplay {
 			const track = this.#tracks[key];
 			const settings = track.options ? track.options : {};
 
+			// Produce the track segments
 			this.#registerCallback(track);
-
-			const ribbons = TrackPOC(
+			const trackSegments = TrackPOC(
 				track,
 				(u) => { return this.#gameEngine.createVector(u) },
 				settings);
-			const ribbon = ribbons[0];
-			const leftRoad = ribbon[1];
-			const rightRoad = ribbon[2];
+
+			// Save the start location
+			const trackSegment = trackSegments[0];
+			const leftRoad = trackSegment.track.ribbon[1];
+			const rightRoad = trackSegment.track.ribbon[2];
 			const p0left = leftRoad[0];
 			const p0right = rightRoad[0];
 			const p1left = leftRoad[1];
@@ -66,12 +68,22 @@ class TrackDisplay {
 					z: (p1left.z + p1right.z) / 2,
 				},
 			}
-			for (let i = 0; i < ribbons.length; i++) {
+
+			// Produce the track
+			for (let i = 0; i < trackSegments.length; i++) {
+				const trackSegment = trackSegments[i];
 				this.#meshes.push(this.#gameEngine.createRibbon(
 					`Segment${i}`,
-					ribbons[i],
+					trackSegment.track.ribbon,
 					track.closed,
 					{ mass: 0, restitution: 0, friction: .2 }));
+				for (let j = 0; j < trackSegment.medians.length; j++) {
+					this.#meshes.push(this.#gameEngine.createRibbon(
+						`Segment${i}.median${j}`,
+						trackSegment.medians[j].ribbon,
+						track.closed,
+						{ mass: 0 }));
+				}
 			}
 			this.#errorDisplay.clear();
 		} catch (e) {
