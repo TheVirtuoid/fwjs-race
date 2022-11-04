@@ -63,6 +63,10 @@
 					Throughout, <b>vertex</b> means a point in space while <b>vector</b>
 					means a direction in space. Both are represented by Euclidean coordinates
 					but their interpretaion differ.
+				</p><p>
+					The phrase <b>the algorithm</b> refers to how the <a href="#TrackPOC">
+					TrackPOC</a>
+					function treats or produces the data discussed.
 				</p>
 			</div>
 			<h1 id="APIandSpecs">API and Specifications</h1>
@@ -115,7 +119,8 @@
 					</ul>
 					<p>
 						<b>NOTE:</b> Various game engines use the y-axis as the
-						vertical axis while others use the z-axis. Currently TrackPOC
+						vertical axis while others use the z-axis. Currently
+						the algorithm
 						uses the y-axis as the vertical axis <em>but will eventually
 						use the z-axis</em>. This will happen once the setting
 						<a href="#yIsVertical">yIsVertical</a> is implemented.
@@ -168,7 +173,7 @@
 						<b>wallHeight</b> (default 0.5) is the height of the wall at the secion
 						element
 					</li><li id="yIsVertical">
-						<b>yIsVertical</b> (default false), if true, causes TrackPOC to treat the
+						<b>yIsVertical</b> (default false), if true, causes the algorithm to treat the
 						y-axis of the <b><em>specification vertices and vectors</em></b>
 						as the vertical axis; <b>IMPORTANT:</b> this does not affect
 						the TrackPOC argument <a href="#vectorFactory">vectorFactory</a>
@@ -181,7 +186,7 @@
 					The <b>lanes</b> setting sets the number of lanes in a
 					<a href="#sectionElements">section</a> of track. If <b>lanes</b>
 					is the same number in both the entry and exit points of a section
-					and <b>lanes</b> is more than 1, <a href="#TrackPOC">TrackPOC</a>
+					and <b>lanes</b> is more than 1, the algorithm
 					generates lane dividers along the section. The width of the dividers
 					is linearly interpolated between the <b>medianWidth</b> of the entry
 					point and that of the exit point.
@@ -218,7 +223,7 @@
 						and <a href="#straightElement">straight</a> sections.
 					</p><p>
 						When determining the banking between a <a href="#pointElement">point</a>
-						and its adjacent section, TrackPOC linearly interpolates between the
+						and its adjacent section, the algorithm linearly interpolates between the
 						point and the appropriate endpoint of the adjacent section.
 					</p>
 				</div>
@@ -386,7 +391,60 @@
 					</li>
 				</ul>
 				<h2 id="spiralElement">Spiral Element</h2>
-				<p>TBD</p>
+				<p>
+					A <b>spiral element</b> represents a curve, starting at its
+					entry point and ending at its exit point, rotating around
+					a fixed center, possibly of a changing height and radius, and
+					possibly of a number of complete 360&deg; rotations.
+				</p><p>
+					Note that the entry and exit points of the spiral form angles
+					with respect to the center of the spiral. The difference in angles,
+					considering the direction of rotation, and the number of 360&deg;
+					rotations, determine the <b>sweep</b> of the spiral.
+				</p><p>
+					The algorithm splits the section into the smallest number of
+					subsections where the sweep of each subsection is &le;&nbsp;90&deg;.
+					The endpoints of these subsections are linearly interpolated, in
+					angle, radius, and height, from the section's entry and exit points.
+				</p><p>
+					<b>NOTE:</b> the spiral element is not fully implemented. The
+					<a href="#TrackPOC">TrackPOC</a> function may throw an exception
+					in some configuations.
+				</p><p>
+					The algorithm attempts to determine the center of the spiral. It
+					cannot do this if the forward vectors of the entry and exit points
+					are the same or are opposite. If so, the <b>center</b> setting
+					is required.
+				</p><p>
+					In addition to the <a href="#settings">universal settings</a>,
+					the spiral element also has these settings.
+				</p>
+				<ul>
+					<li>
+						<b>center</b> (required if necessary; illegal otherwise; see above)
+						is a vector defining the center of rotation for the spiral
+					</li><li>
+						<b>endsAt</b> (required) is a <a href="#pointElement">point
+						element</a> defining the exit point of the spiral
+					</li><li>
+						<b>rotate</b> (required) is either 'left', 'right', or 'up'
+						(<b>NOTE: 'up' is not implemented</b>) and determines the
+						direction of curvature relative to the entry point's <b>forward</b>
+						vector
+					</li><li>
+						<b>startsAt</b> (required if the element is the first in its
+						segment; illegal otherwise) is a <a href="#pointElement">point
+						element</a> defining the entry point of the spiral
+					</li><li>
+						<b>turns</b> (default 0) is the number of complete 360&deg;
+						rotations of the spiral
+					</li>
+				</ul>
+				<p>
+					<b>AUTHOR COMMENT:</b> the relationship between <b>center</b> and
+					<b>rotate</b>, and even the existance of <b>rotate</b>, is not well
+					designed. These may change.
+				</p>
 				<h2 id="straightElement">Straight Element</h2>
 				<p>TBD</p>
 			</div>
