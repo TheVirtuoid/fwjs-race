@@ -1,0 +1,90 @@
+:root {
+	--main-color: #89A203;
+	--main-color-dk: #799203;
+	--main-color-lt: #99b203;
+}
+
+/*
+** The document has vertically class of a header, main-body, and a footer.
+** The script write_header in common.js generates the header for each page
+** while the script write_footer generates the footer for a page.
+*/
+
+header {
+	text-align: center;
+	width: 100%;
+}
+
+main {
+	display: flex;
+}
+
+footer {
+	text-align: center;
+	width: 100%;
+}
+
+/*
+** The main-body consists of three horizontal components: the table of oontents
+** (toc), the main contents (main-content), and an optional sidebar. The sidebar
+** is currently not used.
+*/
+
+#toc {
+	flex-basis: 0;
+	padding: 20px;
+	height: 100%;
+	position: sticky;
+	top: 0;
+}
+
+#main-content {
+	background-color: white;
+	flex-grow: 10;
+	padding: 20px;
+	background-color: white;
+	overflow: auto;
+}
+
+/*
+** The table of contents is a vertical arrangement of buttons with one paragraph
+** masquerading as a button. This static text indicates the current page. Some
+** entries may have indented entries (subtoc) for subordinate topics.
+*/
+
+.toc {
+	background-color: var(--main-color-dk);
+	color: white;
+	display: inline-block;
+	float: left;
+	margin: 0;
+	text-align: left;
+	width: 100%;
+	white-space: nowrap;
+	padding-left: 14px;
+}
+
+.toch1 {
+	padding-top: 14px;
+}
+
+.toch2 {
+	padding-top: 2px;
+	text-indent: 20px;
+}
+
+.toch3 {
+	text-indent: 40px;
+}
+
+.toclast {
+	padding-bottom: 14px;
+}
+
+.indent2 {
+	margin-left: 20px;
+}
+
+.indent3 {
+	margin-left: 20px;
+}
