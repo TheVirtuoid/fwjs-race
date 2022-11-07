@@ -331,14 +331,74 @@
 				</p><p>
 					Note that this <em>t</em> is the same as the first number in
 					the array form of <a href="#trackBank">track banking</a>.
-				</p><p>
+				</p>
+				<div id="demo-standard" class="demo">
+					<p>
+						Let S<sub>0</sub> be the directed line segment from P<sub>0</sub>
+						to P<sub>1</sub> and S<sub>3</sub> be the same from P<sub>3</sub>
+						to P<sub>2</sub>.
+					</p>
+					<ul>
+						<li>
+							See how the curve passes through P<sub>0</sub> and P<sub>3</sub>
+						</li><li>
+							See how S<sub>0</sub> forms the tangent and direction of the curve at P<sub>0</sub>
+						</li><li>
+							See how the longer S<sub>0</sub>, the less the curve diverges from S<sub>0</sub> around P<sub>0</sub>
+						</li><li>
+							See how if S<sub>0</sub> is longer than S<sub>3</sub>, the curve is closer to S<sub>0</sub>
+						</li><li>
+							See how the curve simulates a quarter circle with special lengths of S<sub>0</sub> and S<sub>3</sub>
+						</li>
+					</ul>
+					<div class="panel">
+						<div class="canvas">Canvas</div>
+						<div class="input">
+							<p class="label">P<sub>0</sub></p>
+							<div class="setting">
+								<label for="demo-standard-p0x">X</label>
+								<input class="coord" id="demo-standard-p0x" type="number" value="10"/>
+								<label for="demo-standard-p0y">Y</label>
+								<input class="coord" id="demo-standard-p0y" type="number" value="0"/>
+							</div>
+							<p class="label">P<sub>1</sub></p>
+							<div class="setting">
+								<label for="demo-standard-p1x">X</label>
+								<input class="coord" id="demo-standard-p1x" type="number" value="10"/>
+								<label for="demo-standard-p1y">Y</label>
+								<input class="coord" id="demo-standard-p1y" type="number" value="1"/>
+							</div>
+							<p class="label">P<sub>2</sub></p>
+							<div class="setting">
+								<label for="demo-standard-p2x">X</label>
+								<input class="coord" id="demo-standard-p2x" type="number" value="1"/>
+								<label for="demo-standard-p2y">Y</label>
+								<input class="coord" id="demo-standard-p2y" type="number" value="10"/>
+							</div>
+							<p class="label">P<sub>3</sub></p>
+							<div class="setting">
+								<label for="demo-standard-p3x">X</label>
+								<input class="coord" id="demo-standard-p3x" type="number" value="0"/>
+								<label for="demo-standard-p3y">Y</label>
+								<input class="coord" id="demo-standard-p3y" type="number" value="10"/>
+							</div>
+							<p class="label">See circle?</p>
+							<div class="setting">
+								<input type="radio" id="demo-standard-circleYes" name="demo-standard-circle" value="true"/>
+								<label for="demo-standard-circleYes">Yes</label>
+								<input type="radio" id="demo-standard-circleNo" name="demo-standard-circle" value="false" checked="checked"/>
+								<label for="demo-standard-circleNo">No</label>
+							</div>
+						</div>
+						<div class="error">Error</div>
+					</div>
+				</div>
+				<p>
 					Consider two conjoined curves defined by P<sub>0</sub>&hellip;
 					P<sub>2</sub>P<sub>3</sub>P<sub>4</sub>&hellip;P<sub>7</sub>.
 					Because P<sub>2</sub> and P<sub>4</sub> determine the tangents
 					of the curve at P<sub>3</sub>, the curve is continuous at P<sub>3</sub>
 					only if P<sub>2</sub>, P<sub>3</sub>, and P<sub>4</sub> are colinear.
-				</p><p>
-					<b>INSERT DEMO HERE</b>
 				</p><p>
 					Since we want the track to be continuous, we use a <a href="#forward">
 					forward</a> unit vector to determine one tangent to an endpoint
@@ -351,9 +411,11 @@
 					position of the backward interior point (i.e., P<sub>n-1</sub> =
 					P<sub>n</sub> - <em>b</em>F, where <em>b</em> is the backward weight
 					and F is the forward vector at P<sub>n</sub>).
-				</p><p>
-					<b>INSERT DEMO HERE</b>
-				</p><p>
+				</p>
+				<div id="demo-tangentWeight" class="demo">
+					<b>INSERT GENERAL BEZIER DEMO USING UNIT TANGENTS AND WEIGHTS HERE</b>
+				</div>
+				<p>
 					Note that it is still possible to create a track that is discontinuous
 					at an endpoint. The endpoint must be the last point of one segment
 					and the first point in the next segment. If the endpoint, expressed
@@ -391,9 +453,9 @@
 						vector used when the point is an entry point of a section
 					</li>
 				</ul>
-				<p>
-					<b>INSERT DEMO HERE</b>
-				</p>
+				<div id="demo-point" class="demo">
+					<b>INSERT POINT-TO-POINT DEMO HERE</b>
+				</div>
 				<h2 id="spiralElement">Spiral Element</h2>
 				<p>
 					A <b>spiral element</b> represents a curve, starting at its
@@ -458,9 +520,9 @@
 					<b>rotate</b>, and even the existance of <b>rotate</b>, is not well
 					designed. These may change.
 				</p>
-				<p>
-					<b>INSERT DEMO HERE</b>
-				</p>
+				<div id="demo-spiral" class="demo">
+					<b>INSERT SPIRAL DEMO HERE</b>
+				</div>
 				<h2 id="straightElement">Straight Element</h2>
 				<p>
 					A <b>straight element</b> represents a straight section proceeding
@@ -516,9 +578,9 @@
 						segment; illegal otherwise) sets the center of the entry point
 					</li>
 				</ul>
-				<p>
-					<b>INSERT DEMO HERE</b>
-				</p>
+				<div id="demo-straight" class="demo">
+					<b>INSERT STRAIGHT DEMO HERE</b>
+				</div>
 			</div>
 		</div>
     </main>
@@ -527,4 +589,5 @@
     </footer>
 </section>
 </body>
+<script src="./doc.js" type="module"></script>
 </html>

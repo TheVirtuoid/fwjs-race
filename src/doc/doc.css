@@ -1,7 +1,7 @@
 :root {
-	--main-color: #89A203;
-	--main-color-dk: #799203;
-	--main-color-lt: #99b203;
+	--demo-color: cornsilk;
+	--toc-color: cornsilk;
+	--toc-text: black;
 }
 
 /*
@@ -53,8 +53,8 @@ footer {
 */
 
 .toc {
-	background-color: var(--main-color-dk);
-	color: white;
+	background-color: var(--toc-color);
+	color: var(--toc-text);
 	display: inline-block;
 	float: left;
 	margin: 0;
@@ -87,4 +87,37 @@ footer {
 
 .indent3 {
 	margin-left: 20px;
+}
+
+.demo {
+	background-color: var(--demo-color);
+	border-style: double;
+	padding: 20px;
+}
+
+.demo > .panel {
+	display: flex;
+}
+
+.demo > .panel > .canvas {
+}
+
+.demo > .panel > .input {
+	border-style: solid;
+	border-width: 1px;
+	column-gap: 10px;
+	display: grid;
+}
+
+.demo > .panel > .input > .label {
+	font-weight: bold;
+	grid-column-start: 1;
+}
+
+.demo > .panel > .input > .setting {
+	display: flex;
+	grid-column-start: 2;
+}
+
+.demo > .panel > .error {
 }
