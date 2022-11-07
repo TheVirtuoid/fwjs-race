@@ -148,25 +148,17 @@ function draw() {
 	displayCurve(ctx, p0, p1, p2, p3);
 }
 
-function circleCallback(evt) {
-	const drawCircle = evt.target.id === circleYes;
-	if (drawCircle) {
-		points.x0.value = 10;
-		points.y0.value = 0;
-		points.x1.value = 10;
-		points.y1.value = circleWeight;
-		points.x2.value = circleWeight;
-		points.y2.value = 10;
-		points.x3.value = 0;
-		points.y3.value = 10;
-		helpers.clearError(error);
-		hasError = false;
-	}
-
-	for (let coord of coords) {
-		coord.disabled = drawCircle;
-	}
-
+function resetToCircle() {
+	points.x0.value = 10;
+	points.y0.value = 0;
+	points.x1.value = 10;
+	points.y1.value = circleWeight;
+	points.x2.value = circleWeight;
+	points.y2.value = 10;
+	points.x3.value = 0;
+	points.y3.value = 10;
+	helpers.clearError(error);
+	hasError = false;
 	draw();
 }
 
@@ -181,6 +173,7 @@ function init() {
 	canvas = helpers.initCanvas(demo);
 	coords = helpers.initCoordFields(demo, coordCallback);
 	points = helpers.initPoints(coords);
+	demo.querySelectorAll("#demo-standard-reset")[0].addEventListener("click", resetToCircle);
 	draw();
 }
 
