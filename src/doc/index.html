@@ -410,7 +410,62 @@
 					and F is the forward vector at P<sub>n</sub>).
 				</p>
 				<div id="demo-tangentWeight" class="demo">
-					<b>INSERT GENERAL BEZIER DEMO USING UNIT TANGENTS AND WEIGHTS HERE</b>
+					<p>
+						Let S<sub>0</sub> be the directed line segment from P<sub>0</sub>
+						to P<sub>1</sub> and S<sub>3</sub> be the same from P<sub>3</sub>
+						to P<sub>2</sub>.
+					</p>
+					<ul>
+						<li>
+							See how the curve passes through P<sub>0</sub> and P<sub>3</sub>
+						</li><li>
+							See how S<sub>0</sub> forms the tangent and direction of the curve at P<sub>0</sub>
+						</li><li>
+							See how longer S<sub>0</sub> is, the less the curve diverges from S<sub>0</sub> around P<sub>0</sub> (i.e., set <b>P<sub>1</sub></b> to [4, 6])
+						</li><li>
+							See how if S<sub>0</sub> is longer than S<sub>3</sub>, the curve is closer to S<sub>0</sub> (i.e., set <b>P<sub>1</sub></b> to [4, 6])
+						</li><li>
+							See how the curve simulates a quarter circle (the <b>Reset to Circle</b> button restores the curve to a near quarter circle)
+						</li>
+					</ul>
+					<div class="panel">
+						<canvas></canvas>
+						<div class="input">
+							<p class="label">P<sub>0</sub></p>
+							<div class="setting">
+								<label for="demo-tangentWeight-p0x">X:&nbsp</label>
+								<input class="coord" id="demo-tangentWeight-x0" type="number" value="10"/>
+								<label for="demo-tangentWeight-p0y">Y:&nbsp</label>
+								<input class="coord" id="demo-tangentWeight-y0" type="number" value="0"/>
+							</div>
+							<p class="label">P<sub>1</sub></p>
+							<div class="setting">
+								<label for="demo-tangentWeight-p1x">X:&nbsp</label>
+								<input class="coord" id="demo-tangentWeight-x1" type="number" value="10"/>
+								<label for="demo-tangentWeight-p1y">Y:&nbsp</label>
+								<input class="coord" id="demo-tangentWeight-y1" type="number" value="1"/>
+							</div>
+							<p class="label">P<sub>2</sub></p>
+							<div class="setting">
+								<label for="demo-tangentWeight-p2x">X:&nbsp</label>
+								<input class="coord" id="demo-tangentWeight-x2" type="number" value="1"/>
+								<label for="demo-tangentWeight-p2y">Y:&nbsp</label>
+								<input class="coord" id="demo-tangentWeight-y2" type="number" value="10"/>
+							</div>
+							<p class="label">P<sub>3</sub></p>
+							<div class="setting">
+								<label for="demo-tangentWeight-p3x">X:&nbsp</label>
+								<input class="coord" id="demo-tangentWeight-x3" type="number" value="0"/>
+								<label for="demo-tangentWeight-p3y">Y:&nbsp</label>
+								<input class="coord" id="demo-tangentWeight-y3" type="number" value="10"/>
+							</div>
+							<button id="demo-tangentWeight-reset" type="button">Reset to Circle</button>
+						</div>
+						<div class="error">
+							<p class="alert">Error!</p>
+							<p class="msg"></p>
+						</div>
+					</div>
 				</div>
 				<p>
 					Note that it is still possible to create a track that is discontinuous

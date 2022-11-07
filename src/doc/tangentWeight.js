@@ -165,12 +165,12 @@ function coordCallback() {
 }
 
 function init() {
-	const demo = document.getElementById("demo-standard");
+	const demo = document.getElementById("demo-tangentWeight");
 	error = helpers.initError(demo);
 	canvas = helpers.initCanvas(demo);
 	coords = helpers.initCoordFields(demo, coordCallback);
 	points = helpers.initPoints(coords);
-	demo.querySelectorAll("#demo-standard-reset")[0].addEventListener("click", resetToCircle);
+	demo.querySelectorAll("#demo-tangentWeight-reset")[0].addEventListener("click", resetToCircle);
 	resetToCircle();
 }
 

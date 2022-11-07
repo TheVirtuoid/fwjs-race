@@ -1,7 +1,5 @@
 import initStandard from './standard.js'
-
-function initTangentWeight() {
-}
+import initTangentWeight from './tangentWeight.js'
 
 function initPoint() {
 }
