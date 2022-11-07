@@ -99,7 +99,12 @@ footer {
 	display: flex;
 }
 
-.demo > .panel > .canvas {
+.demo > .panel > canvas {
+	border-style: solid;
+	border-width: 1px;
+	display: block;
+	height: 300px;
+	width: 300px;
 }
 
 .demo > .panel > .input {
@@ -120,4 +125,8 @@ footer {
 }
 
 .demo > .panel > .error {
+}
+
+.hidden {
+	display: none;
 }
