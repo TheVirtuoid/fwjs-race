@@ -6,9 +6,6 @@ const circleNo = "demo-standard-circle-no";
 
 const circleWeight = 5.519150244935105707435627;
 
-const circleWidth = 5;
-const circleColor = "green";
-
 const drawableCanvas = 0.8;
 
 const bezierWidth = 1;
@@ -26,7 +23,6 @@ const pointLabelColor = "black";
 const segmentWidth = 1;
 const segmentColor = "black";
 
-const halfPI = Math.PI / 2;
 const twoPI = 2 * Math.PI;
 
 let canvas, coords, error, points;
@@ -153,7 +149,7 @@ function draw() {
 }
 
 function circleCallback(evt) {
-	drawCircle = evt.target.id === circleYes;
+	const drawCircle = evt.target.id === circleYes;
 	if (drawCircle) {
 		points.x0.value = 10;
 		points.y0.value = 0;
@@ -185,8 +181,6 @@ function init() {
 	canvas = helpers.initCanvas(demo);
 	coords = helpers.initCoordFields(demo, coordCallback);
 	points = helpers.initPoints(coords);
-	demo.querySelectorAll('#' + circleYes)[0].addEventListener("click", circleCallback);
-	demo.querySelectorAll('#' + circleNo)[0].addEventListener("click", circleCallback);
 	draw();
 }
 
