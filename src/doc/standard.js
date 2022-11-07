@@ -5,12 +5,23 @@ const circleNo = "demo-standard-circle-no";
 
 const circleWeight = 5.519150244935105707435627;
 
+const drawableCanvas = 0.85;
+
+const bezierWidth = 1;
+const bezierColor = "blue";
+
+const labelWidth = 1;
+const labelColor = "black";
+const labelOffset = 5;
+
 const pointRadius = 2;
 const pointColor = "black";
 const pointLabelColor = "black";
 
-const bezierWidth = 1;
-const bezierColor = "blue";
+const segmentWidth = 1;
+const segmentColor = "black";
+
+const twoPI = 2 * Math.PI;
 
 let canvas, coords, error, points;
 let drawCircle = false;
@@ -26,15 +37,10 @@ function mapPoint(mapping, curveX, curveY) {
 	return { x: mapping.canvasCenter.x + dXCanvas, y: mapping.canvasCenter.y - dYCanvas };
 }
 
-function displayCircle() {
+function displayCircle(ctx, p0, p1, p2, p3) {
 }
 
-function displayCurve(ctx, mapping, x0, y0, x1, y1, x2, y2, x3, y3) {
-	const p0 = mapPoint(mapping, x0, y0);
-	const p1 = mapPoint(mapping, x1, y1);
-	const p2 = mapPoint(mapping, x2, y2);
-	const p3 = mapPoint(mapping, x3, y3);
-
+function displayCurve(ctx, p0, p1, p2, p3) {
 	ctx.lineWidth = bezierWidth;
 	ctx.strokeStyle = bezierColor;
 	ctx.beginPath();
@@ -43,15 +49,54 @@ function displayCurve(ctx, mapping, x0, y0, x1, y1, x2, y2, x3, y3) {
 	ctx.stroke();
 }
 
-function displayPoint(label, x, y, mapping, x1, y1, x2, y2) {
+function displayPoint(ctx, label, p0, p1, p2) {
+
+	// Draw the point
+	ctx.lineWidth = 1;
+	ctx.fillStyle = pointColor;
+	ctx.strokeStyle = pointColor;
+	ctx.beginPath();
+	ctx.arc(p0.x, p0.y, pointRadius, twoPI, false);
+	ctx.fill();
+	ctx.stroke();
+
+	// Draw the label
+	const measure = ctx.measureText(label);
+	ctx.lineWidth = labelWidth;
+	ctx.fillStyle = labelColor;
+	if (!p2) {
+		let d = { x: p0.x - p1.x, y: p0.y - p1.y };
+		const length = Math.sqrt(d.x * d.x + d.y * d.y);
+		d = { x: d.x / length, y: d.y / length };
+		if (Math.abs(d.x) >= Math.abs(d.y)) {
+			ctx.fillText(label, d.x * (measure.width + labelOffset) + p0.x, p0.y);
+		} else {
+			const height = measure.actualBoundingBoxAscent + measure.actualBoundingBoxDescent;
+			ctx.fillText(label, p0.x, d.y * (measure.width + labelOffset) + p0.y);
+		}
+	} else {
+		console.log("CASE P2");
+	}
+}
+
+function displaySegment(ctx, label, p0, p1, mapping, p2) {
+	ctx.lineWidth = segmentWidth;
+	ctx.strokeStyle = segmentColor;
+	ctx.beginPath();
+	ctx.moveTo(p0.x, p0.y);
+	ctx.lineTo(p1.x, p1.y);
+	ctx.stroke();
 }
 
 function draw() {
 
-	// Clear the canvas
 	const ctx = canvas.getContext('2d');
+
+	// Clear the canvas
 	ctx.fillStyle = window.getComputedStyle(canvas).backgroundColor;
-	ctx.fillRect(0, 0, canvas.width, canvas.height);
+	ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+	// Stop if there is an error
 	if (hasError) return;
 
 	// Get the coordinates of the points
@@ -71,19 +116,30 @@ function draw() {
 	const maxY = Math.max(y0, y1, y2, y3);
 	const mapping = {
 		canvasCenter: { x: canvas.width / 2, y: canvas.height / 2 },
-		canvasSpan: canvas.width * 0.9,
+		canvasSpan: canvas.width * drawableCanvas,
 		curveCenter: { x: (minX + maxX) / 2, y: (minY + maxY) / 2 },
 		curveSpan: Math.max(maxX - minX, maxY - minY),
 	}
+	const p0 = mapPoint(mapping, x0, y0);
+	const p1 = mapPoint(mapping, x1, y1);
+	const p2 = mapPoint(mapping, x2, y2);
+	const p3 = mapPoint(mapping, x3, y3);
 
-	displayPoint('P0', x0, y0, mapping, x1, y1);
-	displayPoint('P1', x1, y1, mapping, x0, y0, x2, y2);
-	displayPoint('P2', x2, y2, mapping, x1, y1, x3, y3);
-	displayPoint('P3', x3, y3, mapping, x2, y2);
+	// Draw points
+	displayPoint(ctx, 'P0', p0, p1);
+	displayPoint(ctx, 'P1', p1, p0, p2);
+	displayPoint(ctx, 'P2', p2, p1, p3);
+	displayPoint(ctx, 'P3', p3, p2);
 
-	displayCurve(ctx, mapping, x0, y0, x1, y1, x2, y2, x3, y3);
+	// Draw segments
+	displaySegment(ctx, 'S0', p0, p1);
+	displaySegment(ctx, 'S1', p3, p2);
 
-	if (drawCircle) displayCircle(mapping, x0, y0, x3, y3);
+	// Draw the Bezier curve
+	displayCurve(ctx, p0, p1, p2, p3);
+
+	// If needed, draw the circle
+	if (drawCircle) displayCircle(ctx, p0, p1, p2, p3);
 }
 
 function circleCallback(evt) {

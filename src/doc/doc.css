@@ -127,6 +127,12 @@ footer {
 .demo > .panel > .error {
 }
 
+.demo > .panel > .error > .alert {
+}
+
+.demo > .panel > .error > .msg {
+}
+
 .hidden {
 	display: none;
 }

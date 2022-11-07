@@ -2,7 +2,7 @@ const helpers = {
 
 	checkForCoincidentalPoints: function(points, numPoints, error, tolerance = 0.01) {
 		const p = [];
-		for (let i = 0; i < numberPoints; i++) {
+		for (let i = 0; i < numPoints; i++) {
 			p.push({
 				x: Number(points['x' + i].value),
 				y: Number(points['y' + i].value),
@@ -15,7 +15,8 @@ const helpers = {
 				const dy = p[i].y - p[j].y;
 				if (Math.sqrt(dx * dx + dy * dy) < tolerance) {
 					const msg = `Points ${i} and ${j} are too close`;
-					this.setError(msg);
+					console.log(msg);
+					this.setError(error, msg);
 					return true;
 				}
 			}
@@ -26,7 +27,7 @@ const helpers = {
 	},
 
 	clearError: function(error) {
-		error.classList.remove("hidden");
+		error.classList.add("hidden");
 	},
 
 	initCanvas: function(owner) {
@@ -66,8 +67,9 @@ const helpers = {
 	},
 
 	setError: function(error, msg) {
+		console.log(error, msg);
 		error.classList.remove("hidden");
-		error.getElementById("msg").innerHTML = msg;
+		error.querySelectorAll(".msg")[0].innerText = msg;
 	}
 }
 
