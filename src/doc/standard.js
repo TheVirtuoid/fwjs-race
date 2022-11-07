@@ -132,14 +132,14 @@ function draw() {
 	const p3 = mapPoint(mapping, x3, y3);
 
 	// Draw points
-	displayPoint(ctx, 'P0', p0, p1);
+	displayPoint(ctx, 'P0', p0, p1, p2);
 	displayPoint(ctx, 'P1', p1, p0, p2);
 	displayPoint(ctx, 'P2', p2, p1, p3);
 	displayPoint(ctx, 'P3', p3, p2);
 
 	// Draw segments
 	displaySegment(ctx, 'S0', p0, p1, p2);
-	displaySegment(ctx, 'S1', p3, p2, p1);
+	displaySegment(ctx, 'S3', p3, p2, p1);
 
 	// Draw the Bezier curve
 	displayCurve(ctx, p0, p1, p2, p3);

@@ -82,19 +82,23 @@ function displayPoint(ctx, label, p0, p1, p2) {
 	displayLabel(ctx, label, p0, d);
 }
 
-function displaySegment(ctx, label, p0, p1, p2) {
+function displaySegment(ctx, label, dash, p0, p1, p2) {
+	console.log(dash);
 	ctx.lineWidth = segmentWidth;
 	ctx.strokeStyle = segmentColor;
+	ctx.setLineDash(dash ? [10, 5] : []);
 	ctx.beginPath();
 	ctx.moveTo(p0.x, p0.y);
 	ctx.lineTo(p1.x, p1.y);
 	ctx.stroke();
 
-	const v01 = p0.toNormal(p1);
-	const v02 = p0.toNormal(p2);
-	const dot = v01.dot(v02);
-	const d = v02.add(-dot, v01).normalize();
-	displayLabel(ctx, label, p0.midpoint(p1), d);
+	if (label && label.length > 0) {
+		const v01 = p0.toNormal(p1);
+		const v02 = p0.toNormal(p2);
+		const dot = v01.dot(v02);
+		const d = v02.add(-dot, v01).normalize();
+		displayLabel(ctx, label, p0.midpoint(p1), d);
+	}
 }
 
 function draw() {
@@ -106,54 +110,71 @@ function draw() {
 	if (hasError) return;
 
 	// Get the coordinates of the points
-	const x0 = Number(points.x0.value);
-	const x1 = Number(points.x1.value);
-	const x2 = Number(points.x2.value);
-	const x3 = Number(points.x3.value);
-	const y0 = Number(points.y0.value);
-	const y1 = Number(points.y1.value);
-	const y2 = Number(points.y2.value);
-	const y3 = Number(points.y3.value);
+	let p0 = new Vector2(Number(points.x0.value), Number(points.y0.value));
+	const d0 = new Vector2(Number(points.dx0.value), Number(points.dy0.value)).normalize();
+	const w0 = Number(points.w0.value);
+	let p1 = p0.add(w0, d0);
+	let t0 = p0.add(1, d0);
+
+	let p3 = new Vector2(Number(points.x3.value), Number(points.y3.value));
+	const d3 = new Vector2(Number(points.dx3.value), Number(points.dy3.value)).normalize();
+	const w3 = Number(points.w3.value);
+	let p2 = p3.add(-w3, d3);
+	let t3 = p3.add(1, d3);
 
 	// Determine mapping
-	const minX = Math.min(x0, x1, x2, x3);
-	const maxX = Math.max(x0, x1, x2, x3);
-	const minY = Math.min(y0, y1, y2, y3);
-	const maxY = Math.max(y0, y1, y2, y3);
+	const minX = Math.min(p0.x, p1.x, p2.x, p3.x, t0.x, t3.x);
+	const maxX = Math.max(p0.x, p1.x, p2.x, p3.x, t0.x, t3.x);
+	const minY = Math.min(p0.y, p1.y, p2.y, p3.y, t0.y, t3.y);
+	const maxY = Math.max(p0.y, p1.y, p2.y, p3.y, t0.y, t3.y);
 	const mapping = {
 		canvasCenter: { x: canvas.width / 2, y: canvas.height / 2 },
 		canvasSpan: canvas.width * drawableCanvas,
 		curveCenter: { x: (minX + maxX) / 2, y: (minY + maxY) / 2 },
 		curveSpan: Math.max(maxX - minX, maxY - minY),
 	}
-	const p0 = mapPoint(mapping, x0, y0);
-	const p1 = mapPoint(mapping, x1, y1);
-	const p2 = mapPoint(mapping, x2, y2);
-	const p3 = mapPoint(mapping, x3, y3);
+
+	// Transform points into canvas coordinates
+	p0 = mapPoint(mapping, p0.x, p0.y);
+	p1 = mapPoint(mapping, p1.x, p1.y);
+	p2 = mapPoint(mapping, p2.x, p2.y);
+	p3 = mapPoint(mapping, p3.x, p3.y);
+	t0 = mapPoint(mapping, t0.x, t0.y);
+	t3 = mapPoint(mapping, t3.x, t3.y);
 
 	// Draw points
 	displayPoint(ctx, 'P0', p0, p1);
 	displayPoint(ctx, 'P1', p1, p0, p2);
 	displayPoint(ctx, 'P2', p2, p1, p3);
 	displayPoint(ctx, 'P3', p3, p2);
+	displayPoint(ctx, 'f0', t0, p2);
+	displayPoint(ctx, 'f3', t3, p2);
 
 	// Draw segments
-	displaySegment(ctx, 'S0', p0, p1, p2);
-	displaySegment(ctx, 'S1', p3, p2, p1);
+	displaySegment(ctx, 'S0', true, p0, p1, p2);
+	displaySegment(ctx, 'S3', true, p3, p2, p1);
+	displaySegment(ctx, '', false, p0, p1, p2);
+	displaySegment(ctx, '', false, p3, p2, p1);
 
 	// Draw the Bezier curve
 	displayCurve(ctx, p0, p1, p2, p3);
 }
 
 function resetToCircle() {
+
 	points.x0.value = 10;
 	points.y0.value = 0;
-	points.x1.value = 10;
-	points.y1.value = circleWeight;
-	points.x2.value = circleWeight;
-	points.y2.value = 10;
 	points.x3.value = 0;
 	points.y3.value = 10;
+
+	points.dx0.value = 0;
+	points.dy0.value = 1;
+	points.w0.value = circleWeight;
+
+	points.dx3.value = -1;
+	points.dy3.value = 0;
+	points.w3.value = circleWeight;
+
 	helpers.clearError(error);
 	hasError = false;
 	draw();
@@ -170,7 +191,9 @@ function init() {
 	canvas = helpers.initCanvas(demo);
 	coords = helpers.initCoordFields(demo, coordCallback);
 	points = helpers.initPoints(coords);
-	demo.querySelectorAll("#demo-tangentWeight-reset")[0].addEventListener("click", resetToCircle);
+	points.w0 = demo.querySelector("#demo-tangentWeight-w0");
+	points.w3 = demo.querySelector("#demo-tangentWeight-w3");
+	demo.querySelector("#demo-tangentWeight-reset").addEventListener("click", resetToCircle);
 	resetToCircle();
 }
 
