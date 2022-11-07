@@ -1,18 +1,4 @@
-function setCoordFields(owner) {
-	const coords = owner.querySelectorAll(".coord");
-	for (let coord of coords) {
-		coord.max = 10;
-		coord.min = -10;
-		coord.step = 0.001;
-	}
-	return coords;
-}
-
-function initStandard() {
-	const demo = document.getElementById("demo-standard");
-	const coords = setCoordFields(demo);
-	console.log(coords);
-}
+import initStandard from './standard.js'
 
 function initTangentWeight() {
 }
