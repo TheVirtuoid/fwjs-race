@@ -90,11 +90,8 @@ function displaySegment(ctx, label, p0, p1, mapping, p2) {
 
 function draw() {
 
-	const ctx = canvas.getContext('2d');
-
 	// Clear the canvas
-	ctx.fillStyle = window.getComputedStyle(canvas).backgroundColor;
-	ctx.clearRect(0, 0, canvas.width, canvas.height);
+	const ctx = helpers.clearCanvas(canvas);
 
 	// Stop if there is an error
 	if (hasError) return;
@@ -154,6 +151,7 @@ function circleCallback(evt) {
 		points.x3.value = 0;
 		points.y3.value = 10;
 		helpers.clearError(error);
+		hasError = false;
 	}
 
 	for (let coord of coords) {

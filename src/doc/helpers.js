@@ -14,9 +14,7 @@ const helpers = {
 				const dx = p[i].x - p[j].x;
 				const dy = p[i].y - p[j].y;
 				if (Math.sqrt(dx * dx + dy * dy) < tolerance) {
-					const msg = `Points ${i} and ${j} are too close`;
-					console.log(msg);
-					this.setError(error, msg);
+					this.setError(error, `Points ${i} and ${j} are too close`);
 					return true;
 				}
 			}
@@ -24,6 +22,12 @@ const helpers = {
 
 		this.clearError(error);
 		return false;
+	},
+
+	clearCanvas: function(canvas) {
+		const ctx = canvas.getContext('2d');
+		ctx.clearRect(0, 0, canvas.width, canvas.height);
+		return ctx;
 	},
 
 	clearError: function(error) {
@@ -67,7 +71,6 @@ const helpers = {
 	},
 
 	setError: function(error, msg) {
-		console.log(error, msg);
 		error.classList.remove("hidden");
 		error.querySelectorAll(".msg")[0].innerText = msg;
 	}
