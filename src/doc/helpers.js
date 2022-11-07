@@ -73,7 +73,7 @@ const helpers = {
 	setError: function(error, msg) {
 		error.classList.remove("hidden");
 		error.querySelectorAll(".msg")[0].innerText = msg;
-	}
+	},
 }
 
 export default helpers;

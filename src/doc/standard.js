@@ -1,18 +1,23 @@
 import helpers from './helpers.js'
+import Vector2 from '../js/Vector2.js'
 
 const circleYes = "demo-standard-circle-yes";
 const circleNo = "demo-standard-circle-no";
 
 const circleWeight = 5.519150244935105707435627;
 
-const drawableCanvas = 0.85;
+const circleWidth = 5;
+const circleColor = "green";
+
+const drawableCanvas = 0.8;
 
 const bezierWidth = 1;
 const bezierColor = "blue";
 
 const labelWidth = 1;
 const labelColor = "black";
-const labelOffset = 5;
+const labelHorizOffset = 3;
+const labelVertOffset = 3;
 
 const pointRadius = 2;
 const pointColor = "black";
@@ -21,10 +26,10 @@ const pointLabelColor = "black";
 const segmentWidth = 1;
 const segmentColor = "black";
 
+const halfPI = Math.PI / 2;
 const twoPI = 2 * Math.PI;
 
 let canvas, coords, error, points;
-let drawCircle = false;
 let hasError = false;
 
 // TODO: Convert to use built-in canvas transformations
@@ -34,10 +39,7 @@ function mapPoint(mapping, curveX, curveY) {
 	const dYCurve = curveY - mapping.curveCenter.y;
 	const dXCanvas = dXCurve * mapping.canvasSpan / mapping.curveSpan;
 	const dYCanvas = dYCurve * mapping.canvasSpan / mapping.curveSpan;
-	return { x: mapping.canvasCenter.x + dXCanvas, y: mapping.canvasCenter.y - dYCanvas };
-}
-
-function displayCircle(ctx, p0, p1, p2, p3) {
+	return new Vector2(mapping.canvasCenter.x + dXCanvas, mapping.canvasCenter.y - dYCanvas);
 }
 
 function displayCurve(ctx, p0, p1, p2, p3) {
@@ -47,6 +49,20 @@ function displayCurve(ctx, p0, p1, p2, p3) {
 	ctx.moveTo(p0.x, p0.y);
 	ctx.bezierCurveTo(p1.x, p1.y, p2.x, p2.y, p3.x, p3.y);
 	ctx.stroke();
+}
+
+function displayLabel(ctx, label, p, d) {
+	const measure = ctx.measureText(label);
+	const textWidth = measure.width;
+	const textHeight = measure.actualBoundingBoxAscent + measure.actualBoundingBoxDescent;
+	ctx.lineWidth = labelWidth;
+	ctx.fillStyle = labelColor;
+
+	if (Math.abs(d.x) >= Math.abs(d.y)) {
+		ctx.fillText(label, p.x - d.x * (textWidth + labelHorizOffset), p.y + textHeight / 2);
+	} else {
+		ctx.fillText(label, p.x - textWidth / 2, p.y - d.y * (textHeight + labelVertOffset));
+	}
 }
 
 function displayPoint(ctx, label, p0, p1, p2) {
@@ -61,31 +77,31 @@ function displayPoint(ctx, label, p0, p1, p2) {
 	ctx.stroke();
 
 	// Draw the label
-	const measure = ctx.measureText(label);
-	ctx.lineWidth = labelWidth;
-	ctx.fillStyle = labelColor;
+	let d;
 	if (!p2) {
-		let d = { x: p0.x - p1.x, y: p0.y - p1.y };
-		const length = Math.sqrt(d.x * d.x + d.y * d.y);
-		d = { x: d.x / length, y: d.y / length };
-		if (Math.abs(d.x) >= Math.abs(d.y)) {
-			ctx.fillText(label, d.x * (measure.width + labelOffset) + p0.x, p0.y);
-		} else {
-			const height = measure.actualBoundingBoxAscent + measure.actualBoundingBoxDescent;
-			ctx.fillText(label, p0.x, d.y * (measure.width + labelOffset) + p0.y);
-		}
+		d = p0.toNormal(p1);
 	} else {
-		console.log("CASE P2");
+		const v12 = p1.toNormal(p2);
+		const v01 = p0.toNormal(p1);
+		const dot = v12.dot(v01);
+		d = v01.add(-dot, v12).normalize();
 	}
+	displayLabel(ctx, label, p0, d);
 }
 
-function displaySegment(ctx, label, p0, p1, mapping, p2) {
+function displaySegment(ctx, label, p0, p1, p2) {
 	ctx.lineWidth = segmentWidth;
 	ctx.strokeStyle = segmentColor;
 	ctx.beginPath();
 	ctx.moveTo(p0.x, p0.y);
 	ctx.lineTo(p1.x, p1.y);
 	ctx.stroke();
+
+	const v01 = p0.toNormal(p1);
+	const v02 = p0.toNormal(p2);
+	const dot = v01.dot(v02);
+	const d = v02.add(-dot, v01).normalize();
+	displayLabel(ctx, label, p0.midpoint(p1), d);
 }
 
 function draw() {
@@ -129,14 +145,11 @@ function draw() {
 	displayPoint(ctx, 'P3', p3, p2);
 
 	// Draw segments
-	displaySegment(ctx, 'S0', p0, p1);
-	displaySegment(ctx, 'S1', p3, p2);
+	displaySegment(ctx, 'S0', p0, p1, p2);
+	displaySegment(ctx, 'S1', p3, p2, p1);
 
 	// Draw the Bezier curve
 	displayCurve(ctx, p0, p1, p2, p3);
-
-	// If needed, draw the circle
-	if (drawCircle) displayCircle(ctx, p0, p1, p2, p3);
 }
 
 function circleCallback(evt) {
