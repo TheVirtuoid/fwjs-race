@@ -354,34 +354,26 @@
 					<div class="panel">
 						<canvas></canvas>
 						<div class="input">
-							<p class="label">P<sub>0</sub></p>
-							<div class="setting">
-								<label for="demo-standard-p0x">X:&nbsp</label>
-								<input class="coord" id="demo-standard-x0" type="number" value="10"/>
-								<label for="demo-standard-p0y">Y:&nbsp</label>
-								<input class="coord" id="demo-standard-y0" type="number" value="0"/>
-							</div>
-							<p class="label">P<sub>1</sub></p>
-							<div class="setting">
-								<label for="demo-standard-p1x">X:&nbsp</label>
-								<input class="coord" id="demo-standard-x1" type="number" value="10"/>
-								<label for="demo-standard-p1y">Y:&nbsp</label>
-								<input class="coord" id="demo-standard-y1" type="number" value="1"/>
-							</div>
-							<p class="label">P<sub>2</sub></p>
-							<div class="setting">
-								<label for="demo-standard-p2x">X:&nbsp</label>
-								<input class="coord" id="demo-standard-x2" type="number" value="1"/>
-								<label for="demo-standard-p2y">Y:&nbsp</label>
-								<input class="coord" id="demo-standard-y2" type="number" value="10"/>
-							</div>
-							<p class="label">P<sub>3</sub></p>
-							<div class="setting">
-								<label for="demo-standard-p3x">X:&nbsp</label>
-								<input class="coord" id="demo-standard-x3" type="number" value="0"/>
-								<label for="demo-standard-p3y">Y:&nbsp</label>
-								<input class="coord" id="demo-standard-y3" type="number" value="10"/>
-							</div>
+							<p class="col1 label">P<sub>0</sub></p>
+							<p class="col2 label">X:</p>
+							<input type="number" class="col3 coord" id="demo-standard-x0"/>
+							<p class="col4 label">Y:</p>
+							<input type="number" class="col5 coord" id="demo-standard-y0"/>
+							<p class="col1 label">P<sub>1</sub></p>
+							<p class="col2 label">X:</p>
+							<input type="number" class="col3 coord" id="demo-standard-x1"/>
+							<p class="col4 label">Y:</p>
+							<input type="number" class="col5 coord" id="demo-standard-y1"/>
+							<p class="col1 label">P<sub>2</sub></p>
+							<p class="col2 label">X:</p>
+							<input type="number" class="col3 coord" id="demo-standard-x2"/>
+							<p class="col4 label">Y:</p>
+							<input type="number" class="col5 coord" id="demo-standard-y2"/>
+							<p class="col1 label">P<sub>3</sub></p>
+							<p class="col2 label">X:</p>
+							<input type="number" class="col3 coord" id="demo-standard-x3"/>
+							<p class="col4 label">Y:</p>
+							<input type="number" class="col5 coord" id="demo-standard-y3"/>
 							<button id="demo-standard-reset" type="button">Reset to Circle</button>
 						</div>
 						<div class="error">
@@ -415,6 +407,9 @@
 						to P<sub>1</sub> and S<sub>3</sub> be the same from P<sub>3</sub>
 						to P<sub>2</sub>. Let f<sub>0</sub> be the P<sub>0</sub> plus its
 						forward vector and f<sub>3</sub> be similarly defined for P<sub>3</sub>.
+					</p><p>
+						Note that below, the weight of P<sub>0</sub> refers to its forward weight
+						while the weight of P<sub>3</sub> refers to its backward weight.
 					</p>
 					<ul>
 						<li>
@@ -432,45 +427,31 @@
 					<div class="panel">
 						<canvas></canvas>
 						<div class="input">
-							<p class="label">P<sub>0</sub></p>
-							<div class="setting">
-								<label for="demo-tangentWeight-p0x">X:&nbsp</label>
-								<input class="coord" id="demo-tangentWeight-x0" type="number" value="10"/>
-								<label for="demo-tangentWeight-p0y">Y:&nbsp</label>
-								<input class="coord" id="demo-tangentWeight-y0" type="number" value="0"/>
-							</div>
-							<p class="label">Forward at P<sub>0</sub></p>
-							<div class="setting">
-								<label for="demo-tangentWeight-dx0">X:&nbsp</label>
-								<input class="coord" id="demo-tangentWeight-dx0" type="number" value="0"/>
-								<label for="demo-tangentWeight-dy0">Y:&nbsp</label>
-								<input class="coord" id="demo-tangentWeight-dy0" type="number" value="1"/>
-							</div>
-							<p class="label">Forward Weight at P<sub>0</sub></p>
-							<div class="setting">
-								<label for="demo-tangentWeight-w0">Weight:&nbsp</label>
-								<input id="demo-tangentWeight-w0" type="number" value="1"/>
-							</div>
-							<p class="label">P<sub>3</sub></p>
-							<div class="setting">
-								<label for="demo-tangentWeight-p3x">X:&nbsp</label>
-								<input class="coord" id="demo-tangentWeight-x3" type="number" value="0"/>
-								<label for="demo-tangentWeight-p3y">Y:&nbsp</label>
-								<input class="coord" id="demo-tangentWeight-y3" type="number" value="10"/>
-							</div>
-							<p class="label">Forward at P<sub>3</sub></p>
-							<div class="setting">
-								<label for="demo-tangentWeight-f3x">X:&nbsp</label>
-								<input class="coord" id="demo-tangentWeight-dx3" type="number" value="0"/>
-								<label for="demo-tangentWeight-f3y">Y:&nbsp</label>
-								<input class="coord" id="demo-tangentWeight-dy3" type="number" value="1"/>
-							</div>
-							<p class="label">Backward Weight at P<sub>3</sub></p>
-							<div class="setting">
-								<label for="demo-tangentWeight-w3">Weight:&nbsp</label>
-								<input id="demo-tangentWeight-w3" type="number" value="1"/>
-							</div>
-							<button id="demo-tangentWeight-reset" type="button">Reset to Circle</button>
+							<p class="col1 label">P<sub>0</sub></p>
+							<p class="col3 label">X:</p>
+							<input type="number" class="col4 coord" id="demo-tangentWeight-x0"/>
+							<p class="col5 label">Y:</p>
+							<input type="number" class="col6 coord" id="demo-tangentWeight-y0"/>
+							<p class="col2 label">Forward</p>
+							<p class="col3 label">X:</p>
+							<input type="number" class="col4 coord" id="demo-tangentWeight-dx0"/>
+							<p class="col5 label">Y:</p>
+							<input type="number" class="col6 coord" id="demo-tangentWeight-dy0"/>
+							<p class="col2 label">Weight</p>
+							<input type="number" class="col4" id="demo-tangentWeight-w0"/>
+							<p class="col1 label">P<sub>3</sub></p>
+							<p class="col3 label">X:</p>
+							<input type="number" class="col4 coord" id="demo-tangentWeight-x3"/>
+							<p class="col5 label">Y:</p>
+							<input type="number" class="col6 coord" id="demo-tangentWeight-y3"/>
+							<p class="col2 label">Forward</p>
+							<p class="col3 label">X:</p>
+							<input type="number" class="col4 coord" id="demo-tangentWeight-dx3"/>
+							<p class="col5 label">Y:</p>
+							<input type="number" class="col6 coord" id="demo-tangentWeight-dy3"/>
+							<p class="col2 label">Weight</p>
+							<input type="number" class="col4" id="demo-tangentWeight-w3"/>
+							<button type="button" class="col1" id="demo-tangentWeight-reset">Reset to Circle</button>
 						</div>
 						<div class="error">
 							<p class="alert">Error!</p>
@@ -518,11 +499,51 @@
 				</ul>
 				<div id="demo-point" class="demo">
 					<p>
-						<b>POINT-TO-POINT DEMO</b>
+						Note that the weight for P<sub>0</sub> is its forward weight
+						while the weight for P<sub>1</sub> is its backward weight.
+					</p><p>
+						Also note that the y-axis is the vertical axis in 3D space. This
+						is contrary to standard mathematical usage where the z-axis is
+						the vertical axis.
 					</p>
 					<div class="panel">
 						<canvas></canvas>
 						<div class="input">
+							<p class="col1 label">P<sub>0</sub></p>
+							<p class="col2 label">Center</p>
+							<p class="col3 label">X:</p>
+							<input type="number" class="col4 coord" id="demo-point-cx0"/>
+							<p class="col5 label">Y:</p>
+							<input type="number" class="col6 coord" id="demo-point-cy0"/>
+							<p class="col7 label">Z:</p>
+							<input type="number" class="col8 coord" id="demo-point-cz0"/>
+							<p class="col2 label">Forward</p>
+							<p class="col3 label">X:</p>
+							<input type="number" class="col4 coord" id="demo-point-fx0"/>
+							<p class="col5 label">Y:</p>
+							<input type="number" class="col6 coord" id="demo-point-fy0"/>
+							<p class="col7 label">Z:</p>
+							<input type="number" class="col8 coord" id="demo-point-fz0"/>
+							<p class="col2 label">Weight</p>
+							<input type="number" class="col4" id="demo-point-w0"/>
+							<p class="col1 label">P<sub>1</sub></p>
+							<p class="col2 label">Center</p>
+							<p class="col3 label">X:</p>
+							<input type="number" class="col4 coord" id="demo-point-cx1"/>
+							<p class="col5 label">Y:</p>
+							<input type="number" class="col6 coord" id="demo-point-cy1"/>
+							<p class="col7 label">Z:</p>
+							<input type="number" class="col8 coord" id="demo-point-cz1"/>
+							<p class="col2 label">Forward</p>
+							<p class="col3 label">X:</p>
+							<input type="number" class="col4 coord" id="demo-point-fx1"/>
+							<p class="col5 label">Y:</p>
+							<input type="number" class="col6 coord" id="demo-point-fy1"/>
+							<p class="col7 label">Z:</p>
+							<input type="number" class="col8 coord" id="demo-point-fz1"/>
+							<p class="col2 label">Weight</p>
+							<input type="number" class="col4" id="demo-point-w1"/>
+							<button type="button" class="col1" id="demo-point-reset">Reset</button>
 						</div>
 						<div class="error">
 							<p class="alert">Error!</p>
