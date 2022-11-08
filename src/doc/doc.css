@@ -121,6 +121,9 @@ footer {
 .demo > .panel > .input > .coord {
 }
 
+.demo > .panel > .input > .posNumber {
+}
+
 .demo > .panel > .input > .col1 {
 	grid-column-start: 1;
 }

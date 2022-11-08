@@ -99,14 +99,14 @@ function displaySegment(ctx, label, p0, p1, p2) {
 function draw(ctx) {
 
 	// Get the coordinates of the points
-	const x0 = Number(demo.points.x0.value);
-	const x1 = Number(demo.points.x1.value);
-	const x2 = Number(demo.points.x2.value);
-	const x3 = Number(demo.points.x3.value);
-	const y0 = Number(demo.points.y0.value);
-	const y1 = Number(demo.points.y1.value);
-	const y2 = Number(demo.points.y2.value);
-	const y3 = Number(demo.points.y3.value);
+	const x0 = Number(demo.inputs.x0.value);
+	const x1 = Number(demo.inputs.x1.value);
+	const x2 = Number(demo.inputs.x2.value);
+	const x3 = Number(demo.inputs.x3.value);
+	const y0 = Number(demo.inputs.y0.value);
+	const y1 = Number(demo.inputs.y1.value);
+	const y2 = Number(demo.inputs.y2.value);
+	const y3 = Number(demo.inputs.y3.value);
 
 	// Determine mapping
 	const minX = Math.min(x0, x1, x2, x3);
@@ -139,14 +139,14 @@ function draw(ctx) {
 }
 
 function resetToCircle(evt) {
-	demo.points.x0.value = 10;
-	demo.points.y0.value = 0;
-	demo.points.x1.value = 10;
-	demo.points.y1.value = circleWeight;
-	demo.points.x2.value = circleWeight;
-	demo.points.y2.value = 10;
-	demo.points.x3.value = 0;
-	demo.points.y3.value = 10;
+	demo.inputs.x0.value = 10;
+	demo.inputs.y0.value = 0;
+	demo.inputs.x1.value = 10;
+	demo.inputs.y1.value = circleWeight;
+	demo.inputs.x2.value = circleWeight;
+	demo.inputs.y2.value = 10;
+	demo.inputs.x3.value = 0;
+	demo.inputs.y3.value = 10;
 	demo.clearError();
 	if (evt) demo.draw();
 }

@@ -37,7 +37,7 @@ class BabylonAdaptor {
 	}
 
 	createRibbon(name, ribbon, closed, meshOptions) {
-		if (!this.#scene) throw new Error("Must invoke createScene first");
+		if (!this.#scene && !this.#views) throw new Error("Must invoke createScene or addView first");
 		const mesh = MeshBuilder.CreateRibbon(
 			name,
 			{
@@ -53,7 +53,7 @@ class BabylonAdaptor {
 	createScene() {
 		if (!this.#canvas) throw new Error("Must invoke setCanvas first");
 		if (!this.#engine) throw new Error("Must invoke createDefaultEngine first");
-		this.#scene = this.#createScene(this.#canvas);
+		this.#scene = this.#createScene(this.#canvas).scene;
 		return this.#scene;
 	}
 
@@ -72,7 +72,11 @@ class BabylonAdaptor {
 
 		// Create scenes for root views
 		for (let view of this.#views) {
-			if (!view.sibling) view.scene = this.#createScene(view.canvas);
+			if (!view.sibling) {
+				const { scene, camera } = this.#createScene(view.canvas);
+				view.scene = scene;
+				view.view = this.#engine.registerView(view.canvas, camera);
+			}
 		}
 
 		// Patch in the siblings
@@ -83,6 +87,7 @@ class BabylonAdaptor {
 					throw new Error(`View ${view.canvas.id} has non-root sibling ${sibling.canvas.id}`);
 				}
 				view.scene = sibling.scene;
+				view.view = sibling.view;
 			}
 		}
 
@@ -98,6 +103,16 @@ class BabylonAdaptor {
 		return false;
 	}
 
+	disableView(canvas) {
+		this.#findView(canvas).view.enabled = false;
+	}
+
+	enableView(canvas) {
+		const view = this.#findView(canvas);
+		view.view.enabled = true;
+		this.#engine.inputElement = view.canvas;
+	}
+
 	async initializePhysics() {
 		await ammo.bind(window)();
 	}
@@ -109,6 +124,11 @@ class BabylonAdaptor {
 		this.#ready = true;
 	}
 
+	render(canvas) {
+		const scene = canvas ? this.#findView(canvas).scene : this.#scene;
+		if (this.#ready && scene.activeCamera) scene.render();
+	}
+
 	resize() { if (this.#engine) this.#engine.resize(); }
 
 	setCanvas(id) {
@@ -118,11 +138,7 @@ class BabylonAdaptor {
 
 	startRenderLoop() {
 		if (!this.#engine) throw new Error("Must invoke createDefaultEngine first");
-		this.#engine.runRenderLoop(() => {
-			if (this.#ready && this.#scene.activeCamera) {
-				this.#scene.render();
-			}
-		});
+		this.#engine.runRenderLoop(() => this.render());
 	}
 
 	#createScene(canvas) {
@@ -136,11 +152,11 @@ class BabylonAdaptor {
 		camera.attachControl(canvas, true);
 		const light = new HemisphericLight('light-' + canvas.id, new Vector3(0, 50, 0), scene);
 		scene.enablePhysics(new Vector3(0, -8.91, 0), new AmmoJSPlugin());
-		return scene;
+		return { scene, camera };
 	}
 
 	#findView(canvas) {
-		for (let view in this.#views) {
+		for (let view of this.#views) {
 			if (view.canvas === canvas) return view;
 		}
 		throw new Error(`Must call addView for canvas ${canvas.id}`);

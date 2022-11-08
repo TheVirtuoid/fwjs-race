@@ -1,25 +1,27 @@
 class Demo {
 
 	#canvas
+	#changeCallback
 	#drawCallback
 	#error
 	#errorMsg
 	#hasError
 	#id
+	#inputs
 	#panel
-	#points
 	#root
 
 	get canvas() { return this.#canvas }
 	get drawCallback() { return this.#drawCallback }
 	get hasError() { return this.#hasError }
 	get height() { return this.#canvas.height }
-	get points() { return this.#points }
+	get inputs() { return this.#inputs }
 	get width() { return this.#canvas.width }
 
-	constructor(id, drawCallback, coordCallback) {
+	constructor(id, drawCallback, changeCallback) {
 		this.#id = id;
 		this.#drawCallback = drawCallback;
+		this.#changeCallback = changeCallback;
 
 		this.#root = document.getElementById(id);
 		this.#canvas = this.#root.querySelector("canvas");
@@ -30,21 +32,17 @@ class Demo {
 		this.#canvas.height = size;
 		this.#canvas.width = size;
 
-		const coords = this.#panel.querySelectorAll(".coord");
-		for (let coord of coords) {
-			coord.max = 10;
-			coord.min = -10;
-			coord.step = 0.001;
-			coord.maxLength = 7;
-			if (coordCallback) coord.addEventListener("change", coordCallback);
-		}
-
-		this.#points = {};
-		const prefixLength = id.length + 1;
-		for (let coord of coords) {
-			const suffix = coord.id.slice(prefixLength);
-			this.#points[suffix] = coord;
-		}
+		this.#inputs = {};
+		this.#addInputs(".coord", (input) => {
+			input.max = 10;
+			input.min = -10;
+			input.step = 0.001;
+		});
+		this.#addInputs(".posNumber", (input) => {
+			input.max = 10;
+			input.min = 0;
+			input.step = 0.001;
+		});
 
 		this.clearError();
 	}
@@ -62,6 +60,17 @@ class Demo {
 		if (!this.#errorMsg) this.#errorMsg = this.#error.querySelector(".msg")
 		this.#errorMsg.innerText = message;
 		this.#error.classList.remove("hidden");
+	}
+
+	#addInputs(selector, init) {
+		const prefixLength = this.#id.length + 1;
+		const inputs = this.#panel.querySelectorAll(selector);
+		for (let input of inputs) {
+			if (init) init(input);
+			input.addEventListener("change", this.#changeCallback);
+			const suffix = input.id.slice(prefixLength);
+			this.#inputs[suffix] = input;
+		}
 	}
 }
 

@@ -102,15 +102,15 @@ function displaySegment(ctx, label, dash, p0, p1, p2) {
 function draw(ctx) {
 
 	// Get the coordinates of the points
-	let p0 = new Vector2(Number(demo.points.x0.value), Number(demo.points.y0.value));
-	const d0 = new Vector2(Number(demo.points.dx0.value), Number(demo.points.dy0.value)).normalize();
-	const w0 = Number(demo.points.w0.value);
+	let p0 = new Vector2(Number(demo.inputs.x0.value), Number(demo.inputs.y0.value));
+	const d0 = new Vector2(Number(demo.inputs.dx0.value), Number(demo.inputs.dy0.value)).normalize();
+	const w0 = Number(demo.inputs.w0.value);
 	let p1 = p0.add(w0, d0);
 	let t0 = p0.add(1, d0);
 
-	let p3 = new Vector2(Number(demo.points.x3.value), Number(demo.points.y3.value));
-	const d3 = new Vector2(Number(demo.points.dx3.value), Number(demo.points.dy3.value)).normalize();
-	const w3 = Number(demo.points.w3.value);
+	let p3 = new Vector2(Number(demo.inputs.x3.value), Number(demo.inputs.y3.value));
+	const d3 = new Vector2(Number(demo.inputs.dx3.value), Number(demo.inputs.dy3.value)).normalize();
+	const w3 = Number(demo.inputs.w3.value);
 	let p2 = p3.add(-w3, d3);
 	let t3 = p3.add(1, d3);
 
@@ -154,18 +154,18 @@ function draw(ctx) {
 
 function resetToCircle(evt) {
 
-	demo.points.x0.value = 10;
-	demo.points.y0.value = 0;
-	demo.points.x3.value = 0;
-	demo.points.y3.value = 10;
+	demo.inputs.x0.value = 10;
+	demo.inputs.y0.value = 0;
+	demo.inputs.x3.value = 0;
+	demo.inputs.y3.value = 10;
 
-	demo.points.dx0.value = 0;
-	demo.points.dy0.value = 1;
-	demo.points.w0.value = circleWeight;
+	demo.inputs.dx0.value = 0;
+	demo.inputs.dy0.value = 1;
+	demo.inputs.w0.value = circleWeight;
 
-	demo.points.dx3.value = -1;
-	demo.points.dy3.value = 0;
-	demo.points.w3.value = circleWeight;
+	demo.inputs.dx3.value = -1;
+	demo.inputs.dy3.value = 0;
+	demo.inputs.w3.value = circleWeight;
 
 	demo.clearError();
 	if (evt) demo.draw();
@@ -177,8 +177,6 @@ function coordCallback() {
 
 function init() {
 	demo = new Demo2D("demo-tangentWeight", draw, coordCallback);
-	demo.points.w0 = demo.queryInput("w0");
-	demo.points.w3 = demo.queryInput("w3");
 	demo.queryInput("reset").addEventListener("click", resetToCircle);
 	resetToCircle();
 	return demo;

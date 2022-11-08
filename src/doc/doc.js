@@ -17,8 +17,8 @@ window.initFunction = async function() {
 	demos.push(initStandard(gameEngine));
 	demos.push(initTangentWeight(gameEngine));
 	demos.push(initPoint(gameEngine));
-	demos.push(initSpiral(gameEngine));
-	demos.push(initStraight(gameEngine));
+	//demos.push(initSpiral(gameEngine));
+	//demos.push(initStraight(gameEngine));
 
 	// Complete the creation of the engine
 	const asyncEngineCreation = async function() {
