@@ -1,4 +1,4 @@
-import helpers from './helpers.js'
+import Demo2D from './Demo2D.js'
 import Vector2 from '../js/Vector2.js'
 
 const circleWeight = 5.519150244935105707435627;
@@ -22,8 +22,7 @@ const segmentColor = "black";
 
 const twoPI = 2 * Math.PI;
 
-let canvas, coords, error, points;
-let hasError = false;
+let demo;
 
 // TODO: Convert to use built-in canvas transformations
 
@@ -97,23 +96,17 @@ function displaySegment(ctx, label, p0, p1, p2) {
 	displayLabel(ctx, label, p0.midpoint(p1), d);
 }
 
-function draw() {
-
-	// Clear the canvas
-	const ctx = helpers.clearCanvas(canvas);
-
-	// Stop if there is an error
-	if (hasError) return;
+function draw(ctx) {
 
 	// Get the coordinates of the points
-	const x0 = Number(points.x0.value);
-	const x1 = Number(points.x1.value);
-	const x2 = Number(points.x2.value);
-	const x3 = Number(points.x3.value);
-	const y0 = Number(points.y0.value);
-	const y1 = Number(points.y1.value);
-	const y2 = Number(points.y2.value);
-	const y3 = Number(points.y3.value);
+	const x0 = Number(demo.points.x0.value);
+	const x1 = Number(demo.points.x1.value);
+	const x2 = Number(demo.points.x2.value);
+	const x3 = Number(demo.points.x3.value);
+	const y0 = Number(demo.points.y0.value);
+	const y1 = Number(demo.points.y1.value);
+	const y2 = Number(demo.points.y2.value);
+	const y3 = Number(demo.points.y3.value);
 
 	// Determine mapping
 	const minX = Math.min(x0, x1, x2, x3);
@@ -121,8 +114,8 @@ function draw() {
 	const minY = Math.min(y0, y1, y2, y3);
 	const maxY = Math.max(y0, y1, y2, y3);
 	const mapping = {
-		canvasCenter: { x: canvas.width / 2, y: canvas.height / 2 },
-		canvasSpan: canvas.width * drawableCanvas,
+		canvasCenter: { x: demo.width / 2, y: demo.height / 2 },
+		canvasSpan: demo.width * drawableCanvas,
 		curveCenter: { x: (minX + maxX) / 2, y: (minY + maxY) / 2 },
 		curveSpan: Math.max(maxX - minX, maxY - minY),
 	}
@@ -146,31 +139,25 @@ function draw() {
 }
 
 function resetToCircle() {
-	points.x0.value = 10;
-	points.y0.value = 0;
-	points.x1.value = 10;
-	points.y1.value = circleWeight;
-	points.x2.value = circleWeight;
-	points.y2.value = 10;
-	points.x3.value = 0;
-	points.y3.value = 10;
-	helpers.clearError(error);
-	hasError = false;
-	draw();
+	demo.points.x0.value = 10;
+	demo.points.y0.value = 0;
+	demo.points.x1.value = 10;
+	demo.points.y1.value = circleWeight;
+	demo.points.x2.value = circleWeight;
+	demo.points.y2.value = 10;
+	demo.points.x3.value = 0;
+	demo.points.y3.value = 10;
+	demo.clearError();
+	demo.draw(draw);
 }
 
 function coordCallback() {
-	hasError = helpers.checkForCoincidentalPoints(points, 4, error);
-	draw();
+	demo.draw(draw);
 }
 
 function init() {
-	const demo = document.getElementById("demo-standard");
-	error = helpers.initError(demo);
-	canvas = helpers.initCanvas(demo);
-	coords = helpers.initCoordFields(demo, coordCallback);
-	points = helpers.initPoints(coords);
-	demo.querySelectorAll("#demo-standard-reset")[0].addEventListener("click", resetToCircle);
+	demo = new Demo2D("demo-standard", coordCallback);
+	demo.queryInput("reset").addEventListener("click", resetToCircle);
 	resetToCircle();
 }
 

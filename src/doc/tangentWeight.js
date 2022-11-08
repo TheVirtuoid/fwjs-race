@@ -1,4 +1,4 @@
-import helpers from './helpers.js'
+import Demo2D from './Demo2D.js'
 import Vector2 from '../js/Vector2.js'
 
 const circleWeight = 5.519150244935105707435627;
@@ -22,8 +22,7 @@ const segmentColor = "black";
 
 const twoPI = 2 * Math.PI;
 
-let canvas, coords, error, points;
-let hasError = false;
+let demo;
 
 // TODO: Convert to use built-in canvas transformations
 
@@ -100,24 +99,18 @@ function displaySegment(ctx, label, dash, p0, p1, p2) {
 	}
 }
 
-function draw() {
-
-	// Clear the canvas
-	const ctx = helpers.clearCanvas(canvas);
-
-	// Stop if there is an error
-	if (hasError) return;
+function draw(ctx) {
 
 	// Get the coordinates of the points
-	let p0 = new Vector2(Number(points.x0.value), Number(points.y0.value));
-	const d0 = new Vector2(Number(points.dx0.value), Number(points.dy0.value)).normalize();
-	const w0 = Number(points.w0.value);
+	let p0 = new Vector2(Number(demo.points.x0.value), Number(demo.points.y0.value));
+	const d0 = new Vector2(Number(demo.points.dx0.value), Number(demo.points.dy0.value)).normalize();
+	const w0 = Number(demo.points.w0.value);
 	let p1 = p0.add(w0, d0);
 	let t0 = p0.add(1, d0);
 
-	let p3 = new Vector2(Number(points.x3.value), Number(points.y3.value));
-	const d3 = new Vector2(Number(points.dx3.value), Number(points.dy3.value)).normalize();
-	const w3 = Number(points.w3.value);
+	let p3 = new Vector2(Number(demo.points.x3.value), Number(demo.points.y3.value));
+	const d3 = new Vector2(Number(demo.points.dx3.value), Number(demo.points.dy3.value)).normalize();
+	const w3 = Number(demo.points.w3.value);
 	let p2 = p3.add(-w3, d3);
 	let t3 = p3.add(1, d3);
 
@@ -127,8 +120,8 @@ function draw() {
 	const minY = Math.min(p0.y, p1.y, p2.y, p3.y, t0.y, t3.y);
 	const maxY = Math.max(p0.y, p1.y, p2.y, p3.y, t0.y, t3.y);
 	const mapping = {
-		canvasCenter: { x: canvas.width / 2, y: canvas.height / 2 },
-		canvasSpan: canvas.width * drawableCanvas,
+		canvasCenter: { x: demo.width / 2, y: demo.height / 2 },
+		canvasSpan: demo.width * drawableCanvas,
 		curveCenter: { x: (minX + maxX) / 2, y: (minY + maxY) / 2 },
 		curveSpan: Math.max(maxX - minX, maxY - minY),
 	}
@@ -161,38 +154,32 @@ function draw() {
 
 function resetToCircle() {
 
-	points.x0.value = 10;
-	points.y0.value = 0;
-	points.x3.value = 0;
-	points.y3.value = 10;
+	demo.points.x0.value = 10;
+	demo.points.y0.value = 0;
+	demo.points.x3.value = 0;
+	demo.points.y3.value = 10;
 
-	points.dx0.value = 0;
-	points.dy0.value = 1;
-	points.w0.value = circleWeight;
+	demo.points.dx0.value = 0;
+	demo.points.dy0.value = 1;
+	demo.points.w0.value = circleWeight;
 
-	points.dx3.value = -1;
-	points.dy3.value = 0;
-	points.w3.value = circleWeight;
+	demo.points.dx3.value = -1;
+	demo.points.dy3.value = 0;
+	demo.points.w3.value = circleWeight;
 
-	helpers.clearError(error);
-	hasError = false;
-	draw();
+	demo.clearError();
+	demo.draw(draw);
 }
 
 function coordCallback() {
-	hasError = helpers.checkForCoincidentalPoints(points, 4, error);
-	draw();
+	demo.draw(draw);
 }
 
 function init() {
-	const demo = document.getElementById("demo-tangentWeight");
-	error = helpers.initError(demo);
-	canvas = helpers.initCanvas(demo);
-	coords = helpers.initCoordFields(demo, coordCallback);
-	points = helpers.initPoints(coords);
-	points.w0 = demo.querySelector("#demo-tangentWeight-w0");
-	points.w3 = demo.querySelector("#demo-tangentWeight-w3");
-	demo.querySelector("#demo-tangentWeight-reset").addEventListener("click", resetToCircle);
+	demo = new Demo2D("demo-tangentWeight", coordCallback);
+	demo.points.w0 = demo.queryInput("w0");
+	demo.points.w3 = demo.queryInput("w3");
+	demo.queryInput("reset").addEventListener("click", resetToCircle);
 	resetToCircle();
 }
 

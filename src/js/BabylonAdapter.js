@@ -18,10 +18,10 @@ class BabylonAdaptor {
 	#ready;
 	#scene;
 
-	addView(canvas) {
+	addView(canvas, sibling) {
 		if (this.#canvas) throw new Error('Cannot mix setCanvas and addView');
 		if (!this.#views) this.#views = [];
-		this.#views.push({ canvas });
+		this.#views.push({ canvas, sibling });
 	}
 
 	createDefaultEngine() {
@@ -70,9 +70,22 @@ class BabylonAdaptor {
 		if (!this.#views) throw new Error("Must invoke addView first");
 		if (!this.#engine) throw new Error("Must invoke createDefaultEngine first");
 
+		// Create scenes for root views
 		for (let view of this.#views) {
-			view.scene = this.#createScene(view.canvas);
+			if (!view.sibling) view.scene = this.#createScene(view.canvas);
 		}
+
+		// Patch in the siblings
+		for (let view of this.#views) {
+			if (view.sibling) {
+				const sibling = this.#findView(view.sibling);
+				if (!sibling.scene) {
+					throw new Error(`View ${view.canvas.id} has non-root sibling ${sibling.canvas.id}`);
+				}
+				view.scene = sibling.scene;
+			}
+		}
+
 		return this.#views[0].scene;
 	}
 
@@ -124,6 +137,13 @@ class BabylonAdaptor {
 		const light = new HemisphericLight('light-' + canvas.id, new Vector3(0, 50, 0), scene);
 		scene.enablePhysics(new Vector3(0, -8.91, 0), new AmmoJSPlugin());
 		return scene;
+	}
+
+	#findView(canvas) {
+		for (let view in this.#views) {
+			if (view.canvas === canvas) return view;
+		}
+		throw new Error(`Must call addView for canvas ${canvas.id}`);
 	}
 }
 

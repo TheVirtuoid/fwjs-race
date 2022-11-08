@@ -1,23 +1,20 @@
-import helpers from './helpers.js'
+import Demo from './Demo.js'
 
-let canvas, coords, error, points;
-let hasError = false;
+let demo;
 
 function coordCallback() {
 }
 
-function reset() {
+function resetToDefaults() {
 }
 
 function init(engine) {
-	const demo = document.getElementById("demo-point");
-	error = helpers.initError(demo);
-	canvas = helpers.initCanvas(demo);
-	engine.addView(canvas);
+	demo = new Demo("demo-point", coordCallback);
+	engine.addView(demo.canvas);
 	//coords = helpers.initCoordFields(demo, coordCallback);
 	//points = helpers.initPoints(coords);
-	//demo.querySelector("#demo-point-reset").addEventListener("click", reset);
-	reset();
+	//demo.querySelector("#demo-point-reset").addEventListener("click", resetToDefaults);
+	resetToDefaults();
 }
 
 export default init;
