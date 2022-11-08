@@ -1,14 +1,11 @@
 import BabylonAdapter from '../js/BabylonAdapter.js'
 import initPoint from './point.js'
+import initSpiral from './spiral.js'
 import initStandard from './standard.js'
+import initStraight from './straight.js'
 import initTangentWeight from './tangentWeight.js'
 
-function initSpiral(engine) {
-}
-
-function initStraight(engine) {
-}
-
+const demos = [];
 let gameEngine;
 
 window.initFunction = async function() {
@@ -17,11 +14,11 @@ window.initFunction = async function() {
 	gameEngine = new BabylonAdapter();
 
 	// Initialize the demos
-	initStandard(gameEngine);
-	initTangentWeight(gameEngine);
-	initPoint(gameEngine);
-	initSpiral(gameEngine);
-	initStraight(gameEngine);
+	demos.push(initStandard(gameEngine));
+	demos.push(initTangentWeight(gameEngine));
+	demos.push(initPoint(gameEngine));
+	demos.push(initSpiral(gameEngine));
+	demos.push(initStraight(gameEngine));
 
 	// Complete the creation of the engine
 	const asyncEngineCreation = async function() {
@@ -41,4 +38,7 @@ window.initFunction = async function() {
 	window.scene = gameEngine.createViews();
 };
 
-initFunction().then(() => { gameEngine.ready() });
+initFunction().then(() => {
+	gameEngine.ready();
+	for (let demo of demos) demo.draw();
+});

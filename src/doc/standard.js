@@ -138,7 +138,7 @@ function draw(ctx) {
 	displayCurve(ctx, p0, p1, p2, p3);
 }
 
-function resetToCircle() {
+function resetToCircle(evt) {
 	demo.points.x0.value = 10;
 	demo.points.y0.value = 0;
 	demo.points.x1.value = 10;
@@ -148,17 +148,18 @@ function resetToCircle() {
 	demo.points.x3.value = 0;
 	demo.points.y3.value = 10;
 	demo.clearError();
-	demo.draw(draw);
+	if (evt) demo.draw();
 }
 
 function coordCallback() {
-	demo.draw(draw);
+	demo.draw();
 }
 
 function init() {
-	demo = new Demo2D("demo-standard", coordCallback);
+	demo = new Demo2D("demo-standard", draw, coordCallback);
 	demo.queryInput("reset").addEventListener("click", resetToCircle);
 	resetToCircle();
+	return demo;
 }
 
 export default init;

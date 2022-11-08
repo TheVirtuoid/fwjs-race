@@ -1,6 +1,7 @@
 class Demo {
 
 	#canvas
+	#drawCallback
 	#error
 	#errorMsg
 	#hasError
@@ -10,15 +11,17 @@ class Demo {
 	#root
 
 	get canvas() { return this.#canvas }
+	get drawCallback() { return this.#drawCallback }
 	get hasError() { return this.#hasError }
 	get height() { return this.#canvas.height }
 	get points() { return this.#points }
 	get width() { return this.#canvas.width }
 
-	constructor(id, coordCallback) {
+	constructor(id, drawCallback, coordCallback) {
 		this.#id = id;
-		this.#root = document.getElementById(id);
+		this.#drawCallback = drawCallback;
 
+		this.#root = document.getElementById(id);
 		this.#canvas = this.#root.querySelector("canvas");
 		this.#panel = this.#root.querySelector(".panel");
 		this.#error = this.#root.querySelector(".error");

@@ -14,7 +14,7 @@ function resetToDefaults() {
 }
 
 function init(engine) {
-	demo = new Demo3D("demo-point", engine, draw, coordCallback);
+	demo = new Demo3D("demo-straight", engine, draw, coordCallback);
 	//demo.queryInput("reset").addEventListener("click", resetToDefaults);
 	resetToDefaults();
 	return demo;

@@ -152,7 +152,7 @@ function draw(ctx) {
 	displayCurve(ctx, p0, p1, p2, p3);
 }
 
-function resetToCircle() {
+function resetToCircle(evt) {
 
 	demo.points.x0.value = 10;
 	demo.points.y0.value = 0;
@@ -168,19 +168,20 @@ function resetToCircle() {
 	demo.points.w3.value = circleWeight;
 
 	demo.clearError();
-	demo.draw(draw);
+	if (evt) demo.draw();
 }
 
 function coordCallback() {
-	demo.draw(draw);
+	demo.draw();
 }
 
 function init() {
-	demo = new Demo2D("demo-tangentWeight", coordCallback);
+	demo = new Demo2D("demo-tangentWeight", draw, coordCallback);
 	demo.points.w0 = demo.queryInput("w0");
 	demo.points.w3 = demo.queryInput("w3");
 	demo.queryInput("reset").addEventListener("click", resetToCircle);
 	resetToCircle();
+	return demo;
 }
 
 export default init;
