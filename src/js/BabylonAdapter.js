@@ -13,13 +13,22 @@ import ammo from "ammo.js";
 class BabylonAdaptor {
 
 	#canvas;
+	#views;
 	#engine;
 	#ready;
 	#scene;
 
+	addView(canvas) {
+		if (this.#canvas) throw new Error('Cannot mix setCanvas and addView');
+		if (!this.#views) this.#views = [];
+		this.#views.push({ canvas });
+	}
+
 	createDefaultEngine() {
-		if (!this.#canvas) throw new Error("Must invoke setCanvas first");
-		this.#engine = new Engine(this.#canvas, true, {
+		if (!this.#canvas && !this.#views) throw new Error("Must invoke setCanvas or addView first");
+
+		const canvas = this.#canvas ? this.#canvas : this.#views[0].canvas;
+		this.#engine = new Engine(canvas, true, {
 			preserveDrawingBuffer: true,
 			stencil: true,
 			disableWebGL2Support: false
@@ -44,16 +53,7 @@ class BabylonAdaptor {
 	createScene() {
 		if (!this.#canvas) throw new Error("Must invoke setCanvas first");
 		if (!this.#engine) throw new Error("Must invoke createDefaultEngine first");
-		this.#scene = new Scene(this.#engine);
-		const camera = new ArcRotateCamera(
-			"Camera",
-			3 * Math.PI / 2,
-			3 * Math.PI / 8,
-			30,
-			Vector3.Zero());
-		camera.attachControl(this.#canvas, true);
-		const light = new HemisphericLight("hemi", new Vector3(0, 50, 0));
-		this.#scene.enablePhysics(new Vector3(0, -8.91, 0), new AmmoJSPlugin());
+		this.#scene = this.#createScene(this.#canvas);
 		return this.#scene;
 	}
 
@@ -65,6 +65,16 @@ class BabylonAdaptor {
 	}
 
 	createVector(u) {return new Vector3(u.x, u.y, u.z) }
+
+	createViews() {
+		if (!this.#views) throw new Error("Must invoke addView first");
+		if (!this.#engine) throw new Error("Must invoke createDefaultEngine first");
+
+		for (let view of this.#views) {
+			view.scene = this.#createScene(view.canvas);
+		}
+		return this.#views[0].scene;
+	}
 
 	destroyMesh(mesh) {
 		if (!this.#scene) throw new Error("Must invoke createScene first");
@@ -80,13 +90,18 @@ class BabylonAdaptor {
 	}
 
 	ready() {
-		if (!this.#scene) throw new Error("Must invoke createScene first");
+		if (!this.#scene && !this.#views && !this.#views[0].scene) {
+			throw new Error("Must invoke createScene or createViews first");
+		}
 		this.#ready = true;
 	}
 
 	resize() { if (this.#engine) this.#engine.resize(); }
 
-	setCanvas(id) { this.#canvas = document.getElementById(id); }
+	setCanvas(id) {
+		if (this.#views) throw new Error('Cannot mix setCanvas and addView');
+		this.#canvas = document.getElementById(id);
+	}
 
 	startRenderLoop() {
 		if (!this.#engine) throw new Error("Must invoke createDefaultEngine first");
@@ -95,6 +110,20 @@ class BabylonAdaptor {
 				this.#scene.render();
 			}
 		});
+	}
+
+	#createScene(canvas) {
+		const scene = new Scene(this.#engine);
+		const camera = new ArcRotateCamera(
+			'camera-' + canvas.id,
+			3 * Math.PI / 2,
+			3 * Math.PI / 8,
+			30,
+			Vector3.Zero());
+		camera.attachControl(canvas, true);
+		const light = new HemisphericLight('light-' + canvas.id, new Vector3(0, 50, 0), scene);
+		scene.enablePhysics(new Vector3(0, -8.91, 0), new AmmoJSPlugin());
+		return scene;
 	}
 }
 

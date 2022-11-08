@@ -83,7 +83,6 @@ function displayPoint(ctx, label, p0, p1, p2) {
 }
 
 function displaySegment(ctx, label, dash, p0, p1, p2) {
-	console.log(dash);
 	ctx.lineWidth = segmentWidth;
 	ctx.strokeStyle = segmentColor;
 	ctx.setLineDash(dash ? [10, 5] : []);

@@ -1,52 +1,29 @@
+import BabylonAdapter from '../js/BabylonAdapter.js'
+import initPoint from './point.js'
 import initStandard from './standard.js'
 import initTangentWeight from './tangentWeight.js'
 
-function initPoint() {
+function initSpiral(engine) {
 }
 
-function initSpiral() {
+function initStraight(engine) {
 }
 
-function initStraight() {
-}
-
-function initDemos() {
-	initStandard();
-	initTangentWeight();
-	initPoint();
-	initSpiral();
-	initStraight();
-};
+let gameEngine;
 
 window.initFunction = async function() {
 
-	initDemos();
+	// Create the game engine
+	gameEngine = new BabylonAdapter();
 
-/*	// Hook DOM elements
-	errorDisplay = new ErrorDisplay(
-		'track-error', 'track-error-text',
-		'go',	// Disable ids
-		[		// Disable functions
-			(v) => debugDisplay.disable(v),
-		]);
-	try {
-		debugDisplay = new DebugDisplay(
-			['debugGeneral', 'debugSegments'],
-			() => trackDisplay.createMesh());
+	// Initialize the demos
+	initStandard(gameEngine);
+	initTangentWeight(gameEngine);
+	initPoint(gameEngine);
+	initSpiral(gameEngine);
+	initStraight(gameEngine);
 
-		// Create the game engine
-		gameEngine = new BabylonAdapter();
-		gameEngine.setCanvas("renderCanvas");
-
-		trackDisplay = new TrackDisplay(
-			"trackFamilies", "trackMembers", gameEngine, errorDisplay,
-			() => { ball.destroy() }, registerCallback);
-		ball = new Ball(gameEngine, trackDisplay, "go");
-
-	} catch (e) {
-		errorDisplay.showError(e);
-	}
-
+	// Complete the creation of the engine
 	const asyncEngineCreation = async function() {
 		try {
 			return gameEngine.createDefaultEngine();
@@ -55,22 +32,13 @@ window.initFunction = async function() {
 			return gameEngine.createDefaultEngine();
 		}
 	}
-
 	window.engine = await asyncEngineCreation();
 	if (!window.engine) throw new Error('engine should not be null.');
 
 	await gameEngine.initializePhysics();
 
-	gameEngine.startRenderLoop();
-	window.scene = gameEngine.createScene();
-
-	// Get tracks
-	try {
-		defineTracks(trackDisplay);
-		trackDisplay.start();
-	} catch (e) {
-		errorDisplay.showError(e);
-	}*/
+	// Complete the initialization of demo views
+	window.scene = gameEngine.createViews();
 };
 
-initFunction().then(() => { /*gameEngine.ready()*/ });
+initFunction().then(() => { gameEngine.ready() });
