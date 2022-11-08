@@ -101,13 +101,19 @@ const leaderBoard = document.getElementById('leader-board');
 const renderLoopCallback = () => {
 	const list = cars.map((car) => {
 		car.setDistanceTravelled();
-		return { name: car.name, distance: car.distanceTravelled, element: `<li>${car.name}: ${car.distanceTravelled.toFixed(3)}</li>` };
+		return { car, name: car.name, distance: car.distanceTravelled, element: `<li>${car.name}: ${car.distanceTravelled.toFixed(3)}</li>` };
 	});
 	list.sort((a, b) => b.distance - a.distance);
 	while(leaderBoard.firstChild) {
 		leaderBoard.removeChild(leaderBoard.firstChild);
 	}
-	leaderBoard.insertAdjacentHTML('afterbegin', list.map((li) => li.element).join(''));
+	const newList = list.map((li, index) => {
+		return `<li><span>${index + 1}</span><span>${li.name}</span></li>`;
+	})
+	// leaderBoard.insertAdjacentHTML('afterbegin', list.map((li) => li.element).join(''));
+	leaderBoard.insertAdjacentHTML('afterbegin', newList.join(''));
+	gameEngine.camera.lockedTarget = list[0].car.chassis;
+
 }
 
 initFunction().then(() => { gameEngine.ready() });
