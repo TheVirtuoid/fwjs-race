@@ -6,27 +6,27 @@ import initStraight from './straight.js'
 import initTangentWeight from './tangentWeight.js'
 
 const demos = [];
-let gameEngine;
+let engineAdapter;
 
 window.initFunction = async function() {
 
 	// Create the game engine
-	gameEngine = new BabylonAdapter();
+	engineAdapter = new BabylonAdapter();
 
 	// Initialize the demos
-	demos.push(initStandard(gameEngine));
-	demos.push(initTangentWeight(gameEngine));
-	demos.push(initPoint(gameEngine));
-	//demos.push(initSpiral(gameEngine));
-	//demos.push(initStraight(gameEngine));
+	demos.push(initStandard(engineAdapter));
+	demos.push(initTangentWeight(engineAdapter));
+	demos.push(initPoint(engineAdapter));
+	//demos.push(initSpiral(engineAdapter));
+	//demos.push(initStraight(engineAdapter));
 
 	// Complete the creation of the engine
 	const asyncEngineCreation = async function() {
 		try {
-			return gameEngine.createDefaultEngine();
+			return engineAdapter.createDefaultEngine();
 		} catch(e) {
 			console.log("the available createEngine function failed. Creating the default engine instead");
-			return gameEngine.createDefaultEngine();
+			return engineAdapter.createDefaultEngine();
 		}
 	}
 
@@ -35,15 +35,14 @@ window.initFunction = async function() {
 
 	window.engine = await asyncEngineCreation();
 	if (!window.engine) throw new Error('engine should not be null.');
-	await gameEngine.initializePhysics();
-	gameEngine.startRenderLoop();
+	await engineAdapter.initializePhysics();
+	engineAdapter.startRenderLoop();
 
 	// Complete the initialization of demo views
-	//window.scene = gameEngine.createViews();
-	window.scene = gameEngine.createScene();
+	window.scene = engineAdapter.createScene();
 };
 
 initFunction().then(() => {
-	gameEngine.ready();
+	engineAdapter.ready();
 	for (let demo of demos) demo.draw();
 });

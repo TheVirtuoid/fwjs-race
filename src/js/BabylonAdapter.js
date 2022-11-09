@@ -12,35 +12,128 @@ import {
 import ammo from "ammo.js";
 import is from './is.js'
 
+class SingleSceneManager {
+
+	#canvas
+	#scene
+
+	get canvas() { return this.#canvas }
+	get scene() { return this.#scene }
+
+	constructor(canvas) {
+		this.#canvas = is.string(canvas) ? document.getElementById(canvas) : canvas;
+	}
+
+	create(createScene, registerView) {
+		this.#scene = createScene(this.#canvas);
+		return this.#scene;
+	}
+
+	render() {
+		this.#scene.render();
+	}
+}
+
+const errorSiblingViewCannotHaveSibling = 'Cannot use a view as a sibling if it also has a sibling'
+const errorMustInvokeAddViewForSibling = 'Must invoke addView for sibling'
+
+class ViewManager {
+
+	#views
+
+	get canvas() { return this.#views[0].canvas }
+	get scene() { return this.#views[0].scene }
+
+	constructor(view) {
+		this.#views = [ view ];
+	}
+
+	create(createScene, registerView) {
+
+		// Create scenes for root views
+		for (let view of this.#views) {
+			if (view.isPrimary) {
+				view.scene = createScene(view.canvas);
+				view.view = registerView(view.canvas);
+			}
+		}
+
+		// Patch in the siblings
+		for (let view of this.#views) {
+			if (view.isSecondary) {
+				const sibling = this.#findPrimary(view.sibling);
+				if (sibling.isSecondary) throw new Error(errorSiblingViewCannotHaveSibling);
+				view.scene = sibling.scene;
+				view.view = registerView(view.canvas, true);
+			}
+		}
+
+		return this.#views[0].scene;
+	}
+
+	render() {
+		for (let view of this.#views) {
+			if (view.isPrimary) view.scene.render();
+		}
+	}
+
+	#findPrimary(view) {
+		for (let v of this.#views) {
+			if (v.canvas === view.sibling) return v;
+		}
+		throw new Error(errorMustInvokeAddViewForSibling);
+	}
+}
+
+const errorCannotMultipleInvokeCreate = 'Cannot invoke createScene or createViews twice'
+const errorCannotMultipleInvokeSetCanvas = 'Cannot invoke setCanvas twice'
+const errorCannotMix = 'Cannot mix setCanvas and addView'
+const errorMustInvokeCreate = 'Must invoke createScene or createViews first'
+const errorMustInvokeCreateEngine = 'Must invoke createDefaultEngine first'
+const errorMustInvokeCreateViews = 'Must invoke createViews first'
+const errorMustInvokeSetAdd = 'Must invoke setCanvas or addView first'
+
 class BabylonAdaptor {
 
-	#canvas;
-	#views;
 	#engine;
 	#ready;
-	#scene;
+	#sceneManager;
 
-	addView(canvas, options) {
-		console.log("addView", options);
-		if (this.#canvas) throw new Error('Cannot mix setCanvas and addView');
-		if (!this.#views) this.#views = [];
-		this.#views.push({ canvas, options });
+	get engine() { return this.#engine }
+
+	addView(view) {
+		if (!this.#sceneManager) {
+			this.#sceneManager = new ViewManager(view);
+		} else if (this.#sceneManager instanceof ViewManager) {
+			this.#sceneManager.addView(view);
+		} else {
+			throw new Error(errorCannotMix);
+		}
 	}
 
 	createDefaultEngine() {
-		if (!this.#canvas && !this.#views) throw new Error("Must invoke setCanvas or addView first");
+		if (!this.#sceneManager) throw new Error(errorMustInvokeSetAdd);
 
-		const canvas = this.#canvas ? this.#canvas : this.#views[0].canvas;
-		this.#engine = new Engine(canvas, true, {
-			preserveDrawingBuffer: true,
-			stencil: true,
-			disableWebGL2Support: false
-		});
+		this.#engine = new Engine(
+			this.#sceneManager.canvas,
+			true,
+			{
+				preserveDrawingBuffer: true,
+				stencil: true,
+				disableWebGL2Support: false
+			});
 		return this.#engine;
 	}
 
-	createRibbon(name, ribbon, closed, meshOptions) {
-		if (!this.#scene && !this.#views) throw new Error("Must invoke createScene or addView first");
+	createRibbon(name, ribbon, closed, meshOptions, view) {
+		if (view) {
+			if (!view.scene) throw new Error(errorMustInvokeCreateViews);
+		} else {
+			if (!this.#sceneManager) throw new Error(errorMustInvokeSetAdd);
+			if (!this.#sceneManager.scene) throw new Error(errorMustInvokeCreate);
+		}
+
+		const scene = view ? view.scene : this.#sceneManager.scene;
 		const mesh = MeshBuilder.CreateRibbon(
 			name,
 			{
@@ -48,77 +141,71 @@ class BabylonAdaptor {
 				sideOrientation: Mesh.DOUBLESIDE,
 				closePath: closed,
 			},
-			this._scene);
-		mesh.physicsImpostor = new PhysicsImpostor(mesh, PhysicsImpostor.MeshImpostor, meshOptions, this.#scene);
+			scene);
+		mesh.physicsImpostor = new PhysicsImpostor(mesh, PhysicsImpostor.MeshImpostor, meshOptions, scene);
 		return mesh;
 	}
 
-	createScene(options) {
-		if (!this.#canvas) throw new Error("Must invoke setCanvas first");
-		if (!this.#engine) throw new Error("Must invoke createDefaultEngine first");
-		this.#scene = this.#createScene(this.#canvas, options);
-		return this.#scene;
+	createScene() {
+		if (!this.#sceneManager) throw new Error(errorMustInvokeSetAdd);
+		if (this.#sceneManager.scene) throw new Error(errorCannotMultipleInvokeCreate);
+
+		return this.#sceneManager.create(
+			(canvas) => { return this.#createScene(canvas) },
+			(canvas, generateCamera) => {
+				if (generateCamera) {
+					const name = BabylonAdaptor.#createUniqueName(canvas);
+					const camera = BabylonAdaptor.#createCamera(canvas, name);
+					return this.#engine.registerView(canvas, camera);
+				} else {
+					return this.#engine.registerView(canvas);
+				}
+			});
 	}
 
+	createScenes() { this.createScene() }
+
 	createSphere(name, sphereOptions, impostorOptions) {
-		if (!this.#scene) throw new Error("Must invoke createScene first");
-		const mesh = MeshBuilder.CreateSphere(name, sphereOptions, this.#scene);
-		mesh.physicsImpostor = new PhysicsImpostor(mesh, PhysicsImpostor.SphereImpostor, impostorOptions, this.#scene);
+		if (!this.#sceneManager) throw new Error(errorMustInvokeSetAdd);
+		if (this.#sceneManager.scene) throw new Error(errorCannotMultipleInvokeCreate);
+
+		const scene = this.#sceneManager.scene;
+		const mesh = MeshBuilder.CreateSphere(name, sphereOptions, scene);
+		mesh.physicsImpostor = new PhysicsImpostor(mesh, PhysicsImpostor.SphereImpostor, impostorOptions, scene);
 		return mesh;
 	}
 
 	createVector(u) {return new Vector3(u.x, u.y, u.z) }
 
-	createViews(options) {
-		if (!this.#views) throw new Error("Must invoke addView first");
-		if (!this.#engine) throw new Error("Must invoke createDefaultEngine first");
+	createViews() { this.createScene() }
 
-		// Create scenes for root views
-		for (let view of this.#views) {
-			if (!view.options || !view.options.sibling) {
-				view.scene = this.#createScene(view.canvas, options);
-				view.view = this.#engine.registerView(view.canvas);
-			}
+	destroyMesh(mesh, view) {
+		if (view) {
+			if (!view.scene) throw new Error(errorMustInvokeCreateViews);
+		} else {
+			if (!this.#sceneManager) throw new Error(errorMustInvokeSetAdd);
+			if (!this.#sceneManager.scene) throw new Error(errorMustInvokeCreate);
 		}
 
-		// Patch in the siblings
-		for (let view of this.#views) {
-			if (view.options && view.sibling) {
-				const sibling = this.#findView(view.options.sibling);
-				if (!sibling.scene) throw new Error('View has non-root sibling');
-				const name = BabylonAdaptor.#createUniqueName(view.canvas);
-				const camera = BabylonAdaptor.#createCamera(view.canvas, name, options);
-				view.scene = sibling.scene;
-				view.view = this.#engine.registerView(view.canvas, camera);
-			}
-		}
-
-		return this.#views[0].scene;
-	}
-
-	destroyMesh(mesh, canvas) {
-		if (!this.#scene && !this.#views) throw new Error("Must invoke createScene or createViews first");
 		if (mesh) {
-			const scene = this.#scene ? this.#scene : this.#findView(canvas).scene;
+			const scene = view ? view.scene : this.#sceneManager.scene;
 			scene.removeMesh(mesh);
 			mesh.dispose();
 		}
 		return false;
 	}
 
-	disableView(canvas) {
-		const view = this.#findView(canvas);
+	disableView(view) {
 		view.scene.detachControl();
 		view.view.enabled = false;
-		if (this.#engine.inputElement === canvas) this.#engine.inputElement = null;
+		if (this.#engine.inputElement === view.canvas) this.#engine.inputElement = null;
 		console.log("disableView", this.#engine.inputElement, view);
 	}
 
-	enableView(canvas) {
-		const view = this.#findView(canvas);
+	enableView(view) {
 		view.view.enabled = true;
 		view.scene.attachControl();
-		this.#engine.inputElement = canvas;
+		this.#engine.inputElement = view.canvas;
 		console.log("enableView", this.#engine.inputElement, view);
 	}
 
@@ -127,37 +214,41 @@ class BabylonAdaptor {
 	}
 
 	ready() {
-		if (!this.#scene && !this.#views && !this.#views[0].scene) {
-			throw new Error("Must invoke createScene or createViews first");
-		}
+		if (!this.#sceneManager) throw new Error(errorMustInvokeSetAdd);
+		if (!this.#sceneManager.scene) throw new Error(errorMustInvokeCreate);
 		this.#ready = true;
 	}
 
-	render(canvas) {
-		const scene = canvas ? this.#findView(canvas).scene : this.#scene;
+	render(view) {
+		const scene = view ? view.scene : this.#sceneManager.scene;
 		if (this.#ready && scene.activeCamera) scene.render();
 	}
 
 	resize() { if (this.#engine) this.#engine.resize(); }
 
 	setCanvas(idOrCanvas) {
-		if (this.#views) throw new Error('Cannot mix setCanvas and addView');
-		this.#canvas = is.string(idOrCanvas) ? document.getElementById(idOrCanvas) : idOrCanvas;
+		if (!this.#sceneManager) {
+			this.#sceneManager = new SingleSceneManager(idOrCanvas);
+		} else if (this.#sceneManager instanceof SingleSceneManager) {
+			throw new Error(errorCannotMultipleInvokeSetCanvas);
+		} else {
+			throw new Error(errorCannotMix);
+		}
 	}
 
 	startRenderLoop() {
-		if (!this.#engine) throw new Error("Must invoke createDefaultEngine first");
+		if (!this.#engine) throw new Error(errorMustInvokeCreateEngine);
 		this.#engine.runRenderLoop(() => this.#renderLoop());
 	}
 
-	static #createCamera(canvas, name, options) {
+	static #createCamera(canvas, name) {
 		const camera = new ArcRotateCamera(
 			'camera-' + name,
 			3 * Math.PI / 2,
 			3 * Math.PI / 8,
 			30,
 			Vector3.Zero());
-		camera.attachControl(canvas, true, options && options.useCtrlForPanning);
+		camera.attachControl(canvas, true);
 		/*
 		const a = camera.inputs.attached;
 		for (let k in a) {
@@ -175,10 +266,10 @@ class BabylonAdaptor {
 		return new HemisphericLight('light-' + name, new Vector3(0, 50, 0), scene);
 	}
 
-	#createScene(canvas, options) {
+	#createScene(canvas) {
 		const name = BabylonAdaptor.#createUniqueName(canvas.id);
 		const scene = new Scene(this.#engine);
-		BabylonAdaptor.#createCamera(canvas, name, options);
+		BabylonAdaptor.#createCamera(canvas, name);
 		BabylonAdaptor.#createLight(scene, name);
 		BabylonAdaptor.#enablePhysics(scene);
 		return scene;
@@ -192,22 +283,9 @@ class BabylonAdaptor {
 		scene.enablePhysics(new Vector3(0, -8.91, 0), new AmmoJSPlugin());
 	}
 
-	#findView(canvas) {
-		for (let view of this.#views) {
-			if (view.canvas === canvas) return view;
-		}
-		throw new Error(`Must call addView for canvas ${canvas.id}`);
-	}
-
 	#renderLoop() {
 		if (!this.#ready) return;
-		if (this.#scene && this.#scene.activeCamera) this.#scene.render();
-		if (this.#views) {
-			for (let view of this.#views) {
-				const isPrimary = !view.options || !view.options.sibling;
-				if (isPrimary && view.scene && view.scene !== this.#scene) view.scene.render();
-			}
-		}
+		this.#sceneManager.render();
 	}
 }
 

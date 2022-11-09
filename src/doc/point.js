@@ -65,8 +65,8 @@ function resetToDefaults(evt) {
 	if (evt) demo.draw()
 }
 
-function init(engine) {
-	demo = new Demo3D("demo-point", engine, draw, coordCallback);
+function init(engineAdapter) {
+	demo = new Demo3D("demo-point", engineAdapter, draw, coordCallback);
 	demo.queryInput("reset").addEventListener("click", resetToDefaults);
 	resetToDefaults();
 	return demo;
