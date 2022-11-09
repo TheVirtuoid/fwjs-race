@@ -58,7 +58,7 @@ class ViewManager {
 		for (let view of this.#views) {
 			if (view.isPrimary) {
 				view.scene = createScene(view.canvas);
-				//view.view = registerView(view.canvas);
+				view.view = registerView(view.canvas);
 			}
 		}
 
@@ -68,16 +68,26 @@ class ViewManager {
 				const sibling = this.#findPrimary(view.sibling);
 				if (sibling.isSecondary) throw new Error(errorSiblingViewCannotHaveSibling);
 				view.scene = sibling.scene;
-				//view.view = registerView(view.canvas, true);
+				view.view = registerView(view.canvas, true);
 			}
 		}
 
 		return this.#views[0].scene;
 	}
 
-	render() {
-		for (let view of this.#views) {
-			if (view.isPrimary) view.scene.render();
+	render(engine) {
+		if (!engine.activeView || !engine.activeView.camera) {
+			console.log("ViewManager.render", 0);
+			this.#views[0].scene.render();
+		} else {
+			for (let view of this.#views) {
+				if (engine.activeView.target === view.view) {
+					console.log("ViewManager.render", this.#views.indexOf(view));
+					view.scene.render();
+					return;
+				}
+			}
+			throw new Error('engine.activeView.target does not match any views');
 		}
 	}
 
@@ -197,18 +207,20 @@ class BabylonAdaptor {
 		return false;
 	}
 
+	// TODO: disableView seems to permenantly disable the view. This may be
+	// because there is only one view per scene in the current tests.
+
 	disableView(view) {
-		//view.scene.detachControl();
 		//view.view.enabled = false;
+		//view.scene.detachControl();
 		//if (this.#engine.inputElement === view.canvas) this.#engine.inputElement = null;
-		//console.log("disableView", view.scene.cameras);
+		//console.log("disableView", this.#engine.inputElement);
 	}
 
 	enableView(view) {
-		//view.view.enabled = true;
-		//view.scene.attachControl();
-		//this.#engine.inputElement = view.canvas;
-		//console.log("enableView", view.scene.cameras);
+		view.view.enabled = true;
+		view.scene.attachControl();
+		this.#engine.inputElement = view.canvas;
 	}
 
 	async initializePhysics() {
@@ -251,16 +263,6 @@ class BabylonAdaptor {
 			30,
 			Vector3.Zero());
 		camera.attachControl(canvas, true);
-		/*
-		const a = camera.inputs.attached;
-		for (let k in a) {
-			const input = a[k];
-			if (input instanceof ArcRotateCameraPointersInput) {
-				input.onButtonDown = function() { console.log("onButtonDown") };
-				input.onButtonUp = function() { console.log("onButtonUp") };
-			}
-		}
-		*/
 		return camera;
 	}
 
@@ -287,7 +289,7 @@ class BabylonAdaptor {
 
 	#renderLoop() {
 		if (!this.#ready) return;
-		this.#sceneManager.render();
+		this.#sceneManager.render(this.#engine);
 	}
 }
 
