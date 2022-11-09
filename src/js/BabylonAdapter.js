@@ -76,6 +76,7 @@ class ViewManager {
 	}
 
 	render(engine) {
+		/*
 		if (!engine.activeView || !engine.activeView.camera) {
 			console.log("ViewManager.render", 0);
 			this.#views[0].scene.render();
@@ -88,6 +89,10 @@ class ViewManager {
 				}
 			}
 			throw new Error('engine.activeView.target does not match any views');
+		}
+		*/
+		for (let view of this.#views) {
+			if (view.isPrimary) view.scene.render();
 		}
 	}
 
