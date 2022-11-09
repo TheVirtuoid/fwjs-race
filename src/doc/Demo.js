@@ -28,6 +28,8 @@ class Demo {
 		this.#panel = this.#root.querySelector(".panel");
 		this.#error = this.#root.querySelector(".error");
 
+		// TODO: This should be controlled through css. However, the
+		// css is incorrectly implemented so this is necessary for now.
 		const size = Math.max(this.height, this.width);
 		this.#canvas.height = size;
 		this.#canvas.width = size;

@@ -102,9 +102,9 @@ footer {
 .demo > .panel > canvas {
 	border-style: solid;
 	border-width: 1px;
-	display: block;
 	height: 300px;
 	width: 300px;
+	touch-action: none;
 }
 
 .demo > .panel > .input {

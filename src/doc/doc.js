@@ -29,6 +29,10 @@ window.initFunction = async function() {
 			return gameEngine.createDefaultEngine();
 		}
 	}
+
+	// TODO: Investigate if setting 'window.engine' and 'window.scene'
+	// is necessary. It appears this is not necessary.
+
 	window.engine = await asyncEngineCreation();
 	if (!window.engine) throw new Error('engine should not be null.');
 

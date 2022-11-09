@@ -105,12 +105,14 @@ class BabylonAdaptor {
 
 	disableView(canvas) {
 		this.#findView(canvas).view.enabled = false;
+		if (this.#engine.inputElement === canvas) this.#engine.inputElement = null;
 	}
 
 	enableView(canvas) {
 		const view = this.#findView(canvas);
 		view.view.enabled = true;
-		this.#engine.inputElement = view.canvas;
+		this.#engine.inputElement = canvas;
+		console.log("enableView", this.#engine.inputElement, view);
 	}
 
 	async initializePhysics() {
