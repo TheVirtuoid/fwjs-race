@@ -54,7 +54,7 @@ class ViewManager {
 		for (let view of this.#views) {
 			if (view.isPrimary) {
 				view.scene = createScene(view.canvas);
-				view.view = registerView(view.canvas);
+				//view.view = registerView(view.canvas);
 			}
 		}
 
@@ -64,7 +64,7 @@ class ViewManager {
 				const sibling = this.#findPrimary(view.sibling);
 				if (sibling.isSecondary) throw new Error(errorSiblingViewCannotHaveSibling);
 				view.scene = sibling.scene;
-				view.view = registerView(view.canvas, true);
+				//view.view = registerView(view.canvas, true);
 			}
 		}
 
@@ -194,17 +194,17 @@ class BabylonAdaptor {
 	}
 
 	disableView(view) {
-		view.scene.detachControl();
-		view.view.enabled = false;
-		if (this.#engine.inputElement === view.canvas) this.#engine.inputElement = null;
-		console.log("disableView", this.#engine.inputElement, view);
+		//view.scene.detachControl();
+		//view.view.enabled = false;
+		//if (this.#engine.inputElement === view.canvas) this.#engine.inputElement = null;
+		//console.log("disableView", view.scene.cameras);
 	}
 
 	enableView(view) {
-		view.view.enabled = true;
-		view.scene.attachControl();
-		this.#engine.inputElement = view.canvas;
-		console.log("enableView", this.#engine.inputElement, view);
+		//view.view.enabled = true;
+		//view.scene.attachControl();
+		//this.#engine.inputElement = view.canvas;
+		//console.log("enableView", view.scene.cameras);
 	}
 
 	async initializePhysics() {

@@ -21,7 +21,9 @@ class Demo3D extends Demo {
 	}
 
 	draw() {
-		for (let mesh of this.#meshes) this.#engineAdapter.destroyMesh(mesh, this.canvas);
+		for (let mesh of this.#meshes) {
+			this.#engineAdapter.destroyMesh(mesh, this.#view);
+		}
 		this.#meshes.length = 0;
 
 		if (!this.hasError) this.drawCallback();
@@ -35,8 +37,8 @@ class Demo3D extends Demo {
 				`Segment${i}`,
 				trackSegment.track.ribbon,
 				track.closed,
-				{ mass: 0 }),
-				this.#view);
+				{ mass: 0 },
+				this.#view));
 		}
 	}
 
