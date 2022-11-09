@@ -4,8 +4,6 @@ let demo;
 
 function draw() {
 	try {
-
-		// Create the track object
 		const p0 = {
 			center: {
 				x: Number(demo.inputs.cx0.value),
@@ -43,7 +41,7 @@ function draw() {
 	demo.render();
 }
 
-function coordCallback() {
+function changeCallback() {
 	demo.draw()
 }
 
@@ -66,7 +64,7 @@ function resetToDefaults(evt) {
 }
 
 function init(engineAdapter) {
-	demo = new Demo3D("demo-point", engineAdapter, draw, coordCallback);
+	demo = new Demo3D("demo-point", engineAdapter, draw, changeCallback);
 	demo.queryInput("reset").addEventListener("click", resetToDefaults);
 	resetToDefaults();
 	return demo;

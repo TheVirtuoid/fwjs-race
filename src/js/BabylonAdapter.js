@@ -48,6 +48,10 @@ class ViewManager {
 		this.#views = [ view ];
 	}
 
+	addView(view) {
+		this.#views.push(view);
+	}
+
 	create(createScene, registerView) {
 
 		// Create scenes for root views

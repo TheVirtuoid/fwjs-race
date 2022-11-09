@@ -495,6 +495,8 @@
 					</li><li>
 						<b>forwardWeight</b> (default 1) is the weight of the <b>forward</b>
 						vector used when the point is an entry point of a section
+					</li><li>
+						<b>type</b> may be set to <b>'point'</b>
 					</li>
 				</ul>
 				<div id="demo-point" class="demo">
@@ -608,6 +610,8 @@
 					</li><li>
 						<b>turns</b> (default 0) is the number of complete 360&deg;
 						rotations of the spiral
+					</li><li>
+						<b>type</b> must be set to <b>'spiral'</b>
 					</li>
 				</ul>
 				<p>
@@ -616,12 +620,55 @@
 					designed. These may change.
 				</p>
 				<div id="demo-spiral" class="demo">
-					<p>
-						<b>SPIRAL DEMO</b>
-					</p>
 					<div class="panel">
 						<canvas></canvas>
 						<div class="input">
+							<p class="col1 label">startsAt:</p>
+							<p class="col2 label">center:</p>
+							<p class="col3 label">x:</p>
+							<input type="number" class="col4 coord" id="demo-spiral-cx0"/>
+							<p class="col5 label">y:</p>
+							<input type="number" class="col6 coord" id="demo-spiral-cy0"/>
+							<p class="col7 label">z:</p>
+							<input type="number" class="col8 coord" id="demo-spiral-cz0"/>
+							<p class="col2 label">forward:</p>
+							<p class="col3 label">x:</p>
+							<input type="number" class="col4 coord" id="demo-spiral-fx0"/>
+							<p class="col5 label">y:</p>
+							<input type="number" class="col6 coord" id="demo-spiral-fy0"/>
+							<p class="col7 label">z:</p>
+							<input type="number" class="col8 coord" id="demo-spiral-fz0"/>
+							<p class="col1 label">endsAt:</p>
+							<p class="col2 label">center:</p>
+							<p class="col3 label">x:</p>
+							<input type="number" class="col4 coord" id="demo-spiral-cx1"/>
+							<p class="col5 label">y:</p>
+							<input type="number" class="col6 coord" id="demo-spiral-cy1"/>
+							<p class="col7 label">z:</p>
+							<input type="number" class="col8 coord" id="demo-spiral-cz1"/>
+							<p class="col2 label">forward:</p>
+							<p class="col3 label">x:</p>
+							<input type="number" class="col4 coord" id="demo-spiral-fx1"/>
+							<p class="col5 label">y:</p>
+							<input type="number" class="col6 coord" id="demo-spiral-fy1"/>
+							<p class="col7 label">z:</p>
+							<input type="number" class="col8 coord" id="demo-spiral-fz1"/>
+							<p class="col1 label centerVector">center:</p>
+							<p class="col3 label centerVector">x:</p>
+							<input type="number" class="col4 coord centerVector" id="demo-spiral-cx"/>
+							<p class="col5 label centerVector">y:</p>
+							<input type="number" class="col6 coord centerVector" id="demo-spiral-cy"/>
+							<p class="col7 label centerVector">z:</p>
+							<input type="number" class="col8 coord centerVector" id="demo-spiral-cz"/>
+							<p class="col1 label">rotate:</p>
+							<select class="col4" id="demo-spiral-rotate">
+								<option value="left">Left</option>
+								<option value="right">Right</option>
+							</select>
+							<p class="col1 label">turns:</p>
+							<input type="number" class="col4 nonNegInteger" id="demo-spiral-turns"/>
+							<button type="button" class="col1" id="demo-spiral-resetNoCenter">Reset w/o center</button>
+							<button type="button" class="col2" id="demo-spiral-resetCenter">Reset with center</button>
 						</div>
 						<div class="error">
 							<p class="alert">Error!</p>
@@ -682,6 +729,8 @@
 					</li><li>
 						<b>startsAt</b> (required if the element is the first in its
 						segment; illegal otherwise) sets the center of the entry point
+					</li><li>
+						<b>type</b> must be set to <b>'straight'</b>
 					</li>
 				</ul>
 				<div id="demo-straight" class="demo">

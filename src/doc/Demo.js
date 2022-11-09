@@ -16,6 +16,7 @@ class Demo {
 	get hasError() { return this.#hasError }
 	get height() { return this.#canvas.height }
 	get inputs() { return this.#inputs }
+	get panel() { return this.#panel }
 	get root() { return this.#root }
 	get width() { return this.#canvas.width }
 
@@ -43,9 +44,15 @@ class Demo {
 		});
 		this.#addInputs(".posNumber", (input) => {
 			input.max = 10;
-			input.min = 0;
+			input.min = 0.001;
 			input.step = 0.001;
 		});
+		this.#addInputs(".nonNegInteger", (input) => {
+			input.max = 10;
+			input.min = 0;
+			input.step = 1;
+		});
+		this.#addInputs("select");
 
 		this.clearError();
 	}

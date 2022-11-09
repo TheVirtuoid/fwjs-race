@@ -124,6 +124,9 @@ footer {
 .demo > .panel > .input > .posNumber {
 }
 
+.demo > .panel > .input > .nonNegInteger {
+}
+
 .demo > .panel > .input > .col1 {
 	grid-column-start: 1;
 }

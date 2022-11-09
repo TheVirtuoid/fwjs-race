@@ -17,7 +17,7 @@ window.initFunction = async function() {
 	demos.push(initStandard(engineAdapter));
 	demos.push(initTangentWeight(engineAdapter));
 	demos.push(initPoint(engineAdapter));
-	//demos.push(initSpiral(engineAdapter));
+	demos.push(initSpiral(engineAdapter));
 	//demos.push(initStraight(engineAdapter));
 
 	// Complete the creation of the engine
