@@ -1,5 +1,6 @@
 import {
 	AmmoJSPlugin, ArcRotateCamera,
+	ArcRotateCameraPointersInput,	// TODO: Remove when finished debugging
 	Engine,
 	HemisphericLight,
 	Mesh, MeshBuilder,
@@ -9,6 +10,7 @@ import {
 } from "@babylonjs/core";
 
 import ammo from "ammo.js";
+import is from './is.js'
 
 class BabylonAdaptor {
 
@@ -18,10 +20,11 @@ class BabylonAdaptor {
 	#ready;
 	#scene;
 
-	addView(canvas, sibling) {
+	addView(canvas, options) {
+		console.log("addView", options);
 		if (this.#canvas) throw new Error('Cannot mix setCanvas and addView');
 		if (!this.#views) this.#views = [];
-		this.#views.push({ canvas, sibling });
+		this.#views.push({ canvas, options });
 	}
 
 	createDefaultEngine() {
@@ -50,10 +53,10 @@ class BabylonAdaptor {
 		return mesh;
 	}
 
-	createScene() {
+	createScene(options) {
 		if (!this.#canvas) throw new Error("Must invoke setCanvas first");
 		if (!this.#engine) throw new Error("Must invoke createDefaultEngine first");
-		this.#scene = this.#createScene(this.#canvas);
+		this.#scene = this.#createScene(this.#canvas, options);
 		return this.#scene;
 	}
 
@@ -66,27 +69,25 @@ class BabylonAdaptor {
 
 	createVector(u) {return new Vector3(u.x, u.y, u.z) }
 
-	createViews() {
+	createViews(options) {
 		if (!this.#views) throw new Error("Must invoke addView first");
 		if (!this.#engine) throw new Error("Must invoke createDefaultEngine first");
 
 		// Create scenes for root views
 		for (let view of this.#views) {
-			if (!view.sibling) {
-				view.scene = this.#createScene(view.canvas);
+			if (!view.options || !view.options.sibling) {
+				view.scene = this.#createScene(view.canvas, options);
 				view.view = this.#engine.registerView(view.canvas);
 			}
 		}
 
 		// Patch in the siblings
 		for (let view of this.#views) {
-			if (view.sibling) {
-				const sibling = this.#findView(view.sibling);
-				if (!sibling.scene) {
-					throw new Error(`View ${view.canvas.id} has non-root sibling ${sibling.canvas.id}`);
-				}
+			if (view.options && view.sibling) {
+				const sibling = this.#findView(view.options.sibling);
+				if (!sibling.scene) throw new Error('View has non-root sibling');
 				const name = BabylonAdaptor.#createUniqueName(view.canvas);
-				const camera = BabylonAdaptor.#createCamera(view.canvas, name);
+				const camera = BabylonAdaptor.#createCamera(view.canvas, name, options);
 				view.scene = sibling.scene;
 				view.view = this.#engine.registerView(view.canvas, camera);
 			}
@@ -107,6 +108,7 @@ class BabylonAdaptor {
 
 	disableView(canvas) {
 		const view = this.#findView(canvas);
+		view.scene.detachControl();
 		view.view.enabled = false;
 		if (this.#engine.inputElement === canvas) this.#engine.inputElement = null;
 		console.log("disableView", this.#engine.inputElement, view);
@@ -115,6 +117,7 @@ class BabylonAdaptor {
 	enableView(canvas) {
 		const view = this.#findView(canvas);
 		view.view.enabled = true;
+		view.scene.attachControl();
 		this.#engine.inputElement = canvas;
 		console.log("enableView", this.#engine.inputElement, view);
 	}
@@ -137,9 +140,9 @@ class BabylonAdaptor {
 
 	resize() { if (this.#engine) this.#engine.resize(); }
 
-	setCanvas(id) {
+	setCanvas(idOrCanvas) {
 		if (this.#views) throw new Error('Cannot mix setCanvas and addView');
-		this.#canvas = document.getElementById(id);
+		this.#canvas = is.string(idOrCanvas) ? document.getElementById(idOrCanvas) : idOrCanvas;
 	}
 
 	startRenderLoop() {
@@ -147,14 +150,24 @@ class BabylonAdaptor {
 		this.#engine.runRenderLoop(() => this.#renderLoop());
 	}
 
-	static #createCamera(canvas, name) {
+	static #createCamera(canvas, name, options) {
 		const camera = new ArcRotateCamera(
 			'camera-' + name,
 			3 * Math.PI / 2,
 			3 * Math.PI / 8,
 			30,
 			Vector3.Zero());
-		camera.attachControl(canvas, true);
+		camera.attachControl(canvas, true, options && options.useCtrlForPanning);
+		/*
+		const a = camera.inputs.attached;
+		for (let k in a) {
+			const input = a[k];
+			if (input instanceof ArcRotateCameraPointersInput) {
+				input.onButtonDown = function() { console.log("onButtonDown") };
+				input.onButtonUp = function() { console.log("onButtonUp") };
+			}
+		}
+		*/
 		return camera;
 	}
 
@@ -162,10 +175,10 @@ class BabylonAdaptor {
 		return new HemisphericLight('light-' + name, new Vector3(0, 50, 0), scene);
 	}
 
-	#createScene(canvas) {
+	#createScene(canvas, options) {
 		const name = BabylonAdaptor.#createUniqueName(canvas.id);
 		const scene = new Scene(this.#engine);
-		BabylonAdaptor.#createCamera(canvas, name);
+		BabylonAdaptor.#createCamera(canvas, name, options);
 		BabylonAdaptor.#createLight(scene, name);
 		BabylonAdaptor.#enablePhysics(scene);
 		return scene;
@@ -191,7 +204,8 @@ class BabylonAdaptor {
 		if (this.#scene && this.#scene.activeCamera) this.#scene.render();
 		if (this.#views) {
 			for (let view of this.#views) {
-				if (!view.sibling && view.scene && view.scene !== this.#scene) view.scene.render();
+				const isPrimary = !view.options || !view.options.sibling;
+				if (isPrimary && view.scene && view.scene !== this.#scene) view.scene.render();
 			}
 		}
 	}

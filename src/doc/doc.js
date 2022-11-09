@@ -39,7 +39,8 @@ window.initFunction = async function() {
 	gameEngine.startRenderLoop();
 
 	// Complete the initialization of demo views
-	window.scene = gameEngine.createViews();
+	//window.scene = gameEngine.createViews();
+	window.scene = gameEngine.createScene();
 };
 
 initFunction().then(() => {

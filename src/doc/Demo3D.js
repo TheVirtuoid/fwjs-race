@@ -10,13 +10,15 @@ class Demo3D extends Demo {
 		super(id, drawCallback, coordCallback);
 		this.#engine = engine;
 		this.#meshes = [];
-		engine.addView(this.canvas);
-		this.canvas.addEventListener('blur', () => this.#onBlur());
-		this.canvas.addEventListener('focus', () => this.#onFocus());
+		this.#engine.setCanvas(this.canvas);
+		//engine.addView(this.canvas, { useCtrlForPanning: true });
+		this.canvas.addEventListener('mouseout', () => this.#onLeaveCanvas());
+		this.canvas.addEventListener('mouseover', () => this.#onEnterCanvas());
 	}
 
 	draw() {
-		for (let mesh of this.#meshes) this.#engine.destroyMesh(mesh, this.canvas);
+		//for (let mesh of this.#meshes) this.#engine.destroyMesh(mesh, this.canvas);
+		for (let mesh of this.#meshes) this.#engine.destroyMesh(mesh);
 		this.#meshes.length = 0;
 
 		if (!this.hasError) this.drawCallback();
@@ -35,15 +37,18 @@ class Demo3D extends Demo {
 	}
 
 	render() {
-		this.#engine.render(this.canvas);
+		//this.#engine.render(this.canvas);
+		this.#engine.render();
 	}
 
-	#onBlur() {
-		this.#engine.disableView(this.canvas);
+	#onLeaveCanvas() {
+		document.body.style.overflowY = "scroll";
+		//this.#engine.disableView(this.canvas);
 	}
 
-	#onFocus() {
-		this.#engine.enableView(this.canvas);
+	#onEnterCanvas() {
+		document.body.style.overflowY = "hidden";
+		//this.#engine.enableView(this.canvas);
 	}
 }
 
