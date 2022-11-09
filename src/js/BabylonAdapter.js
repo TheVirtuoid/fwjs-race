@@ -95,10 +95,11 @@ class BabylonAdaptor {
 		return this.#views[0].scene;
 	}
 
-	destroyMesh(mesh) {
-		if (!this.#scene) throw new Error("Must invoke createScene first");
+	destroyMesh(mesh, canvas) {
+		if (!this.#scene && !this.#views) throw new Error("Must invoke createScene or createViews first");
 		if (mesh) {
-			this.#scene.removeMesh(mesh);
+			const scene = this.#scene ? this.#scene : this.#findView(canvas).scene;
+			scene.removeMesh(mesh);
 			mesh.dispose();
 		}
 		return false;

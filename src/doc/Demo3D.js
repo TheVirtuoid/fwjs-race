@@ -16,7 +16,7 @@ class Demo3D extends Demo {
 	}
 
 	draw() {
-		for (let mesh of this.#meshes) this.#engine.destroyMesh(mesh);
+		for (let mesh of this.#meshes) this.#engine.destroyMesh(mesh, this.canvas);
 		this.#meshes.length = 0;
 
 		if (!this.hasError) this.drawCallback();
