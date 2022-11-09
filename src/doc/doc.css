@@ -127,6 +127,9 @@ footer {
 .demo > .panel > .input > .nonNegInteger {
 }
 
+.demo > .panel > .input > select {
+}
+
 .demo > .panel > .input > .col1 {
 	grid-column-start: 1;
 }
