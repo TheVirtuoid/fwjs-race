@@ -53,7 +53,7 @@ class BabylonAdaptor {
 	createScene() {
 		if (!this.#canvas) throw new Error("Must invoke setCanvas first");
 		if (!this.#engine) throw new Error("Must invoke createDefaultEngine first");
-		this.#scene = this.#createScene(this.#canvas).scene;
+		this.#scene = this.#createScene(this.#canvas);
 		return this.#scene;
 	}
 
@@ -73,9 +73,8 @@ class BabylonAdaptor {
 		// Create scenes for root views
 		for (let view of this.#views) {
 			if (!view.sibling) {
-				const { scene, camera } = this.#createScene(view.canvas);
-				view.scene = scene;
-				view.view = this.#engine.registerView(view.canvas, camera);
+				view.scene = this.#createScene(view.canvas);
+				view.view = this.#engine.registerView(view.canvas);
 			}
 		}
 
@@ -165,10 +164,10 @@ class BabylonAdaptor {
 	#createScene(canvas) {
 		const name = BabylonAdaptor.#createUniqueName(canvas.id);
 		const scene = new Scene(this.#engine);
-		const camera = BabylonAdaptor.#createCamera(canvas, name);
+		BabylonAdaptor.#createCamera(canvas, name);
 		BabylonAdaptor.#createLight(scene, name);
 		BabylonAdaptor.#enablePhysics(scene);
-		return { scene, camera };
+		return scene;
 	}
 
 	static #createUniqueName(preferred) {
