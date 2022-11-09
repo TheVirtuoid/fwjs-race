@@ -9,18 +9,27 @@
     <title>Fun With JavaScript - Race Game</title>
 </head>
 <body>
-<section id="davenport">
     <header>
         <h1>Race Game</h1>
         <aside>Brought to you by <a href="https://www.funwithjavascript.com" rel="noreferrer">Fun With JavaScript</a></aside>
     </header>
     <main>
-        <canvas id="world" touch-action="none"></canvas>
+        <section id="home">
+            <div id="select-cars">
+                <h2>Select Your Four Cars</h2>
+                <aside>Drag and drop the cars into the slots on the right.</aside>
+                <ul id="car-list"></ul>
+            </div>
+        </section>
+<!--
+        <section id="home">
+            <canvas id="world" touch-action="none"></canvas>
+        </section>
+-->
     </main>
     <footer>
         <p>&copy; 2022 Michael P. Smith a.k.a. TheVirtuoid. Free to use!</p>
     </footer>
-</section>
 </body>
 <script src="/js/fwjs-race.js" type="module"></script>
 </html>
