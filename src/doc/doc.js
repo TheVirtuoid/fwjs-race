@@ -35,8 +35,8 @@ window.initFunction = async function() {
 
 	window.engine = await asyncEngineCreation();
 	if (!window.engine) throw new Error('engine should not be null.');
-
 	await gameEngine.initializePhysics();
+	gameEngine.startRenderLoop();
 
 	// Complete the initialization of demo views
 	window.scene = gameEngine.createViews();

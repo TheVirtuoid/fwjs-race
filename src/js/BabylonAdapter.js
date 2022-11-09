@@ -86,8 +86,10 @@ class BabylonAdaptor {
 				if (!sibling.scene) {
 					throw new Error(`View ${view.canvas.id} has non-root sibling ${sibling.canvas.id}`);
 				}
+				const name = BabylonAdaptor.#createUniqueName(view.canvas);
+				const camera = BabylonAdaptor.#createCamera(view.canvas, name);
 				view.scene = sibling.scene;
-				view.view = sibling.view;
+				view.view = this.#engine.registerView(view.canvas, camera);
 			}
 		}
 
@@ -104,8 +106,10 @@ class BabylonAdaptor {
 	}
 
 	disableView(canvas) {
-		this.#findView(canvas).view.enabled = false;
+		const view = this.#findView(canvas);
+		view.view.enabled = false;
 		if (this.#engine.inputElement === canvas) this.#engine.inputElement = null;
+		console.log("disableView", this.#engine.inputElement, view);
 	}
 
 	enableView(canvas) {
@@ -140,21 +144,39 @@ class BabylonAdaptor {
 
 	startRenderLoop() {
 		if (!this.#engine) throw new Error("Must invoke createDefaultEngine first");
-		this.#engine.runRenderLoop(() => this.render());
+		this.#engine.runRenderLoop(() => this.#renderLoop());
 	}
 
-	#createScene(canvas) {
-		const scene = new Scene(this.#engine);
+	static #createCamera(canvas, name) {
 		const camera = new ArcRotateCamera(
-			'camera-' + canvas.id,
+			'camera-' + name,
 			3 * Math.PI / 2,
 			3 * Math.PI / 8,
 			30,
 			Vector3.Zero());
 		camera.attachControl(canvas, true);
-		const light = new HemisphericLight('light-' + canvas.id, new Vector3(0, 50, 0), scene);
-		scene.enablePhysics(new Vector3(0, -8.91, 0), new AmmoJSPlugin());
+		return camera;
+	}
+
+	static #createLight(scene, name) {
+		return new HemisphericLight('light-' + name, new Vector3(0, 50, 0), scene);
+	}
+
+	#createScene(canvas) {
+		const name = BabylonAdaptor.#createUniqueName(canvas.id);
+		const scene = new Scene(this.#engine);
+		const camera = BabylonAdaptor.#createCamera(canvas, name);
+		BabylonAdaptor.#createLight(scene, name);
+		BabylonAdaptor.#enablePhysics(scene);
 		return { scene, camera };
+	}
+
+	static #createUniqueName(preferred) {
+		return preferred ? preferred : crypto.randomUUID();
+	}
+
+	static #enablePhysics(scene) {
+		scene.enablePhysics(new Vector3(0, -8.91, 0), new AmmoJSPlugin());
 	}
 
 	#findView(canvas) {
@@ -162,6 +184,16 @@ class BabylonAdaptor {
 			if (view.canvas === canvas) return view;
 		}
 		throw new Error(`Must call addView for canvas ${canvas.id}`);
+	}
+
+	#renderLoop() {
+		if (!this.#ready) return;
+		if (this.#scene && this.#scene.activeCamera) this.#scene.render();
+		if (this.#views) {
+			for (let view of this.#views) {
+				if (!view.sibling && view.scene && view.scene !== this.#scene) view.scene.render();
+			}
+		}
 	}
 }
 
