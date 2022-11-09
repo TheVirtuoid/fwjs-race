@@ -99,8 +99,6 @@ class BabylonAdaptor {
 	#ready;
 	#sceneManager;
 
-	get engine() { return this.#engine }
-
 	addView(view) {
 		if (!this.#sceneManager) {
 			this.#sceneManager = new ViewManager(view);

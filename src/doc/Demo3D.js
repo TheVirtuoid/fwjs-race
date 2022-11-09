@@ -5,6 +5,7 @@ import View from '../js/View.js'
 class Demo3D extends Demo {
 
 	#engineAdapter
+	#hasEntered
 	#meshes
 	#view
 
@@ -13,16 +14,14 @@ class Demo3D extends Demo {
 		this.#engineAdapter = engineAdapter;
 		this.#meshes = [];
 
-		this.canvas.addEventListener('mouseout', () => this.#onLeaveCanvas());
-		this.canvas.addEventListener('mouseover', () => this.#onEnterCanvas());
+		this.root.addEventListener('mouseout', (evt) => this.#onLeave(evt));
+		this.root.addEventListener('mouseover', (evt) => this.#onEnter(evt));
 
-		//this.#engineAdapter.setCanvas(this.canvas);
 		this.#view = new View(engineAdapter, this.canvas);
 	}
 
 	draw() {
 		for (let mesh of this.#meshes) this.#engineAdapter.destroyMesh(mesh, this.canvas);
-		//for (let mesh of this.#meshes) this.#engineAdapter.destroyMesh(mesh);
 		this.#meshes.length = 0;
 
 		if (!this.hasError) this.drawCallback();
@@ -43,17 +42,35 @@ class Demo3D extends Demo {
 
 	render() {
 		this.#engineAdapter.render(this.#view);
-		//this.#engineAdapter.render();
 	}
 
-	#onLeaveCanvas() {
+	#isInArea(evt) {
+		const rect = this.root.getBoundingClientRect();
+		return rect.left <= evt.clientX &&
+			evt.clientX <= rect.right &&
+			rect.top <= evt.clientY &&
+			evt.clientY <= rect.bottom
+	}
+
+	#onEnter(evt) {
+		if (!this.#hasEntered) {
+			this.#hasEntered = true;
+			document.body.style.overflowY = "hidden";
+			this.#engineAdapter.enableView(this.#view);
+		}
+	}
+
+	#onLeave(evt) {
+		if (!this.#hasEntered) return;
+		if (this.root === evt.target) {
+			if (this.#isInArea(evt)) return;
+		} else {
+			if (this.root.contains(evt.target)) return;
+		}
+
+		this.#hasEntered = false;
 		document.body.style.overflowY = "scroll";
 		this.#engineAdapter.disableView(this.#view);
-	}
-
-	#onEnterCanvas() {
-		document.body.style.overflowY = "hidden";
-		this.#engineAdapter.enableView(this.#view);
 	}
 }
 

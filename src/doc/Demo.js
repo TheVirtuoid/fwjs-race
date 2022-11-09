@@ -16,6 +16,7 @@ class Demo {
 	get hasError() { return this.#hasError }
 	get height() { return this.#canvas.height }
 	get inputs() { return this.#inputs }
+	get root() { return this.#root }
 	get width() { return this.#canvas.width }
 
 	constructor(id, drawCallback, changeCallback) {
