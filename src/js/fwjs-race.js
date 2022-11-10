@@ -69,18 +69,19 @@ engine.runRenderLoop(() => {
 });*/
 
 const cars = [
-	{ name: 'Green Ghost', color: '#00ff00' },
-	{ name: 'Red Ranger', color: '#ff0000' },
-	{ name: 'Blue Bull', color: '#0000ff' },
-	{ name: 'Yellow Yak', color: '#ffff00' },
-	{ name: 'Pink Piranha ', color: '#ff00ff' },
-	{ name: 'Cyan Cat', color: '#00ffff' },
-	{ name: 'White Wallaby', color: '#dddddd' },
-	{ name: 'Black Bart', color: '#222222' }
+	{ name: 'Green Ghost', color: '#00ff00', id: 'green-ghost' },
+	{ name: 'Red Ranger', color: '#ff0000', id: 'red-ranger' },
+	{ name: 'Blue Bull', color: '#0000ff', id: 'blue-bull' },
+	{ name: 'Yellow Yak', color: '#ffff00', id: 'yellow-yak' },
+	{ name: 'Pink Piranha ', color: '#ff00ff', id: 'pink-piranha' },
+	{ name: 'Cyan Cat', color: '#00ffff', id: 'cyan-cat' },
+	{ name: 'White Wallaby', color: '#dddddd', id: 'white-wallaby' },
+	{ name: 'Black Bart', color: '#222222', id: 'black-bart' }
 ];
 
 const carSvg = `
 <svg xmlns="http://www.w3.org/2000/svg"
+	id="--ID--"
 	viewBox="0 0 1280.000000 640.000000"
 	preserveAspectRatio="xMidYMid meet"
 	draggable="true">
@@ -134,7 +135,35 @@ const carSvg = `
 `;
 
 const carList = document.getElementById('car-list');
-cars.forEach((car) => {
-	const li = `<li>${carSvg}</li`.replace('--FILL-COLOR--', car.color);
-	carList.insertAdjacentHTML('beforeend', li);
+cars.forEach((car, index) => {
+	const svg = carSvg.replace('--FILL-COLOR--', car.color).replace('--ID--', car.id);
+	const li = document.createElement('li');
+	li.insertAdjacentHTML('afterbegin', svg);
+	carList.appendChild(li);
+	li.querySelector('svg').addEventListener('dragstart', (event) => {
+		event.dataTransfer.setData('text/plain', event.target.id);
+		event.dataTransfer.dropEffect = 'move';
+	});
+});
+
+
+/*
+carList.querySelectorAll('li').forEach((carElement) => {
+	carElement.addEventListener('dragstart', (event) => {
+		event.dataTransfer.setData('text/plain', event.target.id);
+		event.dataTransfer.dropEffect = 'move';
+	});
+});
+
+*/
+const carSlots = document.getElementById('car-slots');
+carSlots.querySelectorAll('li').forEach((slotElement) => {
+	slotElement.addEventListener('drop', (event) => {
+		console.log('drop');
+		console.log(event);
+	});
+	slotElement.addEventListener('dragover', (event) => {
+		event.preventDefault();
+		event.dataTransfer.dropEffect = 'move';
+	});
 });
