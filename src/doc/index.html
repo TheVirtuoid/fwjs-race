@@ -62,7 +62,7 @@
 				<p>
 					Throughout, <b>vertex</b> means a point in space while <b>vector</b>
 					means a direction in space. Both are represented by Euclidean coordinates
-					but their interpretaion differ.
+					(x, y, z) but their interpretaion differ.
 				</p><p>
 					The phrase <b>the algorithm</b> refers to how the <a href="#TrackPOC">
 					TrackPOC</a>
@@ -105,14 +105,10 @@
 					The argument <b>vectorFactory</b> is a function that converts internal
 					3D vertices into game engine vertices.
 					</p>
-					<code>const v = vectorFactory(x, y, z);</code>
+					<code>const v = vectorFactory(u);</code>
 					<ul>
 						<li>
-							<b>x</b> is the internal x-axis coordinate
-						</li><li>
-							<b>y</b> is the internal y-axis coordinate
-						</li><li>
-							<b>z</b> is the internal z-axis coordinate
+							<b>u</b> is the algorithm vector
 						</li><li>
 							<b>v</b> is the corresponding game engine vector
 						</li>
@@ -509,7 +505,7 @@
 						the vertical axis.
 					</p>
 					<div class="panel">
-						<canvas></canvas>
+						<canvas id="debug-point-canvas"></canvas>
 						<div class="input">
 							<p class="col1 label">P<sub>0</sub></p>
 							<p class="col2 label">Center</p>
@@ -621,7 +617,7 @@
 				</p>
 				<div id="demo-spiral" class="demo">
 					<div class="panel">
-						<canvas></canvas>
+						<canvas id="debug-spiral-canvas"></canvas>
 						<div class="input">
 							<p class="col1 label">startsAt:</p>
 							<p class="col2 label">center:</p>

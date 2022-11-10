@@ -12,6 +12,7 @@ class View {
 
 	constructor(engineAdapter, canvas, sibling) {
 		this.#canvas = is.string(canvas) ? document.getElementById(canvas) : canvas;
+		if (!this.#canvas.debugName) this.#canvas.debugName = this.#canvas.id || ('canvas-' + crypto.randomUUID());
 		this.#sibling = sibling ?
 			(is.string(sibling) ? document.getElementById(sibling) : sibling) :
 			sibling;

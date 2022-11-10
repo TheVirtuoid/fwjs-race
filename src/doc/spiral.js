@@ -42,7 +42,6 @@ function draw() {
 				z: Number(demo.inputs.cz.value),
 			}
 		}
-		console.log(spiral);
 		const segment = { points: [ spiral ] };
 		const track = { segments: [ segment ] };
 		demo.produceTrack(track);

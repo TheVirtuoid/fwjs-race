@@ -22,6 +22,7 @@ class SingleSceneManager {
 
 	constructor(canvas) {
 		this.#canvas = is.string(canvas) ? document.getElementById(canvas) : canvas;
+		if (!canvas.debugName) canvas.debugName = canvas.id || crypto.randomUUID();
 	}
 
 	create(createScene, registerView) {
@@ -52,13 +53,14 @@ class ViewManager {
 		this.#views.push(view);
 	}
 
-	create(createScene, registerView) {
+	create(createScene, registerView, createDummyScene) {
 
 		// Create scenes for root views
 		for (let view of this.#views) {
 			if (view.isPrimary) {
 				view.scene = createScene(view.canvas);
-				view.view = registerView(view.canvas);
+				view.view = registerView(view.canvas, view.scene);
+				view.scene.detachControl();
 			}
 		}
 
@@ -68,31 +70,40 @@ class ViewManager {
 				const sibling = this.#findPrimary(view.sibling);
 				if (sibling.isSecondary) throw new Error(errorSiblingViewCannotHaveSibling);
 				view.scene = sibling.scene;
-				view.view = registerView(view.canvas, true);
+				view.view = registerView(view.canvas, view.scene, true);
+				view.scene.detachControl();
 			}
 		}
 
 		return this.#views[0].scene;
 	}
 
+	static renderAlgo = 2;
+
 	render(engine) {
-		/*
-		if (!engine.activeView || !engine.activeView.camera) {
-			console.log("ViewManager.render", 0);
-			this.#views[0].scene.render();
-		} else {
+		if (ViewManager.renderAlgo === 1) {
+			if (!engine.activeView || !engine.activeView.camera) {
+				//console.log('ViewManager.render-0', engine.activeView, this.#views[0].scene.debugName, this.#views[0].scene.cameras.length, this.#views[0].scene.cameras[0].id);
+				this.#views[0].scene.render();
+			} else {
+				for (let view of this.#views) {
+					if (engine.activeView.target === view.view) {
+						console.log('ViewManager.render-1', view.scene.debugName, view.scene.cameras.length, view.scene.cameras[0].id);
+						view.scene.render();
+						return;
+					}
+				}
+				throw new Error('engine.activeView.target does not match any views');
+			}
+		}
+
+		else if (ViewManager.renderAlgo === 2) {
 			for (let view of this.#views) {
-				if (engine.activeView.target === view.view) {
-					console.log("ViewManager.render", this.#views.indexOf(view));
+				if (view.isPrimary) {
+					//console.log('ViewManager.render', view.scene.debugName, view.scene.cameras.length, view.scene.cameras[0].id);
 					view.scene.render();
-					return;
 				}
 			}
-			throw new Error('engine.activeView.target does not match any views');
-		}
-		*/
-		for (let view of this.#views) {
-			if (view.isPrimary) view.scene.render();
 		}
 	}
 
@@ -169,15 +180,16 @@ class BabylonAdaptor {
 
 		return this.#sceneManager.create(
 			(canvas) => { return this.#createScene(canvas) },
-			(canvas, generateCamera) => {
+			(canvas, scene, generateCamera) => {
 				if (generateCamera) {
 					const name = BabylonAdaptor.#createUniqueName(canvas);
-					const camera = BabylonAdaptor.#createCamera(canvas, name);
+					const camera = BabylonAdaptor.#createCamera(canvas, scene, name);
 					return this.#engine.registerView(canvas, camera);
 				} else {
 					return this.#engine.registerView(canvas);
 				}
-			});
+			},
+			() => { return new Scene(this.#engine) });
 	}
 
 	createScenes() { this.createScene() }
@@ -260,14 +272,16 @@ class BabylonAdaptor {
 		this.#engine.runRenderLoop(() => this.#renderLoop());
 	}
 
-	static #createCamera(canvas, name) {
+	static #createCamera(canvas, scene, name) {
 		const camera = new ArcRotateCamera(
 			'camera-' + name,
 			3 * Math.PI / 2,
 			3 * Math.PI / 8,
 			30,
-			Vector3.Zero());
+			Vector3.Zero(),
+			scene);
 		camera.attachControl(canvas, true);
+		console.log('#createCamera', camera.id, canvas.debugName, scene.debugName, scene.cameras.length, scene.cameras.indexOf(camera) >= 0);
 		return camera;
 	}
 
@@ -278,7 +292,8 @@ class BabylonAdaptor {
 	#createScene(canvas) {
 		const name = BabylonAdaptor.#createUniqueName(canvas.id);
 		const scene = new Scene(this.#engine);
-		BabylonAdaptor.#createCamera(canvas, name);
+		scene.debugName = 'scene-' + name;
+		BabylonAdaptor.#createCamera(canvas, scene, name);
 		BabylonAdaptor.#createLight(scene, name);
 		BabylonAdaptor.#enablePhysics(scene);
 		return scene;
