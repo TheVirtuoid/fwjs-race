@@ -81,10 +81,8 @@ const cars = [
 
 const carSvg = `
 <svg xmlns="http://www.w3.org/2000/svg"
-	id="--ID--"
 	viewBox="0 0 1280.000000 640.000000"
-	preserveAspectRatio="xMidYMid meet"
-	draggable="true">
+	preserveAspectRatio="xMidYMid meet">
 	<metadata>Created by potrace 1.15, written by Peter Selinger 2001-2017</metadata>
 	<g transform="translate(0.000000,640.000000) scale(0.100000,-0.100000)" fill="#000000" stroke="none">
 		<path fill="--FILL-COLOR--" d="M3525 5341 c-72 -18 -79 -28 -90 -121 -4 -30 -11 -62 -16 -71 -4 -9 -97 -51 -206 -94 -774 -304 -1348 -540 -1603 -661 -163 -77 -222 -91 -421
@@ -138,24 +136,24 @@ const carList = document.getElementById('car-list');
 cars.forEach((car, index) => {
 	const svg = carSvg.replace('--FILL-COLOR--', car.color).replace('--ID--', car.id);
 	const li = document.createElement('li');
+	li.id = car.id;
 	li.insertAdjacentHTML('afterbegin', svg);
 	carList.appendChild(li);
-	li.querySelector('svg').addEventListener('dragstart', (event) => {
+/*	li.addEventListener('dragstart', (event) => {
 		event.dataTransfer.setData('text/plain', event.target.id);
+		event.dataTransfer.setData('text/html', event.target.innerHTML);
 		event.dataTransfer.dropEffect = 'move';
-	});
+	});*/
 });
 
 
-/*
 carList.querySelectorAll('li').forEach((carElement) => {
 	carElement.addEventListener('dragstart', (event) => {
-		event.dataTransfer.setData('text/plain', event.target.id);
+		event.dataTransfer.setData('text/html', event.target.innerHTML);
 		event.dataTransfer.dropEffect = 'move';
 	});
 });
 
-*/
 const carSlots = document.getElementById('car-slots');
 carSlots.querySelectorAll('li').forEach((slotElement) => {
 	slotElement.addEventListener('drop', (event) => {
