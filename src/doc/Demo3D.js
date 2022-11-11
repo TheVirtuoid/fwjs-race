@@ -13,8 +13,8 @@ class Demo3D extends Demo {
 	constructor(id, drawCallback, coordCallback, initializationCallback) {
 		super(id, drawCallback, coordCallback);
 		this.#initializationCallback = initializationCallback;
-		this.root.addEventListener('mouseout', (evt) => this.#onLeave(evt));
-		this.root.addEventListener('mouseover', (evt) => this.#onEnter(evt));
+		this.canvas.addEventListener('mouseout', (evt) => this.#onLeave(evt));
+		this.canvas.addEventListener('mouseover', (evt) => this.#onEnter(evt));
 	}
 
 	draw() {

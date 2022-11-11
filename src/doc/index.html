@@ -505,7 +505,7 @@
 						the vertical axis.
 					</p>
 					<div class="panel">
-						<canvas id="debug-point-canvas"></canvas>
+						<canvas></canvas>
 						<div class="input">
 							<p class="col1 label">P<sub>0</sub></p>
 							<p class="col2 label">Center</p>
@@ -617,7 +617,7 @@
 				</p>
 				<div id="demo-spiral" class="demo">
 					<div class="panel">
-						<canvas id="debug-spiral-canvas"></canvas>
+						<canvas></canvas>
 						<div class="input">
 							<p class="col1 label">startsAt:</p>
 							<p class="col2 label">center:</p>
@@ -702,9 +702,10 @@
 				</p>
 				<ul>
 					<li>
-						<b>backwardWeight</b> (default 1) sets the exit point's backward weight;
-						note this is effective only if the entry and exit point's forward vectors
-						differ and provides a counterbalance to <b>startingWeight</b>
+						<b>backwardWeight</b> (default 1; valid only if <b>startsAt</b> is not use or
+						<b>forward</b> is used) sets the exit point's backward weight;
+						this provides a counterbalance to the forward weight of the previous
+						section's exit point or to 	<b>startingWeight</b>
 					</li><li>
 						<b>endsAt</b> (required if <b>length</b> is not provided) sets the
 						exit point's center
@@ -718,8 +719,8 @@
 						exit point's center as a function of the entry point's center vertex
 						and forward vector (see above)
 					</li><li>
-						<b>startingWeight</b> (default 1; used only if <b>startsAt</b>
-						is defined) sets the forward weight of the entry point; this
+						<b>startingWeight</b> (default 1; valid only <b>startsAt</b> is not set
+						and <b>endsAt</b> is set) sets the forward weight of the entry point; this
 						is effective only if the entry point's forward vector is not
 						the direction of the straight
 					</li><li>
@@ -729,13 +730,71 @@
 						<b>type</b> must be set to <b>'straight'</b>
 					</li>
 				</ul>
+				<p>
+					<b>AUTHOR NOTES</b>
+				</p><p>
+					It appears that <b>startingWeight</b> is ill-defined and may be removed.
+				</p>
 				<div id="demo-straight" class="demo">
-					<p>
-						<b>STRAIGHT DEMO</b>
-					</p>
+					<ul>
+						<li>
+							<b>forwardWeight</b> does not affect the straight
+							but only the following section. As such, it is not shown here.
+						</li><li>
+							Select 'yes' in <b>use startsAt</b> if you want to simulate a straight
+							that starts a segment. If set so, you must supply the <b>startsAt</b>
+							vertex and <b>forward</b> vector. If not, you must supply the point
+							<b>startsAt</b>, with a center vertex and forward vector, to simulate
+							the endpoint of the prior section.
+						</li><li>
+							Select 'yes' in <b>use endsAt</b> if you want to specify the
+							precise exit point of the straight. If not, you must supply the
+							length of the straight.
+						</li>
+					</ul>
 					<div class="panel">
 						<canvas></canvas>
 						<div class="input">
+							<p class="col1 label">use startsAt:</p>
+							<select class="col4" id="demo-straight-useStartsAt">
+								<option value="false">No</option>
+								<option value="true">Yes</option>
+							</select>
+							<p class="col1 label">use endsAt:</p>
+							<select class="col4" id="demo-straight-useEndsAt">
+								<option value="false">No</option>
+								<option value="true">Yes</option>
+							</select>
+							<p class="col1 label">startsAt:</p>
+							<p class="col2 label useInherited">center:</p>
+							<p class="col3 label">x:</p>
+							<input type="number" class="col4 coord" id="demo-straight-startX"/>
+							<p class="col5 label">y:</p>
+							<input type="number" class="col6 coord" id="demo-straight-startY"/>
+							<p class="col7 label">z:</p>
+							<input type="number" class="col8 coord" id="demo-straight-startZ"/>
+							<p class="col1 label useStartsAtAndLength">forward:</p>
+							<p class="col2 label useInherited">forward:</p>
+							<p class="col3 label useInheritedOrLength">x:</p>
+							<input type="number" class="col4 coord useInheritedOrLength" id="demo-straight-forwardX"/>
+							<p class="col5 label useInheritedOrLength">y:</p>
+							<input type="number" class="col6 coord useInheritedOrLength" id="demo-straight-forwardY"/>
+							<p class="col7 label useInheritedOrLength">z:</p>
+							<input type="number" class="col8 coord useInheritedOrLength" id="demo-straight-forwardZ"/>
+							<p class="col1 label useStartingWeight">startingWeight:</p>
+							<input type="number" class="col4 posNumber useStartingWeight" id="demo-straight-startingWeight"/>
+							<p class="col1 label useLength">length:</p>
+							<input type="number" class="col4 posNumber useLength" id="demo-straight-length"/>
+							<p class="col1 label useEndsAt">endsAt:</p>
+							<p class="col3 label useEndsAt">x:</p>
+							<input type="number" class="col4 coord useEndsAt" id="demo-straight-endsAtX"/>
+							<p class="col5 label useEndsAt">y:</p>
+							<input type="number" class="col6 coord useEndsAt" id="demo-straight-endsAtY"/>
+							<p class="col7 label useEndsAt">z:</p>
+							<input type="number" class="col8 coord useEndsAt" id="demo-straight-endsAtZ"/>
+							<p class="col1 label useBackwardWeight">backwardWeight:</p>
+							<input type="number" class="col4 posNumber useBackwardWeight" id="demo-straight-backwardWeight"/>
+							<button type="button" class="col1" id="demo-straight-reset">Reset</button>
 						</div>
 						<div class="error">
 							<p class="alert">Error!</p>

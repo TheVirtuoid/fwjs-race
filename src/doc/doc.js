@@ -1,7 +1,7 @@
 import createPoint from './point.js'
 import createSpiral from './spiral.js'
 import createStandard from './standard.js'
-import initStraight from './straight.js'
+import createStraight from './straight.js'
 import createTangentWeight from './tangentWeight.js'
 
 await async function() {
@@ -12,7 +12,7 @@ await async function() {
 	demos.push(createTangentWeight());
 	demos.push(createPoint());
 	demos.push(createSpiral());
-	//demos.push(initStraight());
+	demos.push(createStraight());
 
 	// Initialize the demos
 	const promises = [];

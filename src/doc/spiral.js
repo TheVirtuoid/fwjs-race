@@ -59,13 +59,13 @@ function changeCallback() {
 
 function resetCenter() {
 	demo.inputs.cx0.value = 10;
-	demo.inputs.cy0.value = 10;
+	demo.inputs.cy0.value = 2;
 	demo.inputs.cz0.value = 0;
 	demo.inputs.fx0.value = 0;
 	demo.inputs.fy0.value = 0;
 	demo.inputs.fz0.value = 1;
 	demo.inputs.cx1.value = -10;
-	demo.inputs.cy1.value = 8;
+	demo.inputs.cy1.value = -2;
 	demo.inputs.cz1.value = 0;
 	demo.inputs.fx1.value = 0;
 	demo.inputs.fy1.value = 0;
@@ -82,13 +82,13 @@ function resetCenter() {
 
 function resetNoCenter(evt) {
 	demo.inputs.cx0.value = 10;
-	demo.inputs.cy0.value = 10;
+	demo.inputs.cy0.value = 2;
 	demo.inputs.cz0.value = 0;
 	demo.inputs.fx0.value = 0;
 	demo.inputs.fy0.value = 0;
 	demo.inputs.fz0.value = 1;
 	demo.inputs.cx1.value = 0;
-	demo.inputs.cy1.value = 8;
+	demo.inputs.cy1.value = -2;
 	demo.inputs.cz1.value = 10;
 	demo.inputs.fx1.value = -1;
 	demo.inputs.fy1.value = 0;
