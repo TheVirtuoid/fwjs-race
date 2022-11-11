@@ -5,43 +5,21 @@ let demo;
 function draw() {
 	try {
 		const startsAt = {
-			center: {
-				x: Number(demo.inputs.cx0.value),
-				y: Number(demo.inputs.cy0.value),
-				z: Number(demo.inputs.cz0.value),
-			},
-			forward: {
-				x: Number(demo.inputs.fx0.value),
-				y: Number(demo.inputs.fy0.value),
-				z: Number(demo.inputs.fz0.value),
-			},
+			center: demo.getVector('c0'),
+			forward: demo.getVector('f0'),
 		}
 		const endsAt = {
-			center: {
-				x: Number(demo.inputs.cx1.value),
-				y: Number(demo.inputs.cy1.value),
-				z: Number(demo.inputs.cz1.value),
-			},
-			forward: {
-				x: Number(demo.inputs.fx1.value),
-				y: Number(demo.inputs.fy1.value),
-				z: Number(demo.inputs.fz1.value),
-			},
+			center: demo.getVector('c1'),
+			forward: demo.getVector('f1'),
 		}
 		const spiral = {
 			endsAt,
 			rotate: demo.inputs.rotate.value,
 			startsAt,
-			turns: Number(demo.inputs.turns.value),
+			turns: demo.getNumber('turns'),
 			type: 'spiral',
 		}
-		if (!demo.inputs.cx.classList.contains('hidden')) {
-			spiral.center = {
-				x: Number(demo.inputs.cx.value),
-				y: Number(demo.inputs.cy.value),
-				z: Number(demo.inputs.cz.value),
-			}
-		}
+		demo.testAddVector(spiral, 'center');
 		const segment = { points: [ spiral ] };
 		const track = { segments: [ segment ] };
 		demo.produceTrack(track);
@@ -58,45 +36,47 @@ function changeCallback() {
 }
 
 function resetCenter() {
-	demo.inputs.cx0.value = 10;
-	demo.inputs.cy0.value = 2;
-	demo.inputs.cz0.value = 0;
-	demo.inputs.fx0.value = 0;
-	demo.inputs.fy0.value = 0;
-	demo.inputs.fz0.value = 1;
-	demo.inputs.cx1.value = -10;
-	demo.inputs.cy1.value = -2;
-	demo.inputs.cz1.value = 0;
-	demo.inputs.fx1.value = 0;
-	demo.inputs.fy1.value = 0;
-	demo.inputs.fz1.value = -1;
-	demo.inputs.cx.value = 0;
-	demo.inputs.cy.value = 0;
-	demo.inputs.cz.value = 0;
+	demo.inputs.c0X.value = 10;
+	demo.inputs.c0Y.value = 2;
+	demo.inputs.c0Z.value = 0;
+	demo.inputs.f0X.value = 0;
+	demo.inputs.f0Y.value = 0;
+	demo.inputs.f0Z.value = 1;
+	demo.inputs.c1X.value = -10;
+	demo.inputs.c1Y.value = -2;
+	demo.inputs.c1Z.value = 0;
+	demo.inputs.f1X.value = 0;
+	demo.inputs.f1Y.value = 0;
+	demo.inputs.f1Z.value = -1;
+	demo.inputs.centerX.value = 0;
+	demo.inputs.centerY.value = 0;
+	demo.inputs.centerZ.value = 0;
 	demo.inputs.rotate.selectedIndex = 0;
 	demo.inputs.turns.value = 0;
 
-	demo.panel.querySelectorAll(".centerVector").forEach((element) => element.classList.remove('hidden'));
+	demo.showClass('centerVector', true);
+
 	demo.draw()
 }
 
 function resetNoCenter(evt) {
-	demo.inputs.cx0.value = 10;
-	demo.inputs.cy0.value = 2;
-	demo.inputs.cz0.value = 0;
-	demo.inputs.fx0.value = 0;
-	demo.inputs.fy0.value = 0;
-	demo.inputs.fz0.value = 1;
-	demo.inputs.cx1.value = 0;
-	demo.inputs.cy1.value = -2;
-	demo.inputs.cz1.value = 10;
-	demo.inputs.fx1.value = -1;
-	demo.inputs.fy1.value = 0;
-	demo.inputs.fz1.value = 0;
+	demo.inputs.c0X.value = 10;
+	demo.inputs.c0Y.value = 2;
+	demo.inputs.c0Z.value = 0;
+	demo.inputs.f0X.value = 0;
+	demo.inputs.f0Y.value = 0;
+	demo.inputs.f0Z.value = 1;
+	demo.inputs.c1Z.value = 0;
+	demo.inputs.c1Y.value = -2;
+	demo.inputs.c1Z.value = 10;
+	demo.inputs.f1X.value = -1;
+	demo.inputs.f1Y.value = 0;
+	demo.inputs.f1Z.value = 0;
 	demo.inputs.rotate.selectedIndex = 0;
 	demo.inputs.turns.value = 1;
 
-	demo.panel.querySelectorAll(".centerVector").forEach((element) => element.classList.add('hidden'));
+	demo.showClass('centerVector', false);
+
 	if (evt) demo.draw()
 }
 

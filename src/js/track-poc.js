@@ -57,7 +57,7 @@ window.initFunction = async function() {
 	window.engine = await asyncEngineCreation();
 	if (!window.engine) throw new Error('engine should not be null.');
 
-	await gameEngine.initializePhysics();
+	await BabylonAdapter.initializePhysics();
 
 	gameEngine.startRenderLoop();
 	window.scene = gameEngine.createScene();
