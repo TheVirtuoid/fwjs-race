@@ -2,7 +2,6 @@ import Demo from './Demo.js'
 
 import BabylonAdapter from '../js/BabylonAdapter.js'
 import { TrackPOC } from '../js/Builder.js'
-import View from '../js/View.js'
 
 class Demo3D extends Demo {
 
