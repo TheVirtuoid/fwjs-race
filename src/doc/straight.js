@@ -2,54 +2,24 @@ import Demo3D from './Demo3D.js'
 
 let demo;
 
-function showClass(name, show) {
-	let addRemove = show ? 'remove' : 'add';
-	demo.panel.querySelectorAll('.' + name).forEach((element) => element.classList[addRemove]('hidden'));
-}
-
-function toggleOpposites(classA, classB) {
-	const value = demo.inputs[classA].value === "true";
-	showClass(classA, value);
-	showClass(classB, !value);
-	return value;
-}
-
-function getNumber(name) { return Number(demo.inputs[name].value) }
-
-function getVector(name) {
-	return {
-		x: getNumber(name + 'X'),
-		y: getNumber(name + 'Y'),
-		z: getNumber(name + 'Z'),
-	}
-}
-
-function testAddNumber(o, name) {
-	if (!demo.inputs[name].classList.contains('hidden')) o[name] = getNumber(name);
-}
-
-function testAddVector(o, name) {
-	if (!demo.inputs[name + 'X'].classList.contains('hidden')) o[name] = getVector(name);
-}
-
 function draw() {
 	try {
 		const straight = { type: 'straight' }
 		const points = [];
 		if (demo.inputs.useStartsAt.value === "false") {
 			points.push({
-				center: getVector('start'),
-				forward: getVector('forward'),
+				center: demo.getVector('start'),
+				forward: demo.getVector('forward'),
 				forwardWeight: 1,	// TODO
 			});
 		} else {
-			straight.startsAt = getVector('start')
+			straight.startsAt = demo.getVector('start')
 		}
-		testAddNumber(straight, 'backwardWeight');
-		testAddVector(straight, 'endsAt');
-		testAddVector(straight, 'forward');
-		testAddNumber(straight, 'length');
-		testAddNumber(straight, 'startingWeight');
+		demo.testAddNumber(straight, 'backwardWeight');
+		demo.testAddVector(straight, 'endsAt');
+		demo.testAddVector(straight, 'forward');
+		demo.testAddNumber(straight, 'length');
+		demo.testAddNumber(straight, 'startingWeight');
 		points.push(straight);
 		const segment = { points };
 		const track = { segments: [ segment ] };
@@ -62,17 +32,21 @@ function draw() {
 	demo.render();
 }
 
+function toggleOpposites(classA, classB) {
+	demo.toggleOppositeClasses(classA, classB, () => demo.inputs[classA].value === "true");
+}
+
 function changeCallback(evt) {
 	const useStartsAt = toggleOpposites('useStartsAt', 'useInherited');
 	const useEndsAt = toggleOpposites('useEndsAt', 'useLength');
 	const useInherited = !useStartsAt;
 	const useLength = !useEndsAt;
 	const useForward = useStartsAt && useLength;
-	showClass('useForward', useForward);
-	showClass('useStartsAtAndLength', useStartsAt && useLength);
-	showClass('useInheritedOrLength', useInherited || useLength);
-	showClass('useStartingWeight', useInherited && useEndsAt);
-	showClass('useBackwardWeight', useInherited || useForward);
+	demo.showClass('useForward', useForward);
+	demo.showClass('useStartsAtAndLength', useStartsAt && useLength);
+	demo.showClass('useInheritedOrLength', useInherited || useLength);
+	demo.showClass('useStartingWeight', useInherited && useEndsAt);
+	demo.showClass('useBackwardWeight', useInherited || useForward);
 
 	if (evt) demo.draw()
 }

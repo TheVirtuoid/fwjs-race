@@ -26,6 +26,16 @@ class Demo3D extends Demo {
 		if (!this.hasError) this.drawCallback();
 	}
 
+	getNumber(name) { return Number(this.inputs[name].value) }
+
+	getVector(name) {
+		return {
+			x: this.getNumber(name + 'X'),
+			y: this.getNumber(name + 'Y'),
+			z: this.getNumber(name + 'Z'),
+		}
+	}
+
 	async initialize() {
 
 		// Create the adapter and set the canvas
@@ -66,6 +76,28 @@ class Demo3D extends Demo {
 
 	render() {
 		this.#engineAdapter.render();
+	}
+
+	showClass(name, show) {
+		let addRemove = show ? 'remove' : 'add';
+		this.panel.querySelectorAll('.' + name).forEach(
+			(element) => element.classList[addRemove]('hidden')
+		);
+	}
+
+	testAddNumber(o, name) {
+		if (!this.inputs[name].classList.contains('hidden')) o[name] = this.getNumber(name);
+	}
+
+	testAddVector(o, name) {
+		if (!this.inputs[name + 'X'].classList.contains('hidden')) o[name] = this.getVector(name);
+	}
+
+	toggleOppositeClasses(classA, classB, test) {
+		const value = test();
+		this.showClass(classA, value);
+		this.showClass(classB, !value);
+		return value;
 	}
 
 	#asyncEngineCreation() {
