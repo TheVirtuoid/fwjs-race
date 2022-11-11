@@ -175,11 +175,11 @@ function coordCallback() {
 	demo.draw();
 }
 
-function init() {
+function create() {
 	demo = new Demo2D("demo-tangentWeight", draw, coordCallback);
 	demo.queryInput("reset").addEventListener("click", resetToCircle);
 	resetToCircle();
 	return demo;
 }
 
-export default init;
+export default create;

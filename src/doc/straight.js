@@ -9,14 +9,16 @@ function coordCallback() {
 	demo.draw()
 }
 
-function resetToDefaults() {
-	demo.draw()
+function resetToDefaults(evt) {
+	if (evt) demo.draw()
 }
 
-function init(engine) {
-	demo = new Demo3D("demo-straight", engine, draw, coordCallback);
-	//demo.queryInput("reset").addEventListener("click", resetToDefaults);
-	resetToDefaults();
+async function init() {
+	demo = new Demo3D("demo-straight", draw, coordCallback);
+	await demo.initialize(() => async function() {
+		//demo.queryInput("reset").addEventListener("click", resetToDefaults);
+		resetToDefaults();
+	});
 	return demo;
 }
 

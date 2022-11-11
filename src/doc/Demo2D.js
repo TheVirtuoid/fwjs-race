@@ -11,6 +11,8 @@ class Demo2D extends Demo {
 		ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 		if (!this.hasError) this.drawCallback(ctx);
 	}
+
+	async initialize() {}
 }
 
 export default Demo2D

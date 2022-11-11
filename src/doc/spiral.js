@@ -57,7 +57,7 @@ function changeCallback() {
 	demo.draw()
 }
 
-function resetCenter(evt) {
+function resetCenter() {
 	demo.inputs.cx0.value = 10;
 	demo.inputs.cy0.value = 10;
 	demo.inputs.cz0.value = 0;
@@ -77,7 +77,7 @@ function resetCenter(evt) {
 	demo.inputs.turns.value = 0;
 
 	demo.panel.querySelectorAll(".centerVector").forEach((element) => element.classList.remove('hidden'));
-	if (evt) demo.draw()
+	demo.draw()
 }
 
 function resetNoCenter(evt) {
@@ -100,12 +100,13 @@ function resetNoCenter(evt) {
 	if (evt) demo.draw()
 }
 
-function init(engineAdapter) {
-	demo = new Demo3D("demo-spiral", engineAdapter, draw, changeCallback);
-	demo.queryInput("resetNoCenter").addEventListener("click", resetNoCenter);
-	demo.queryInput("resetCenter").addEventListener("click", resetCenter);
-	resetNoCenter();
+function create() {
+	demo = new Demo3D("demo-spiral", draw, changeCallback, async function() {
+		demo.queryInput("resetNoCenter").addEventListener("click", resetNoCenter);
+		demo.queryInput("resetCenter").addEventListener("click", resetCenter);
+		resetNoCenter();
+	});
 	return demo;
 }
 
-export default init;
+export default create;

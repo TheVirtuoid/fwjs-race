@@ -1,32 +1,56 @@
 import Demo from './Demo.js'
+
+import BabylonAdapter from '../js/BabylonAdapter.js'
 import { TrackPOC } from '../js/Builder.js'
 import View from '../js/View.js'
 
 class Demo3D extends Demo {
 
 	#engineAdapter
-	#hasEntered
+	#initializationCallback
 	#meshes
-	#view
+	#scene
 
-	constructor(id, engineAdapter, drawCallback, coordCallback) {
+	constructor(id, drawCallback, coordCallback, initializationCallback) {
 		super(id, drawCallback, coordCallback);
-		this.#engineAdapter = engineAdapter;
-		this.#meshes = [];
-
+		this.#initializationCallback = initializationCallback;
 		this.root.addEventListener('mouseout', (evt) => this.#onLeave(evt));
 		this.root.addEventListener('mouseover', (evt) => this.#onEnter(evt));
-
-		this.#view = new View(engineAdapter, this.canvas);
 	}
 
 	draw() {
 		for (let mesh of this.#meshes) {
-			this.#engineAdapter.destroyMesh(mesh, this.#view);
+			this.#engineAdapter.destroyMesh(mesh);
 		}
 		this.#meshes.length = 0;
 
 		if (!this.hasError) this.drawCallback();
+	}
+
+	async initialize() {
+
+		// Create the adapter and set the canvas
+		this.#meshes = [];
+		this.#engineAdapter = new BabylonAdapter();
+		this.#engineAdapter.setCanvas(this.canvas);
+
+		// Queue the adapter and domain initializers
+		const promiseEngine = this.#asyncEngineCreation();
+		const promiseCallback = this.#initializationCallback();
+		const promisePhysics = BabylonAdapter.initializePhysics();
+
+		// Wait on the engine initialization and then physics initialization
+		const engine = await promiseEngine;
+		if (!engine) throw new Error('engine should not be null.');
+		await promisePhysics;
+
+		// Wait on the domain initialization
+		await promiseCallback;
+
+		// Start the render loop and create the scene
+		this.#engineAdapter.startRenderLoop();
+		this.#scene = this.#engineAdapter.createScene();
+		this.#engineAdapter.ready();
 	}
 
 	produceTrack(track) {
@@ -34,16 +58,24 @@ class Demo3D extends Demo {
 		for (let i = 0; i < trackSegments.length; i++) {
 			const trackSegment = trackSegments[i];
 			this.#meshes.push(this.#engineAdapter.createRibbon(
-				`Segment${i}`,
+				`${this.canvas.id}-segment${i}`,
 				trackSegment.track.ribbon,
 				track.closed,
-				{ mass: 0 },
-				this.#view));
+				{ mass: 0 }));
 		}
 	}
 
 	render() {
-		this.#engineAdapter.render(this.#view);
+		this.#engineAdapter.render();
+	}
+
+	#asyncEngineCreation() {
+		try {
+			return this.#engineAdapter.createDefaultEngine();
+		} catch(e) {
+			console.log("the available createEngine function failed. Creating the default engine instead");
+			return this.#engineAdapter.createDefaultEngine();
+		}
 	}
 
 	#isInArea(evt) {
@@ -55,24 +87,11 @@ class Demo3D extends Demo {
 	}
 
 	#onEnter(evt) {
-		if (!this.#hasEntered) {
-			this.#hasEntered = true;
-			document.body.style.overflowY = "hidden";
-			this.#engineAdapter.enableView(this.#view);
-		}
+		document.body.style.overflowY = "hidden";
 	}
 
 	#onLeave(evt) {
-		if (!this.#hasEntered) return;
-		if (this.root === evt.target) {
-			if (this.#isInArea(evt)) return;
-		} else {
-			if (this.root.contains(evt.target)) return;
-		}
-
-		this.#hasEntered = false;
 		document.body.style.overflowY = "scroll";
-		this.#engineAdapter.disableView(this.#view);
 	}
 }
 

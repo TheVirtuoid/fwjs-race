@@ -22,7 +22,6 @@ class SingleSceneManager {
 
 	constructor(canvas) {
 		this.#canvas = is.string(canvas) ? document.getElementById(canvas) : canvas;
-		if (!canvas.debugName) canvas.debugName = canvas.id || crypto.randomUUID();
 	}
 
 	create(createScene, registerView) {
@@ -83,12 +82,10 @@ class ViewManager {
 	render(engine) {
 		if (ViewManager.renderAlgo === 1) {
 			if (!engine.activeView || !engine.activeView.camera) {
-				//console.log('ViewManager.render-0', engine.activeView, this.#views[0].scene.debugName, this.#views[0].scene.cameras.length, this.#views[0].scene.cameras[0].id);
 				this.#views[0].scene.render();
 			} else {
 				for (let view of this.#views) {
 					if (engine.activeView.target === view.view) {
-						console.log('ViewManager.render-1', view.scene.debugName, view.scene.cameras.length, view.scene.cameras[0].id);
 						view.scene.render();
 						return;
 					}
@@ -99,10 +96,7 @@ class ViewManager {
 
 		else if (ViewManager.renderAlgo === 2) {
 			for (let view of this.#views) {
-				if (view.isPrimary) {
-					//console.log('ViewManager.render', view.scene.debugName, view.scene.cameras.length, view.scene.cameras[0].id);
-					view.scene.render();
-				}
+				if (view.isPrimary) view.scene.render();
 			}
 		}
 	}
@@ -240,7 +234,7 @@ class BabylonAdaptor {
 		this.#engine.inputElement = view.canvas;
 	}
 
-	async initializePhysics() {
+	static async initializePhysics() {
 		await ammo.bind(window)();
 	}
 
@@ -281,7 +275,6 @@ class BabylonAdaptor {
 			Vector3.Zero(),
 			scene);
 		camera.attachControl(canvas, true);
-		console.log('#createCamera', camera.id, canvas.debugName, scene.debugName, scene.cameras.length, scene.cameras.indexOf(camera) >= 0);
 		return camera;
 	}
 
@@ -292,7 +285,6 @@ class BabylonAdaptor {
 	#createScene(canvas) {
 		const name = BabylonAdaptor.#createUniqueName(canvas.id);
 		const scene = new Scene(this.#engine);
-		scene.debugName = 'scene-' + name;
 		BabylonAdaptor.#createCamera(canvas, scene, name);
 		BabylonAdaptor.#createLight(scene, name);
 		BabylonAdaptor.#enablePhysics(scene);

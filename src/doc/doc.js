@@ -1,48 +1,29 @@
-import BabylonAdapter from '../js/BabylonAdapter.js'
-import initPoint from './point.js'
-import initSpiral from './spiral.js'
-import initStandard from './standard.js'
+import createPoint from './point.js'
+import createSpiral from './spiral.js'
+import createStandard from './standard.js'
 import initStraight from './straight.js'
-import initTangentWeight from './tangentWeight.js'
+import createTangentWeight from './tangentWeight.js'
 
-const demos = [];
-let engineAdapter;
+await async function() {
 
-window.initFunction = async function() {
-
-	// Create the game engine
-	engineAdapter = new BabylonAdapter();
+	// Construt the demos
+	const demos = [];
+	demos.push(createStandard());
+	demos.push(createTangentWeight());
+	demos.push(createPoint());
+	demos.push(createSpiral());
+	//demos.push(initStraight());
 
 	// Initialize the demos
-	demos.push(initStandard(engineAdapter));
-	demos.push(initTangentWeight(engineAdapter));
-	demos.push(initPoint(engineAdapter));
-	demos.push(initSpiral(engineAdapter));
-	//demos.push(initStraight(engineAdapter));
+	const promises = [];
+	for (let demo of demos) promises.push(demo.initialize());
+	for (let promise of promises) await promise;
 
-	// Complete the creation of the engine
-	const asyncEngineCreation = async function() {
-		try {
-			return engineAdapter.createDefaultEngine();
-		} catch(e) {
-			console.log("the available createEngine function failed. Creating the default engine instead");
-			return engineAdapter.createDefaultEngine();
-		}
-	}
-
-	// TODO: Investigate if setting 'window.engine' and 'window.scene'
-	// is necessary. It appears this is not necessary.
-
-	window.engine = await asyncEngineCreation();
-	if (!window.engine) throw new Error('engine should not be null.');
-	await engineAdapter.initializePhysics();
-	engineAdapter.startRenderLoop();
-
-	// Complete the initialization of demo views
-	window.scene = engineAdapter.createScene();
-};
-
-initFunction().then(() => {
-	engineAdapter.ready();
+	// Perform the initial draw the demos
 	for (let demo of demos) demo.draw();
-});
+}();
+/*
+window.addEventListener('load', () => async function() {
+	console.log('load');
+	await onLoad();
+});*/
