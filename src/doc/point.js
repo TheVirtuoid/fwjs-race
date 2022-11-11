@@ -5,33 +5,18 @@ let demo;
 function draw() {
 	try {
 		const p0 = {
-			center: {
-				x: Number(demo.inputs.cx0.value),
-				y: Number(demo.inputs.cy0.value),
-				z: Number(demo.inputs.cz0.value),
-			},
-			forward: {
-				x: Number(demo.inputs.fx0.value),
-				y: Number(demo.inputs.fy0.value),
-				z: Number(demo.inputs.fz0.value),
-			},
-			forwardWeight: Number(demo.inputs.w0.value),
+			center: demo.getVector('c0'),
+			forward: demo.getVector('f0'),
+			forwardWeight: demo.getNumber('w0'),
 		}
 		const p1 = {
-			backwardWeight: Number(demo.inputs.w1.value),
-			center: {
-				x: Number(demo.inputs.cx1.value),
-				y: Number(demo.inputs.cy1.value),
-				z: Number(demo.inputs.cz1.value),
-			},
-			forward: {
-				x: Number(demo.inputs.fx1.value),
-				y: Number(demo.inputs.fy1.value),
-				z: Number(demo.inputs.fz1.value),
-			},
+			backwardWeight: demo.getNumber('w1'),
+			center: demo.getVector('c1'),
+			forward: demo.getVector('f1'),
 		}
 		const segment = { points: [ p0, p1 ] };
 		const track = { segments: [ segment ] };
+		console.log(segment.points);
 		demo.produceTrack(track);
 		demo.clearError();
 	} catch (e) {
@@ -46,20 +31,20 @@ function changeCallback() {
 }
 
 function resetToDefaults(evt) {
-	demo.inputs.cx0.value = 2;
-	demo.inputs.cy0.value = 6;
-	demo.inputs.cz0.value = 2;
-	demo.inputs.fx0.value = 1;
-	demo.inputs.fy0.value = 0;
-	demo.inputs.fz0.value = 0;
-	demo.inputs.w0.value = 1;
-	demo.inputs.cx1.value = -2;
-	demo.inputs.cy1.value = -6;
-	demo.inputs.cz1.value = -4;
-	demo.inputs.fx1.value = 1;
-	demo.inputs.fy1.value = 0;
-	demo.inputs.fz1.value = 0;
-	demo.inputs.w1.value = 1;
+	demo.inputs.c0X.value = 2;
+	demo.inputs.c0Y.value = 6;
+	demo.inputs.c0Z.value = 0;
+	demo.inputs.f0X.value = -1;
+	demo.inputs.f0Y.value = 0;
+	demo.inputs.f0Z.value = 0;
+	demo.inputs.w0.value = 4;
+	demo.inputs.c1X.value = -2;
+	demo.inputs.c1Y.value = -6;
+	demo.inputs.c1Z.value = 0;
+	demo.inputs.f1X.value = -1;
+	demo.inputs.f1Y.value = 0;
+	demo.inputs.f1Z.value = 0;
+	demo.inputs.w1.value = 4;
 	if (evt) demo.draw()
 }
 
