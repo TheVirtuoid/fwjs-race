@@ -103,16 +103,19 @@ class bezier {
 		const midtime = (t0 + t1) / 2;
 		const lmp = bpt0.center.midpoint(bpt1.center);	// Linear midpoint
 		const bmp = bezier.#getPoint(curve, midtime);	// Bezier midpoint
+		const d0m = bpt0.center.toNormal(lmp);
+		const dm1 = lmp.toNormal(bpt1.center);
+		const dPrecision = 1 - precision;
 
-		// TODO: This precision test is insufficient. It is possible for the curve to pass
-		// through the linear midpoint but the tangent at the midpoint be different (e.g.,
-		// an 'S' curve passing through the midpoint).
-
-		// If the linear midpoint is close enough to the curve midpoint, add bmp0
-		// to the  track segment. Otherwise recursively add the sections of the curve
+		// If the linear midpoint is close enough to the curve midpoint and its forward
+		// direction is close enough to the endpoints, add bmp0 to the  track segment.
+		// Otherwise recursively add the sections of the curve
 		// (t0, midtime) and (midtime, t1). Note that the latter eventually adds
 		// the midpoint calcuated here.
-		if (lmp.distance(bmp.center) <= precision) {
+		const closeEnough = lmp.distance(bmp.center) <= precision &&
+			bpt0.forward.dot(d0m) >= dPrecision &&
+			 dm1.dot(bpt1.forward) >= dPrecision;
+		if (closeEnough) {
 			trackSegment.push(bpt0, vectorFactory);
 		} else {
 			bezier.#interpolate(trackSegment, curve, t0, midtime, bpt0, bmp, vectorFactory, precision);
