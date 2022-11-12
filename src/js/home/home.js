@@ -1,9 +1,7 @@
 import styles from "../../css/fwjs-race.pcss";
-import Car from "./Car";
-import CarListItem from "./CarListItem";
-import CarSlotItem from "./CarSlotItem";
+import CarService from "./CarService";
 
-const carsData = [
+const carData = [
 	{ name: 'Green Ghost', color: '#00ff00', id: 'green-ghost' },
 	{ name: 'Red Ranger', color: '#ff0000', id: 'red-ranger' },
 	{ name: 'Blue Bull', color: '#0000ff', id: 'blue-bull' },
@@ -14,28 +12,38 @@ const carsData = [
 	{ name: 'Black Bart', color: '#222222', id: 'black-bart' }
 ];
 
-const listItems = new Map();
-const slotItems = new Map([
-	["1", new CarSlotItem({ selector: 'div[data-slot="1"]' })],
-	["2", new CarSlotItem({ selector: 'div[data-slot="2"]' })],
-	["3", new CarSlotItem({ selector: 'div[data-slot="3"]' })],
-	["4", new CarSlotItem({ selector: 'div[data-slot="4"]' })],
-]);
-
-const cars = carsData.map((carData) => {
-	const { name, color, id } = carData;
-	return new Car({ name, color, id });
-});
+const carService = new CarService({ carData });
 
 const carList = document.getElementById('car-list');
+carService.populateCarList(carList);
+
+/*
+const cars = new Map();
+carsData.forEach((carData) => {
+	const { name, color, id } = carData;
+	const car = new Car({ name, color, id });
+	cars.set(id, car);
+});
+
+const slotItems = new Map([
+	["1", new CarSlotItem({ selector: 'div[data-slot="1"]', cars })],
+	["2", new CarSlotItem({ selector: 'div[data-slot="2"]', cars })],
+	["3", new CarSlotItem({ selector: 'div[data-slot="3"]', cars })],
+	["4", new CarSlotItem({ selector: 'div[data-slot="4"]', cars })],
+]);
+
+
+const listItems = new Map();
+const carList = document.getElementById('car-list');
 cars.forEach((car, index) => {
-	const carListItem = new CarListItem({ car });
+	const carListItem = new CarListItem({ car, cars });
 	listItems.set(car.id, carListItem);
 	carList.appendChild(carListItem.listItem);
 });
+*/
 
 
-const carSlots = document.getElementById('car-slots');
+/*const carSlots = document.getElementById('car-slots');
 carSlots.querySelectorAll('div').forEach((slotElement) => {
 	slotElement.addEventListener('drop', (event) => {
 		const carId = event.dataTransfer.getData('text/plain');
@@ -60,4 +68,4 @@ carSlots.querySelectorAll('div').forEach((slotElement) => {
 		event.preventDefault();
 		event.dataTransfer.dropEffect = 'move';
 	});
-});
+});*/
