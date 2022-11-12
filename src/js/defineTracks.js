@@ -578,7 +578,7 @@ export function defineTracks(tracks) {
 				},
 				forward: posY,
 				forwardWeight: weight,
-				trackBank: negX,
+				up: posX,
 			});
 			p = this._pushPoint({		// Top of loop
 				backwardWeight: weight,
@@ -589,7 +589,7 @@ export function defineTracks(tracks) {
 				},
 				forward: posX,
 				forwardWeight: weight,
-				trackBank: posY,
+				up: negY,
 			});
 			p = this._pushPoint({		// Last quarter of loop
 				backwardWeight: weight,
@@ -600,7 +600,7 @@ export function defineTracks(tracks) {
 				},
 				forward: negY,
 				forwardWeight: weight,
-				trackBank: posX,
+				up: negX,
 			});
 			p = this._pushPoint({		// Exit of loop
 				backwardWeight: weight,

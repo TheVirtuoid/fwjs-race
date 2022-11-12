@@ -28,6 +28,7 @@
 					<a href="#yIsVertical" class="toc toch3">yIsVertical</a><br/>
 					<a href="#lanes" class="toc toch3">Lanes</a><br/>
 					<a href="#trackBank" class="toc toch3">Track Bank</a><br/>
+					<a href="#up" class="toc toch3">Up</a><br/>
 				<a href="#trackSpecs" class="toc toch2">Track Specifications</a><br/>
 					<a href="#trackDetails" class="toc toch3">Track Details</a><br/>
 					<a href="#segmentDetails" class="toc toch3">Segment Details</a><br/>
@@ -166,6 +167,10 @@
 						<b>trackWidth</b> (default 1) is the width of the track at the section
 						element
 					</li><li>
+						<b>up</b> (default is the geometric up vector) is the <em>up</em> vector,
+						relative to the track surface, at the section
+						element; see <a href='#up'>Up</a> for further details
+					</li><li>
 						<b>wallHeight</b> (default 0.5) is the height of the wall at the secion
 						element
 					</li><li id="yIsVertical">
@@ -190,37 +195,56 @@
 					<h3 id="trackBank">Track Bank</h3>
 					<p>
 						The <b>trackBank</b> setting affects the banking of the track in the
-						section. There are multiple ways to define the banking:
+						section. There are two ways to define the banking:
 					</p>
 					<ul>
 						<li>
 							a number representing the amount of banking in degrees, rotating
 							the track cross section around the point's <a href="#forward">
-							forward</a> vector,
-						</li><li>
-							a vector representing the desired <em>down</em> vector of the track,
-							rotating the track cross section around the point's <a href="#forward">
-							forward</a> vector until the downside of the track aligns with
-							the assigned vector,
+							forward</a> vector, and
 						</li><li>
 							an array of number pairs, the first number representing the
 							parametric <b><em>t</em></b> value (see <a href="#bezierCurves">
 							Bézier Curves</a> for details) and the second number representing
-							the amount of banking in degrees, and
-						</li><li>
-							<b>[NOT IMPLEMENTED]</b> an array of number-vector tuples, the
-							number representing the parametric <b><em>t</em></b> value
-							(see <a href="#bezierCurves">Bézier Curves</a> for details) and
-							the vector representing the desired <em>down</em> vector of the track.
+							the amount of banking in degrees.
 						</li>
 					</ul>
 					<p>
 						The array forms are valid only for the <a href="#spiralElement">spiral</a>
 						and <a href="#straightElement">straight</a> sections.
 					</p><p>
+						At a particular point, the algorithm computes a <b>local up</b> (see
+						<a href="#up">Up</a>) and rotates this vector around the <b>forward</b>
+						vector by the number of degrees indicated. The rotated vector is the
+						direction that the walls arise from the track and also determines, along
+						with <b>forward</b>, the direction of the left and right sides of the track.
+					</p><p>
 						When determining the banking between a <a href="#pointElement">point</a>
 						and its adjacent section, the algorithm linearly interpolates between the
 						point and the appropriate endpoint of the adjacent section.
+					</p>
+					<h3 id="up">Up</h3>
+					<p>
+						The <b>up</b> vector, which defaults to the geometric <em>up</em> vector,
+						points away from the surface of the track in
+						the general direction that the walls rise.
+						The algorithm computes a <b>local up</b> by removing any contribution
+						of <b>forward</b> from the <b>up</b>.
+					</p><p>
+						Generally, <b>up</b> may be omitted.
+						However, there are cases where specification of <b>up</b> is required
+						or useful.
+						For example, on vertical sections where the geometric up
+						closely aligns with <b>forward</b>, the algorithm cannot
+						compute the <b>local up</b> and requires <b>up</b> to be defined.
+						In other cases, such as the top of a vertical loop, the algorithm will
+						erroneously compute the <b>local up</b> as being geometric up;
+						specifying <b>up</b> to be geometric <em>down</em> produces the desired
+						results.
+					</p><p>
+						Note that <a href="#trackBank">track banking</a> is related to <b>up</b>
+						as this rotates the <b>local up</b> around <b>forward</b>. It is possible,
+						though not advised, to implement track banking by solely using <b>up</b>.
 					</p>
 				</div>
 				<h2 id="trackSpecs">Track Specifications</h2>

@@ -33,12 +33,9 @@ class bezier {
 
 	static getDown(sp) {
 
-		// We are done if we already have a vector
-		if (Vector3.is(sp.trackBank)) return new Vector3(sp.trackBank);
-
 		// Compute the true 'down' vector. This must be orthogonal to the forward vector.
 		// Remove any component of the down vector inline with the forward vector.
-		let down = Vector3.down;
+		let down = sp.up.scale(-1);
 		const dot = sp.forward.dot(down);
 		if (Math.abs(dot) > .0001)  {
 			down = down.add(-dot, sp.forward);
@@ -60,6 +57,7 @@ class bezier {
 		const vScalars = [olt * olt * olt, 3 * olt * olt * t, 3 * olt * t * t, t * t * t];
 		const center = Vector3.scaledSum(curve.points, vScalars);
 
+		// TODO: Need to verify; see analysis of source material in spiralParser
 		// Compute the forward vector with is the tangent at t
 		// v'(t) = 3*(1-t)^2*(p1 - p0) + 6*(1-t)*t*(p2-p1) + 3*t^2*(p3-p2).
 		// Note that we normalize this to get a unit vector.

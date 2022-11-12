@@ -48,16 +48,23 @@ class Vector3 extends Vector {
 	static is(value) {
 		return value instanceof Vector3 || Vector.is(value, Vector3.coordinateNames);
 	}
+
 	static validate(object, memberName, objectName) {
 		const value = object[memberName];
 		if (Vector3.is(value)) return new Vector3(value);
 		throw new TypeError(`${objectName}.${memberName} must be a 3D vector`);
 	}
 
+	static validateNormal(object, memberName, objectName) {
+		return Vector3.validate(object, memberName, objectName).normalize();
+	}
+
 	cross(v) {
 		return new Vector3(this.y * v.z - this.z * v.y, this.z * v.x - this.x * v.z, this.x * v.y - this.y * v.x);
 	}
+
 	newHack() { return new Vector3() }
+
 	rotate(axis, angle) {
 		if (!(axis instanceof Vector3)) throw new Error('Vector3.rotate: axis is not a Vector3');
 		if (!is.number(angle)) throw new Error('Vector3.rotate: angle is not a number');
