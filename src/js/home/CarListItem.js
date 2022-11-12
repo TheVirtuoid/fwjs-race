@@ -1,10 +1,12 @@
 export default class CarListItem {
 	#car;
 	#listItem;
+	#service;
 
 	constructor(args = {}) {
-		const { car } = args;
+		const { car, service } = args;
 		this.#car = car;
+		this.#service = service;
 	}
 
 	get car () {
@@ -31,6 +33,7 @@ export default class CarListItem {
 
 	show () {
 		if (this.#listItem) {
+			this.#listItem.prepend(this.#car.carImage);
 			this.#listItem.classList.remove('hidden');
 		}
 	}

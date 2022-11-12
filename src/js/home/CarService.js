@@ -11,10 +11,12 @@ export default class CarService {
 	#carData;
 	#cars;
 	#numberOfSlots = numberOfSlots;
+	#race;
 
 	constructor(args = {}) {
 		const { carData } = args;
 		this.#carData = carData;
+		this.#race = document.getElementById('race');
 		this.#createCars(carData);
 		this.#createListItems(this.#cars);
 		this.#createCarSlots(this.#numberOfSlots);
@@ -25,6 +27,22 @@ export default class CarService {
 			listElement.removeChild(listElement.firstChild);
 		}
 		this.#listItems.forEach((item) => listElement.append(item.listItem));
+	}
+
+	getCar(carId) {
+		return this.#cars.get(carId);
+	}
+
+	removeCarFromList(carId) {
+		const listItem = this.#listItems.get(carId);
+		listItem.hide();
+		this.#activateRace();
+	}
+
+	addCarToList(carId) {
+		const listItem = this.#listItems.get(carId);
+		listItem.show();
+		this.#activateRace();
 	}
 
 	#createCars (carData) {
@@ -40,7 +58,7 @@ export default class CarService {
 	#createListItems(cars) {
 		const listItems = new Map();
 		cars.forEach((car) => {
-			const carListItem = new CarListItem({ car });
+			const carListItem = new CarListItem({ car, service: this });
 			listItems.set(car.id, carListItem);
 		});
 		this.#listItems = listItems;
@@ -49,10 +67,24 @@ export default class CarService {
 	#createCarSlots(numberOfSlots) {
 		const slots = new Map();
 		for(let i = 1; i <= numberOfSlots; i++) {
-			const slot = new CarSlotItem({ selector: `div[data-slot="${i}"]` });
+			const slot = new CarSlotItem({ selector: `div[data-slot="${i}"]`, service: this });
 			slots.set(i, slot);
 		}
 		this.#carSlots = slots;
+	}
+
+	#areSlotsFull() {
+		let slotsFull = true;
+		this.#carSlots.forEach((slot) => slotsFull &= !!slot.carId);
+		return slotsFull;
+	}
+
+	#activateRace() {
+		if (this.#areSlotsFull()) {
+			this.#race.classList.remove('hidden');
+		} else {
+			this.#race.classList.add('hidden');
+		}
 	}
 
 
