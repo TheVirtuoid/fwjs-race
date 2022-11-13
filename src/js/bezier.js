@@ -1,3 +1,4 @@
+import BezierPoint from './BezierPoint.js'
 import StaticClassError from './errors/StaticClassError.js'
 import Vector3 from './Vector3.js'
 
@@ -8,6 +9,9 @@ class bezier {
 	}
 
 	static build(trackSegment, sp0, sp1, vectorFactory, precision) {
+
+		if (!sp0 instanceof BezierPoint) throw new Error(sp0);
+		if (!sp1 instanceof BezierPoint) throw new Error(sp1);
 
 		// Compute the Bezier cubic curve points
 		const curve = {
@@ -77,14 +81,7 @@ class bezier {
 		// Interpolate the down vector
 		const down = curve.trackBanks[0].interpolate(curve.trackBanks[1], t).normalize();
 
-		return {
-			center: center,				// center line position at t
-			down: down,					// Down vector at t
-			forward: forward,			// Forward vector at t
-			medianWidth: medianWidth,
-			trackWidth: trackWidth,
-			wallHeight: wallHeight,
-		};
+		return new BezierPoint({ center, down, forward, medianWidth, trackWidth, wallHeight });
 	}
 
 	// Generate the Bezier cubic curve between t0 and t1
