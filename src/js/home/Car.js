@@ -90,4 +90,12 @@ export default class Car {
 		return this.#svg;
 	}
 
+	toObject() {
+		return {
+			name: this.#name,
+			color: this.#color,
+			id: this.#id
+		}
+	}
+
 }

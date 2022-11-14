@@ -47,4 +47,10 @@ export default class CarSlotItem {
 		this.#carId = null;
 		this.#service.addCarToList(carId);
 	}
+
+	toObject() {
+		return {
+			carId: this.#carId
+		}
+	}
 }

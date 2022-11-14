@@ -20,6 +20,7 @@ export default class CarService {
 		this.#createCars(carData);
 		this.#createListItems(this.#cars);
 		this.#createCarSlots(this.#numberOfSlots);
+		this.#race.addEventListener('click', this.#startRace.bind(this));
 	}
 
 	populateCarList(listElement) {
@@ -85,6 +86,18 @@ export default class CarService {
 		} else {
 			this.#race.classList.add('hidden');
 		}
+	}
+
+	#startRace(event) {
+		const slots = [];
+		this.#carSlots.forEach((slot, index) => {
+			slots.push({
+				slot: index,
+				car: this.#cars.get(slot.carId).toObject()
+			})
+		});
+		sessionStorage.setItem('FWJS-Race', JSON.stringify(slots));
+		window.location = '/race.html';
 	}
 
 

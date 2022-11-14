@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8" />
+		<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+		<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+		<meta name="Description" content="Fun With JavaScript Race Game - Presented by TheVirtuoid" />
+		<link rel="icon" href="/img/fwjs-race.ico" />
+		<!--<script src="js/race/styleloader.js" type="module"></script>-->
+		<title>Fun With JavaScript - Race Game</title>
+		<link rel="stylesheet" type="text/css" href="css/track-poc.css" title="ThisIsMe" />
+	</head>
+	<body>
+		<div id="countdown">
+			<span class="red">&#x25cf;</span>
+			<span class="red">&#x25cf;</span>
+			<span class="red">&#x25cf;</span>
+			<span class="red">&#x25cf;</span>
+			<span class="yellow">&#x25cf;</span>
+			<span class="green">&#x25cf;</span>
+		</div>
+<!--
+		<div id="track-selector-box">
+			<div>
+				<label for="trackFamilies">Choose a track:</label>
+				<select id="trackFamilies"></select>
+				<select id="trackMembers"></select>
+				<button type="button" id="go">GO!</button>
+				<button type="button" id="go-car">GO CAR!</button>
+				<button type="button" id="start">START!</button>
+			</div>
+			<div>
+				<label>Enable debugging for:</label>
+				<input type="checkbox" id="debugSegments" member="debugSegments"/>
+				<label for="debugSegments">Segments</label>
+				<input type="checkbox" id="debugGeneral" member="debug"/>
+				<label for="debugGeneral">Other</label>
+			</div>
+			<ul id="leader-board"></ul>
+		</div>
+-->
+		<div id="track-renderer">
+			<canvas id="renderCanvas"></canvas>
+		</div>
+		<div id="track-error">
+			<h1>Error</h1>
+			<p id="track-error-text"></p>
+		</div>
+	</body>
+<script src="/js/race/race.js" type="module"></script>
+</html>
