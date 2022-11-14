@@ -22,6 +22,11 @@ class bezier {
 		curve.points[3] = sp1.center;
 		curve.points[2] = curve.points[3].add(-sp1.backwardWeight, sp1.forward);
 
+		// If either up vector is not Vector3.up, disable the alternate down hack
+		if (Vector3.up.dot(sp0.up) !== 1 || Vector3.up.dot(sp1.up) !== 1) {
+			curve.useAlt = false;
+		}
+
 		// Fill out the curve
 		const bpt0 = bezier.#getPoint(curve, 0);
 		const bpt1 = bezier.#getPoint(curve, 1);
@@ -75,7 +80,7 @@ class bezier {
 		const medianWidth = olt * curve.medianWidths[0] + t * curve.medianWidths[1];
 
 		// Interpolate the down vector
-		const down = curve.trackBanks[0].interpolate(curve.trackBanks[1], t).normalize();
+		const down = bezier.#interpolateDownHack(curve, forward, t);
 
 		return { center, down, forward, medianWidth, trackWidth, wallHeight };
 	}
@@ -111,6 +116,23 @@ class bezier {
 		} else {
 			bezier.#interpolate(trackSegment, curve, t0, midtime, bpt0, bmp, vectorFactory, precision);
 			bezier.#interpolate(trackSegment, curve, midtime, t1, bmp, bpt1, vectorFactory, precision);
+		}
+	}
+
+	static #interpolateDownHack(curve, forward, t) {
+
+		if (curve.useAlt === undefined && Math.abs(Vector3.up.dot(forward)) > .9) {
+			curve.useAlt = true;
+		}
+
+		if (!curve.useAlt) {
+			return curve.trackBanks[0].interpolate(curve.trackBanks[1], t).normalize();
+		} else {
+			const epForward = (t > .5 ?
+				curve.points[1].add(-1, curve.points[0]) :
+				curve.points[3].add(-1, curve.points[2]));
+			const axis = epForward.cross(forward).normalize();
+			return axis.rotate(forward, -90);
 		}
 	}
 }
