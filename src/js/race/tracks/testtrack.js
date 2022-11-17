@@ -181,6 +181,7 @@ export function testTrack(tracks, cars, scene) {
 			}
 		},
 	});
+/*
 	tracks.register({
 		sibling: track2,
 		member: "45&#176; bank",
@@ -202,6 +203,7 @@ export function testTrack(tracks, cars, scene) {
 						forwardWeight: track2.curveTop.forwardWeight,
 						trackBank: 45
 					},
+*/
 /*					{
 						backwardWeight: track2.curveLeft.backwardWeight,
 						center: track2.curveLeft.center,
@@ -217,54 +219,11 @@ export function testTrack(tracks, cars, scene) {
 						trackBank: 10,
 						trackWidth
 					},*/
+/*
 					jump.runout
 				],
 			}],
 		},
 	});
-	tracks.register({
-		sibling: track2,
-		member: "Using spiral (cheat -.1)",
-		track: {
-			options: { trackWidth },
-			segments: [ jump.launchSegment, {
-				points: [
-					jump.catchStart,
-					jump.catchEnd,
-					{
-						type: 'spiral',
-						endsAt: {
-							center: track2.curveEnd.center,
-							forward: track2.curveEnd.forward
-						},
-						rotate: 'left',
-					},
-					jump.runout
-				],
-			}],
-		},
-	});
-	tracks.register({
-		sibling: track2,
-		member: "Using spiral with 23&#176; bank",
-		track: {
-			segments: [ jump.launchSegment, {
-				points: [
-					jump.catchStart,
-					jump.catchEnd,
-					{
-						type: 'spiral',
-						endsAt: {
-							center: track2.curveEnd.center,
-							forward: track2.curveEnd.forward,
-						},
-						rotate: 'left',
-						trackBank: parametricBank,
-					},
-					jump.runout
-				],
-			}],
-		},
-	});
-
+*/
 }

@@ -7,6 +7,7 @@ import TrackDisplay from './utilities/TrackDisplay.js'
 import {testTrack} from "./tracks/testtrack";
 import Car2 from "./../models/Car2";
 import CarOnTrack from "../models/CarOnTrack";
+import {Color3} from "@babylonjs/core";
 
 //======================================================================
 // WINDOW INITIALIZATION
@@ -17,13 +18,19 @@ function registerCallback(track) {
 	// debugDisplay.register(track);
 }
 
-const carScale = .25
+const scale = .25;
+const wheelType = 'ellipse';
 const cars = new Map();
 
+// new Car2({ scale: carScale, name: 'Green Ghost', color: new Color3.Green(), wheelType: 'ellipse' }),
+let startingCardId = '';
 const slots = JSON.parse(sessionStorage.getItem('FWJS-Race'));
 slots.forEach((slot) => {
 	const { name, id, color } = slot.car;
-	cars.set(id, new CarOnTrack({ name, id, color }));
+	cars.set(id, new CarOnTrack({ scale, name, id, color, wheelType }));
+	if (slot.slot === 1) {
+		startingCardId = id;
+	}
 });
 
 const gameEngine = new BabylonAdapter();
@@ -52,8 +59,9 @@ gameEngine.ready();
 testTrack(trackDisplay, cars, scene);
 trackDisplay.start();
 const selectedTrack = trackDisplay.getSelectedTrack();
-// selectedTrack.gate.dropCars();
-// gameEngine.camera.lockedTarget = cars[0].chassis;
+console.log(selectedTrack);
+selectedTrack.gate.dropCars();
+gameEngine.camera.lockedTarget = cars.get(startingCardId).chassis;
 
 
 const leaderBoard = document.getElementById('leader-board');

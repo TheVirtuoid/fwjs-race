@@ -66,6 +66,7 @@ export default class CarOnTrack {
 	#rotate;
 	#distanceTravelled;
 	#previousPosition;
+	#baseColor;
 
 	constructor(args = {}) {
 		const { scale = 1, scene, position, name, color, wheelType = 'ellipse', rotate = 0 }= args;
@@ -73,7 +74,9 @@ export default class CarOnTrack {
 		this.#scene = scene;
 		this.#position = position;
 		this.#name = name;
-		this.#color = color;
+		this.#baseColor = color;
+		const { red, green, blue } = this.#hashToColor(color);
+		this.#color = new Color3(red, green, blue);
 		this.#wheelType = wheelType;
 		this.#rotate = rotate * Math.PI / 180;
 		this.#wheelParameters = wheelParameters.map((wheelParameter) => {
@@ -297,6 +300,13 @@ export default class CarOnTrack {
 			wheelBase.physicsImpostor.addJoint(wheel.physicsImpostor, joint);
 		});
 		return { wheelBase, wheels: wheels.map((wheelData) => wheelData.wheel), chassis, box };
+	}
+
+	#hashToColor(hash) {
+		const red = parseInt(hash.substring(1, 3), 16);
+		const green = parseInt(hash.substring(3, 5), 16);
+		const blue = parseInt(hash.substring(5, 7), 16);
+		return { red, green, blue };
 	}
 
 }
