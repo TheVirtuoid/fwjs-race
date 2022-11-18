@@ -10,9 +10,10 @@ export default (args) => {
 	const riseRate = Math.tan(slope * Math.PI / 180);
 	let maxCarLength = -1;
 	let length = 0;
-	cars.forEach((car, index) => {
+	cars.forEach((car) => {
+		const slot = car.slot - 1;
 		maxCarLength = Math.max(maxCarLength, car.length);
-		if (index % 2 !== 0) {
+		if (slot % 2 !== 0) {
 			rows.push(maxCarLength);
 			length += maxCarLength;
 			maxCarLength = -1;
@@ -31,16 +32,17 @@ export default (args) => {
 	const dropCars = () => {
 		gateFront.position.y += 1;
 		gateBack.position.y += 1;
-		cars.forEach((car, index) => {
+		cars.forEach((car) => {
+			const slot = car.slot - 1;
 			const rotate = slope;
 			car.junk();
 			let x, y;
-			const z = end.center.z + (index % 2 === 0 ? -car.width/2 - .25 : car.width/2 + .25);
-			if (index <= 1) {
-				x = end.center.x + car.length / 2;
+			const z = end.center.z + (slot % 2 === 0 ? -car.width/2 - .25 : car.width/2 + .25);
+			if (slot <= 1) {
+				x = end.center.x + car.length / 2 + .25;
 				y = end.center.y + (car.length + gateWidth) * riseRate;
 			} else {
-				x = end.center.x + car.length + gateWidth * 2 + spacing * 4;
+				x = end.center.x + car.length + gateWidth * 2 + spacing * 4 + .25;
 				y = end.center.y + (car.length * 2 + gateWidth * 2) * riseRate;
 			}
 			car.build({ rotate, position: new Vector3(x, y, z), scene });

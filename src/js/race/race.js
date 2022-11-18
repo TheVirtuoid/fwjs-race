@@ -1,3 +1,5 @@
+import styles from "./../../css/race.pcss";
+
 import BabylonAdapter from './utilities/BabylonAdapter.js'
 
 import DebugDisplay from './utilities/DebugDisplay.js'
@@ -8,6 +10,7 @@ import {testTrack} from "./tracks/testtrack";
 import Car2 from "./../models/Car2";
 import CarOnTrack from "../models/CarOnTrack";
 import {Color3} from "@babylonjs/core";
+import countdown from "./environment/countdown";
 
 //======================================================================
 // WINDOW INITIALIZATION
@@ -23,13 +26,13 @@ const wheelType = 'ellipse';
 const cars = new Map();
 
 // new Car2({ scale: carScale, name: 'Green Ghost', color: new Color3.Green(), wheelType: 'ellipse' }),
-let startingCardId = '';
+let startingCarId = '';
 const slots = JSON.parse(sessionStorage.getItem('FWJS-Race'));
 slots.forEach((slot) => {
 	const { name, id, color } = slot.car;
-	cars.set(id, new CarOnTrack({ scale, name, id, color, wheelType }));
+	cars.set(id, new CarOnTrack({ slot: slot.slot, scale, name, id, color, wheelType }));
 	if (slot.slot === 1) {
-		startingCardId = id;
+		startingCarId = id;
 	}
 });
 
@@ -61,7 +64,7 @@ trackDisplay.start();
 const selectedTrack = trackDisplay.getSelectedTrack();
 console.log(selectedTrack);
 selectedTrack.gate.dropCars();
-gameEngine.camera.lockedTarget = cars.get(startingCardId).chassis;
+gameEngine.camera.lockedTarget = cars.get(startingCarId).chassis;
 
 
 const leaderBoard = document.getElementById('leader-board');
@@ -85,6 +88,8 @@ const renderLoopCallback = () => {
 
 }
 gameEngine.startRenderLoop(renderLoopCallback);
+const lights = countdown();
+lights.start();
 
 /*
 

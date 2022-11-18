@@ -7,11 +7,13 @@ import {
 	Vector3
 } from "@babylonjs/core";
 
+const zeroMass = false;
+
 const defaults = {
 	wheel: {
 		diameter: 1.5,
 		height: 1,
-		mass: 23
+		mass: zeroMass ? 0 : 23
 	},
 /*	wheelBase: {
 		depth: .25,
@@ -23,7 +25,7 @@ const defaults = {
 		depth: .1,
 		width: .5,
 		height: .5,
-		mass: 1302
+		mass: zeroMass ? 0 : 1302
 	},
 	chassis: {
 		depth: 3,
@@ -35,7 +37,7 @@ const defaults = {
 		depth: 4,
 		height: 2,
 		width: 8,
-		mass: 200
+		mass: zeroMass ? 0 : 200
 	}
 };
 
@@ -67,9 +69,10 @@ export default class CarOnTrack {
 	#distanceTravelled;
 	#previousPosition;
 	#baseColor;
+	#slot;
 
 	constructor(args = {}) {
-		const { scale = 1, scene, position, name, color, wheelType = 'ellipse', rotate = 0 }= args;
+		const { slot, scale = 1, scene, position, name, color, wheelType = 'ellipse', rotate = 0 }= args;
 		this.#scale = scale;
 		this.#scene = scene;
 		this.#position = position;
@@ -79,6 +82,7 @@ export default class CarOnTrack {
 		this.#color = new Color3(red, green, blue);
 		this.#wheelType = wheelType;
 		this.#rotate = rotate * Math.PI / 180;
+		this.#slot = slot;
 		this.#wheelParameters = wheelParameters.map((wheelParameter) => {
 			let { wheelName, pivot } = wheelParameter;
 			return { wheelName, pivot: this.#scaleVector3(pivot) };
@@ -186,6 +190,10 @@ export default class CarOnTrack {
 
 	get position () {
 		return this.#wheelBase.position;
+	}
+
+	get slot () {
+		return this.#slot;
 	}
 
 	get distanceTravelled () {
@@ -303,9 +311,9 @@ export default class CarOnTrack {
 	}
 
 	#hashToColor(hash) {
-		const red = parseInt(hash.substring(1, 3), 16);
-		const green = parseInt(hash.substring(3, 5), 16);
-		const blue = parseInt(hash.substring(5, 7), 16);
+		const red = parseInt(hash.substring(1, 3), 16) / 256;
+		const green = parseInt(hash.substring(3, 5), 16) / 256;
+		const blue = parseInt(hash.substring(5, 7), 16) / 256;
 		return { red, green, blue };
 	}
 
