@@ -3,22 +3,27 @@ export default (args = {}) => {
 	let index = 0;
 	const dom = document.getElementById('countdown')
 	const start = () => {
-		index = 0;
-		const lights = dom.querySelectorAll('span');
-		lights[index].classList.remove('off');
-		const finalLight = lights.length - 1;
-		const timer = setInterval(() => {
-			lights.forEach((light) => light.classList.add('off'));
-			index++;
+		return new Promise((resolve, reject) => {
+			index = 0;
+			const lights = dom.querySelectorAll('span');
 			lights[index].classList.remove('off');
-			if (index === finalLight) {
-				clearInterval(timer);
-				setTimeout(() => {
-					dom.classList.add('hidden');
-				}, 3000);
-			}
-		}, 1000)
+			const finalLight = lights.length - 1;
+			const timer = setInterval(() => {
+				lights.forEach((light) => light.classList.add('off'));
+				index++;
+				lights[index].classList.remove('off');
+				if (index === finalLight) {
+					clearInterval(timer);
+					resolve(true);
+				}
+			}, 1000)
+		});
 	}
 
-	return { start };
+	const off = () => {
+		dom.classList.add('hidden');
+		return Promise.resolve();
+	}
+
+	return { start, off };
 }

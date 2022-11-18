@@ -181,49 +181,4 @@ export function testTrack(tracks, cars, scene) {
 			}
 		},
 	});
-/*
-	tracks.register({
-		sibling: track2,
-		member: "45&#176; bank",
-		track: {
-			options: { trackWidth },
-			segments: [ jump.launchSegment, {
-				points: [
-					jump.catchStart,
-					{
-						center: track2.curveStart.center,
-						forward: track2.curveStart.forward,
-						forwardWeight: track2.curveStart.forwardWeight,
-						trackBank: 10
-					},
-					{
-						backwardWeight: track2.curveTop.backwardWeight,
-						center: track2.curveTop.center,
-						forward: track2.curveTop.forward,
-						forwardWeight: track2.curveTop.forwardWeight,
-						trackBank: 45
-					},
-*/
-/*					{
-						backwardWeight: track2.curveLeft.backwardWeight,
-						center: track2.curveLeft.center,
-						forward: track2.curveLeft.forward,
-						forwardWeight: track2.curveLeft.forwardWeight,
-						trackBank: 45,
-						trackWidth
-					},
-					{
-						backwardWeight: track2.curveEnd.backwardWeight,
-						center: track2.curveEnd.center,
-						forward: track2.curveEnd.forward,
-						trackBank: 10,
-						trackWidth
-					},*/
-/*
-					jump.runout
-				],
-			}],
-		},
-	});
-*/
 }

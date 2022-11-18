@@ -50,12 +50,18 @@ export default (args) => {
 	};
 
 	const startRace = () => {
-		cars.forEach((car, index) => {
-			const distance = index <= 1 ? 0 : Vector3.Distance(car.position, cars[index - 2].position) * -1;
-			car.resetDistanceTravelled(distance);
+		return new Promise((resolve, reject) => {
+			cars.forEach((car) => {
+				const slot = car.slot - 1;
+				// const distance = slot <= 1 ? 0 : Vector3.Distance(car.position, cars[slot - 2].position) * -1;
+				// car.resetDistanceTravelled(distance);
+			});
+			gateBack.position.y -= 1;
+			gateFront.position.y -= 1;
+			setTimeout(() => {
+				resolve(true);
+			}, 3000);
 		});
-		gateBack.position.y -= 1;
-		gateFront.position.y -= 1;
 	}
 
 	const gate = {};
