@@ -1,3 +1,24 @@
+/*import Point from "./Point";
+
+export default class Straight extends Point {
+	#endsAt;
+	#length;
+	#startsAt;
+	#startingWeight;
+
+	constructor(args = {}) {
+		super(args);
+		const { endsAt, length, startsAt, startingWeight } = args;
+		this.#endsAt = endsAt;
+		this.#length = length;
+		this.#startsAt = startsAt;
+		this.#startingWeight = startingWeight;
+	}
+
+	get endsAt() {
+		return this.#endsAt;
+	}
+}*/
 import Section from "./Section";
 
 export default class Straight extends Section {

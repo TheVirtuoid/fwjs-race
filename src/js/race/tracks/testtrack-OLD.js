@@ -1,7 +1,6 @@
 import Vector3 from '../utilities/Vector3.js'
 import startingGate from "./pieces/startingGate";
 import Straight from "./pieces/Straight";
-import Track from "./pieces/Track";
 
 const posX = Vector3.right;
 const negX = Vector3.left;
@@ -34,35 +33,11 @@ const trackStart = { x: 20, y:15, z: 0};
 
 export function testTrack(tracks, cars, scene) {
 
-
-/*	const track = new Track();
-	const segment = track.addSegment();
-
-	const gate = startingGate({ cars, startingPosition: trackStart });
-	track.addSegment(gate);
-
-	tracks.register(track.toObject());*/
-
 	// See https://spencermortensen.com/articles/bezier-circle/
 	// If we want a closer approximation, we would need to break the
 	// convention that backward = -forward and allow backward to be
 	// forward rotated 180 degrees around down.
 	const circleWeight = 0.5519150244935105707435627;
-
-
-	//----------------------------------------------------------------------
-	// Common launch and jump points
-
-/*	const gate = startingGate({
-		slope: startingGateSlope,
-		startingPosition: trackStart,
-		cars,
-		scene
-	});
-
-	const firstRun = {
-
-	}*/
 
 
 	//----------------------------------------------------------------------
@@ -75,9 +50,18 @@ export function testTrack(tracks, cars, scene) {
 		scene
 	});
 
-	const track1 = {};
+/*	console.log(gate.track.end);
 
-
+	const firstRunStart = { center: gate.track.end.center };
+	const firstRunEnd = {
+		center: {
+			x: firstRunStart.center.x - firstRunLength,
+			y: firstRunStart.center.y - firstRunLength * firstRunRiseRate,
+			z: firstRunStart.center.z
+		}
+	}
+	const firstRun = new Straight({ start: firstRunStart, end: firstRunEnd, forwardWeight: 1.1 });
+	console.log(firstRun);*/
 
 	const jump = {
 		descent: 1,
@@ -175,7 +159,6 @@ export function testTrack(tracks, cars, scene) {
 				y: this.curveLeft.center.y - jump.descent / 4,
 				z: this.curveLeft.center.z + jump.radius
 			}
-			console.log(gate);
 			const points = [
 				gate.track.start,
 				gate.track.end,

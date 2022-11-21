@@ -1,5 +1,32 @@
 import Straight from "./Straight";
 import {Color3, MeshBuilder, PhysicsImpostor, Vector3} from "@babylonjs/core";
+import Section from "./Section";
+import Segment from "./Segment";
+
+const gateWidth = .25;
+const carSpacing = .25;
+
+/*export default (args = {}) => {
+	const { cars, startingPosition } = args;
+
+	const lowerSectionCars = [...cars].filter((car) => car.slot <= 2);
+	const upperSectionCars = [...cars].filter((car) => car.slot >= 3);
+
+	const upperSectionLength = Math.max(...upperSectionCars.map((car) => car.length));
+	const lowerSectionLength = Math.max(...lowerSectionCars.map((car) => car.length));
+
+	const upperSection = Section.createStraight({
+		startsAt: startingPosition,
+		length: upperSectionLength
+	});
+
+
+	const gate = new Section();
+	gate.addPoint(upperSection);
+	console.log(gate.toObject());
+	return gate.toObject();
+}*/
+
 
 export default (args) => {
 	const { slope, startingPosition, cars, scene } = args;

@@ -1,3 +1,39 @@
+/*
+import Point from "./Point";
+import Straight from "./Straight";
+
+export default class Section {
+	#points;
+
+	constructor() {
+		this.#points = []
+	}
+
+	static createPoint(args = {}) {
+		return new Point();
+	}
+
+	static createStraight(args = {}) {
+		return new Straight();
+	}
+
+	static createSpiral(args = {}) {
+		// return new Spiral();
+	}
+
+	addPoint(point) {
+		this.#points.push(point);
+		return point;
+	}
+
+	toObject() {
+		return {
+			points: this.#points
+		}
+	}
+}
+*/
+
 export default class Section {
 	#start;
 	#end;

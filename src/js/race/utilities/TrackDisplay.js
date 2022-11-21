@@ -15,6 +15,8 @@ class TrackDisplay {
 	#start;
 	#tracks;
 
+	#track;
+
 	#familyOption;
 	#memberOption;
 
@@ -29,8 +31,10 @@ class TrackDisplay {
 		this.#familySelector.addEventListener("change", () => this.#onFamilyChanged());
 		this.#memberSelector.addEventListener("change", () => this.#onMemberChanged());*/
 
-		this.#families = {};
+		/*this.#families = {};
 		this.#tracks = {};
+		this.#meshes = [];*/
+
 		this.#meshes = [];
 	}
 
@@ -41,8 +45,9 @@ class TrackDisplay {
 
 		try {
 			// const key = this.#memberSelector.value;
-			const key = this.#memberOption.value;
-			const track = this.#tracks[key];
+			/*const key = this.#memberOption.value;
+			const track = this.#tracks[key];*/
+			const track = this.#track.track;
 			const settings = track.options ? track.options : {};
 
 			// Produce the track segments
@@ -98,57 +103,56 @@ class TrackDisplay {
 	getTrackStart() { return this.#start }
 
 	register(track) {
-
 		// Invoke function if not an object
 		if (typeof(track) === 'function') track = track();
 
 		// Perform late initialization
 		if (track.init) track.init();
-
 		// Get the family
-		if (!track.family && !track.sibling) {
+		/*if (!track.family && !track.sibling) {
 			throw new Error("A track must define either 'family' or 'sibling'")
-		}
-		if ((track.family || track.sibling) && (track.name || track.desc)) {
+		}*/
+		/*if ((track.family || track.sibling) && (track.name || track.desc)) {
 			throw new Error("A track defining 'family' or 'sibling' cannot define 'name' or 'desc'")
 		}
 		if (track.sibling && !track.sibling.family) {
 			throw new Error(`A 'sibling' track, here '${track.sibling}', must define 'family'`)
-		}
-		const family = track.family ? track.family : track.sibling.family;
-		const familyKey = TrackDisplay.#removeSpaces(family);
+		}*/
+		/*const family = track.family ? track.family : track.sibling.family;
+		const familyKey = TrackDisplay.#removeSpaces(family);*/
 
 		// Get the member
-		if (track.sibling && !track.member) throw "A track defining 'sibling' must also define 'member'";
+		/*if (track.sibling && !track.member) throw "A track defining 'sibling' must also define 'member'";
 		if (track.sibling && track.member && track.member === TrackDisplay.#originalMember) {
 			throw new Error(`A track defining 'sibling' cannot have 'member' set to '${TrackDisplay.#originalMember}'`)
 		}
 		const member = track.member ? track.member : TrackDisplay.#originalMember;
 		const memberKey = familyKey + TrackDisplay.#removeSpaces(member);
-		const key = familyKey + memberKey;
+		const key = familyKey + memberKey;*/
 
 		// Add family if necessary
-		if (!this.#families[familyKey]) {
+		/*if (!this.#families[familyKey]) {
 			this.#families[familyKey] = true;
 
 			// Add the family to the family list
-			/*const fsOption = document.createElement("option");
+			/!*const fsOption = document.createElement("option");
 			fsOption.setAttribute('value', familyKey);
-			fsOption.innerHTML = family;*/
+			fsOption.innerHTML = family;*!/
 			// this.#familySelector.appendChild(fsOption);
 			this.#familyOption = { value: familyKey };
-		}
+		}*/
 
 		// Add to member selector
 		/*const msOption = document.createElement("option");
 		msOption.setAttribute('value', key);
 		msOption.setAttribute('family', familyKey);
 		msOption.innerHTML = member;*/
-		this.#memberOption = { value: key, family: familyKey };
+		// this.#memberOption = { value: key, family: familyKey };
 		// this.#memberSelector.appendChild(msOption);
 
 		// Add the track to the tracks array
-		this.#tracks[key] = track.track;
+		// this.#tracks[key] = track.track;
+		this.#track = track;
 		return track;
 	}
 
@@ -156,7 +160,8 @@ class TrackDisplay {
 		/*if (!this.#familySelector || !this.#memberSelector) {
 			throw new Error("Must invoke setSelectors first")
 		}*/
-		this.#onFamilyChanged()
+		// this.#onFamilyChanged()
+		this.createMesh();
 	}
 
 	#onFamilyChanged() {
@@ -170,17 +175,18 @@ class TrackDisplay {
 			if (match && firstMatch === -1) firstMatch = i;
 		}
 		if (firstMatch !== -1) this.#memberSelector.selectedIndex = firstMatch;*/
-		this.createMesh();
+		// this.createMesh();
 	}
 
 	#onMemberChanged() { this.createMesh() }
 
 	getSelectedTrack() {
 		// return this.#tracks[this.#memberSelector.value];
-		return this.#tracks[this.#memberOption.value];
+		// return this.#tracks[this.#memberOption.value];
+		return this.#track.track;
 	}
 
-	static #removeSpaces(value) { return value.replace(/\s/g, '') }
+	// static #removeSpaces(value) { return value.replace(/\s/g, '') }
 }
 
 export default TrackDisplay

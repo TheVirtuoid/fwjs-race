@@ -15,7 +15,7 @@ import countdown from "./environment/countdown";
 //======================================================================
 // WINDOW INITIALIZATION
 
-let errorDisplay, debugDisplay;
+let debugDisplay;
 
 function registerCallback(track) {
 	// debugDisplay.register(track);
@@ -24,6 +24,12 @@ function registerCallback(track) {
 const scale = .2;
 const wheelType = 'ellipse';
 const cars = new Map();
+
+// Error Display
+const errorDisplay = new ErrorDisplay(
+		'track-error', 'track-error-text',
+		'',	// Disable ids
+		[]);
 
 // new Car2({ scale: carScale, name: 'Green Ghost', color: new Color3.Green(), wheelType: 'ellipse' }),
 let startingCarId = '';
@@ -62,6 +68,7 @@ gameEngine.ready();
 testTrack(trackDisplay, cars, scene);
 trackDisplay.start();
 const selectedTrack = trackDisplay.getSelectedTrack();
+console.log(selectedTrack);
 selectedTrack.gate.dropCars();
 gameEngine.camera.lockedTarget = cars.get(startingCarId).chassis;
 
