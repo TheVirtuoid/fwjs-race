@@ -24,6 +24,7 @@ function registerCallback(track) {
 const scale = .2;
 const wheelType = 'ellipse';
 const cars = new Map();
+const runCars = false;
 
 // Error Display
 const errorDisplay = new ErrorDisplay(
@@ -68,9 +69,10 @@ gameEngine.ready();
 testTrack(trackDisplay, cars, scene);
 trackDisplay.start();
 const selectedTrack = trackDisplay.getSelectedTrack();
-console.log(selectedTrack);
 selectedTrack.gate.dropCars();
-gameEngine.camera.lockedTarget = cars.get(startingCarId).chassis;
+if (runCars) {
+	gameEngine.camera.lockedTarget = cars.get(startingCarId).chassis;
+}
 
 
 const leaderBoard = document.getElementById('leader-board');
@@ -94,10 +96,12 @@ const renderLoopCallback = () => {
 
 }
 gameEngine.startRenderLoop(renderLoopCallback);
-const lights = countdown();
-lights.start()
-	.then(selectedTrack.gate.startRace)
-	.then(lights.off);
+if (runCars) {
+	const lights = countdown();
+	lights.start()
+			.then(selectedTrack.gate.startRace)
+			.then(lights.off);
+}
 
 /*
 

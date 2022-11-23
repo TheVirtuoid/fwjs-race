@@ -44,38 +44,7 @@ export function testTrack(tracks, cars, scene) {
 		scene
 	});
 
-	// const firstRun = Section.createStraight({ length: 80 });
-	const firstRun = Section.createStraight({
-		start: {
-			center: {
-				x: gate.track.end.center.x,
-				y: gate.track.end.center.y,
-				z: gate.track.end.center.z
-			}
-		},
-		endsAt: {
-			x: gate.track.end.center.x - 40,
-			y: gate.track.end.center.y - 15,
-			z: gate.track.end.center.z
-		}
-	});
-
-	const curveOne = Section.createPoint({
-		start: gate.track.end,
-		forward: negX,
-		end: {
-			center: {
-				x: gate.track.end.x - 10,
-				y: gate.track.end.y - 5,
-				z: gate.track.end.z
-			}
-		},
-		backwardWeight: 1,
-		forwardWeight: circleWeight * trackRadius,
-		trackBank: 23
-	});
-
-	console.log(firstRun);
+	const firstRun = Section.createStraight({ length: 40 });
 
 	const jump = {
 		descent: 1,
@@ -146,16 +115,10 @@ export function testTrack(tracks, cars, scene) {
 			forwardWeight: circleWeight * jump.radius,
 		},
 		curveStart: {
-			// center: jump.catchEnd.center,
-			center: {
-				x: firstRun.endsAt.x - 10,
-				y: firstRun.endsAt.y - 3.75,
-				z: firstRun.endsAt.z
-			},
-			forward: negX,
-			//forwardWeight: circleWeight * jump.radius,
-			forwardWeight: trackRadius,
-			//trackBank: 23
+			center: jump.catchEnd.center,
+			forward: jump.catchEnd.forward,
+			forwardWeight: circleWeight * jump.radius,
+			trackBank: 23
 		},
 		curveTop: {
 			backwardWeight: circleWeight * jump.radius,
@@ -166,9 +129,9 @@ export function testTrack(tracks, cars, scene) {
 
 		init: function() {
 			this.curveTop.center = {
-				x: this.curveStart.center.x - trackRadius,
-				y: this.curveStart.center.y - trackRadius / 2.667,
-				z: this.curveStart.center.z - trackRadius,
+				x: this.curveStart.center.x - jump.radius,
+				y: this.curveStart.center.y - jump.descent * 4,
+				z: this.curveStart.center.z - jump.radius,
 			}
 			this.curveLeft.center = {
 				x: this.curveTop.center.x + jump.radius,
@@ -183,15 +146,14 @@ export function testTrack(tracks, cars, scene) {
 
 			const points = [
 				gate.track.start,
-				// gate.track.end,
+				gate.track.end,
 				firstRun,
-				// curveOne,
 				// jump.catchStart,
 				this.curveStart,
 				this.curveTop,
 				// this.curveLeft,
 				// this.curveEnd,
-				// jump.runout,
+				jump.runout,
 			];
 			this.track = {
 				gate,

@@ -38,14 +38,18 @@ export default class Section {
 	#start;
 	#end;
 	#type;
-	#forwardWeight
+	#forwardWeight;
+	#length;
+	#endsAt;
 
 	constructor(args = {}) {
-		const { start, end, type, forwardWeight } = args;
+		const { start, end, type, forwardWeight, length, endsAt } = args;
 		this.#start = start;
 		this.#end = end;
 		this.#type = type;
+		this.#length = length;
 		this.#forwardWeight = forwardWeight;
+		this.#endsAt = endsAt;
 	}
 
 	get start () {
@@ -54,6 +58,28 @@ export default class Section {
 
 	get end () {
 		return this.#end;
+	}
+
+	get length() {
+		return this.#length;
+	}
+
+	get endsAt() {
+		return this.#endsAt;
+	}
+
+	get endPosition() {
+		return {
+			center: {
+				x: this.end.center.x,
+				y: this.end.center.y,
+				z: this.end.center.z
+			}
+		}
+	}
+
+	get type() {
+		return this.#type;
 	}
 
 	toObject() {
@@ -65,7 +91,24 @@ export default class Section {
 		}
 	}
 
-	endsAt() {
-		return this.#end.center;
+	static createStraight(args) {
+		const type = 'straight';
+		const section = new Section({ ...args, type });
+		const { start, end } = section;
+
+		if (start && end) {
+			start.forward = {
+				x: end.center.x - start.center.x,
+				y: end.center.y - start.center.y,
+				z: end.center.z - start.center.z,
+			};
+			end.forward = start.forward;
+		}
+		return section;
+	}
+
+	static createPoint(args) {
+		const section = new Section(args);
+		return section;
 	}
 }

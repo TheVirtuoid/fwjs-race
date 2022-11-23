@@ -56,6 +56,7 @@ export default (args) => {
 		}
 	}
 
+
 	const dropCars = () => {
 		gateFront.position.y += 1;
 		gateBack.position.y += 1;
@@ -92,7 +93,7 @@ export default (args) => {
 	}
 
 	const gate = {};
-	gate.track = new Straight({ start, end, forwardWeight: 1.1 });
+	gate.track = Section.createStraight({ start, end, forwardWeight: 1.1 });
 	gate.dropCars = dropCars;
 	gate.startRace = startRace;
 
