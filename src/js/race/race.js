@@ -4,7 +4,7 @@ import BabylonAdapter from './utilities/BabylonAdapter.js'
 
 import DebugDisplay from './utilities/DebugDisplay.js'
 import ErrorDisplay from './utilities/ErrorDisplay.js'
-import TrackDisplay from './utilities/TrackDisplay.js'
+import RaceTrackDisplay from './utilities/RaceTrackDisplay.js'
 
 import {testTrack} from "./tracks/testtrack";
 import Car2 from "./../models/Car2";
@@ -24,12 +24,12 @@ function registerCallback(track) {
 const scale = .2;
 const wheelType = 'ellipse';
 const cars = new Map();
-const runCars = false;
+const runCars = true;
 
 // Error Display
 const errorDisplay = new ErrorDisplay(
 		'track-error', 'track-error-text',
-		'',	// Disable ids
+		[],	// Disable ids
 		[]);
 
 // new Car2({ scale: carScale, name: 'Green Ghost', color: new Color3.Green(), wheelType: 'ellipse' }),
@@ -46,24 +46,18 @@ slots.forEach((slot) => {
 const gameEngine = new BabylonAdapter();
 gameEngine.setCanvas("renderCanvas");
 
-const trackDisplay = new TrackDisplay(
-			"trackFamilies", "trackMembers", gameEngine, errorDisplay,
+const trackDisplay = new RaceTrackDisplay(
+		gameEngine,
+		errorDisplay,
 			() => {
 				cars.forEach((car) => car.junk());
 				}, registerCallback);
-		/*document.getElementById('go-car').addEventListener('click', () => {
-			const selectedTrack = trackDisplay.getSelectedTrack();
-			selectedTrack.gate.dropCars();
-			gameEngine.camera.lockedTarget = cars[0].chassis;
-		});
-		document.getElementById('start').addEventListener('click', () => {
-			const selectedTrack = trackDisplay.getSelectedTrack();
-			selectedTrack.gate.startRace();
-		});*/
 
 const engine = gameEngine.createDefaultEngine();
-await gameEngine.initializePhysics();
+await BabylonAdapter.initializePhysics();
+// TODO Abstract out the scene, camera
 const scene = gameEngine.createScene();
+const camera = scene.cameras[0];
 gameEngine.ready();
 
 testTrack(trackDisplay, cars, scene);
@@ -71,7 +65,7 @@ trackDisplay.start();
 const selectedTrack = trackDisplay.getSelectedTrack();
 selectedTrack.gate.dropCars();
 if (runCars) {
-	gameEngine.camera.lockedTarget = cars.get(startingCarId).chassis;
+	camera.lockedTarget = cars.get(startingCarId).chassis;
 }
 
 

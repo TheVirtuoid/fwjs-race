@@ -292,7 +292,7 @@ export default class CarOnTrack {
 			switch(this.#wheelType) {
 				case 'round':
 				case 'ellipse':
-					wheel.physicsImpostor = new PhysicsImpostor(wheel, PhysicsImpostor.SphereImpostor, { mass: wheelMass, friction: 3, restitution: 0 });
+					wheel.physicsImpostor = new PhysicsImpostor(wheel, PhysicsImpostor.SphereImpostor, { mass: wheelMass, friction: 30, restitution: 0 });
 					break;
 				case 'cylinder':
 					wheel.physicsImpostor = new PhysicsImpostor(wheel, PhysicsImpostor.CylinderImpostor, { mass: wheelMass, friction: 1, restitution: 0 });
