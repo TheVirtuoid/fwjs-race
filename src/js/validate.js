@@ -16,17 +16,17 @@ class validate {
 		throw new TypeError(`${objectName}.${memberName} must be 'true' or 'false'`);
 	}
 
-	static nonNegativeInteger(object, memberName, objectName, defaultValue) {
-		const value = object[memberName];
-		if (is.default(value)) return defaultValue;
-		if (is.integer(value) && value >= 0) return value;
-		throw new RangeError(`${objectName}.${memberName} number be a non-negative integer`);
-	}
-
 	static jsonOrObject(o, name) {
 		if (is.string(o)) return JSON.parse(o);
 		if (is.object(o)) return o;
 		throw new TypeError(`${name} must be an JSON string or object`);
+	}
+
+	static nonNegativeInteger(object, memberName, objectName, defaultValue) {
+		const value = object[memberName];
+		if (is.default(value)) return defaultValue;
+		if (is.integer(value) && value >= 0) return value;
+		throw new RangeError(`${objectName}.${memberName} must be a non-negative integer`);
 	}
 
 	static object(object, objectName) {
@@ -37,7 +37,7 @@ class validate {
 	static positiveNumber(object, memberName, objectName) {
 		const value = object[memberName];
 		if (is.positiveNumber(value)) return value;
-		throw new RangeError(`${objectName}.${memberName} number be a positive number`);
+		throw new RangeError(`${objectName}.${memberName} must be a positive number`);
 	}
 
 	static sizedArray(object, memberName, objectName, minElements) {
@@ -57,10 +57,9 @@ class validate {
 
 	static trackBank(object, memberName, objectName) {
 		const value = object[memberName];
-		if (Vector3.is(value)) return value;
 		if (is.number(value)) return trig.normalizeAngle(value);
 		if (is.array(value)) return validate.#interpolationArray(object, memberName, objectName);
-		throw new TypeError(`${objectName}.${memberName} must be a number, 3D vector, or interpolation array`);
+		throw new TypeError(`${objectName}.${memberName} must be a number or interpolation array`);
 	}
 
 	static undefined(object, memberName, objectName, reason) {

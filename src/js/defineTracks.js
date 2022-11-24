@@ -110,21 +110,19 @@ export function defineTracks(tracks) {
 		init: function() {
 			const launchEnd = this.launchSegment.points[this.launchSegment.points.length - 1];
 			this.catchStart = {
-				center: {
-					x: launchEnd.center.x - this._gap,
-					y: launchEnd.center.y - this._catchDrop,
-					z: launchEnd.center.z,
-				},
-				forward: negX,
+				center: new Vector3(
+					launchEnd.center.x - this._gap,
+					launchEnd.center.y - this._catchDrop,
+ 					launchEnd.center.z)
 			}
 			this.catchEnd = {
-				center: {
-					x: this.catchStart.center.x - this.radius + this._gap / 2,
-					y: this.catchStart.center.y - this.descent / 4,
-					z: this.catchStart.center.z
-				},
-				forward: negX,
+				center: new Vector3(
+					this.catchStart.center.x - this.radius + this._gap / 2,
+					this.catchStart.center.y - this.descent / 4,
+					this.catchStart.center.z)
 			}
+			this.catchStart.forward = this.catchStart.center.toNormal(this.catchEnd.center);
+			this.catchEnd.forward = this.catchStart.forward;
 			this.runout = {
 				type: 'straight',
 				length: 2 * this.radius,
@@ -578,7 +576,7 @@ export function defineTracks(tracks) {
 				},
 				forward: posY,
 				forwardWeight: weight,
-				trackBank: negX,
+				up: posX,
 			});
 			p = this._pushPoint({		// Top of loop
 				backwardWeight: weight,
@@ -589,7 +587,7 @@ export function defineTracks(tracks) {
 				},
 				forward: posX,
 				forwardWeight: weight,
-				trackBank: posY,
+				up: negY,
 			});
 			p = this._pushPoint({		// Last quarter of loop
 				backwardWeight: weight,
@@ -600,7 +598,7 @@ export function defineTracks(tracks) {
 				},
 				forward: negY,
 				forwardWeight: weight,
-				trackBank: posX,
+				up: negX,
 			});
 			p = this._pushPoint({		// Exit of loop
 				backwardWeight: weight,

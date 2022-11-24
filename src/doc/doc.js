@@ -1,76 +1,29 @@
-import initStandard from './standard.js'
-import initTangentWeight from './tangentWeight.js'
+import createPoint from './point.js'
+import createSpiral from './spiral.js'
+import createStandard from './standard.js'
+import createStraight from './straight.js'
+import createTangentWeight from './tangentWeight.js'
 
-function initPoint() {
-}
+await async function() {
 
-function initSpiral() {
-}
+	// Construt the demos
+	const demos = [];
+	demos.push(createStandard());
+	demos.push(createTangentWeight());
+	demos.push(createPoint());
+	demos.push(createSpiral());
+	demos.push(createStraight());
 
-function initStraight() {
-}
+	// Initialize the demos
+	const promises = [];
+	for (let demo of demos) promises.push(demo.initialize());
+	for (let promise of promises) await promise;
 
-function initDemos() {
-	initStandard();
-	initTangentWeight();
-	initPoint();
-	initSpiral();
-	initStraight();
-};
-
-window.initFunction = async function() {
-
-	initDemos();
-
-/*	// Hook DOM elements
-	errorDisplay = new ErrorDisplay(
-		'track-error', 'track-error-text',
-		'go',	// Disable ids
-		[		// Disable functions
-			(v) => debugDisplay.disable(v),
-		]);
-	try {
-		debugDisplay = new DebugDisplay(
-			['debugGeneral', 'debugSegments'],
-			() => trackDisplay.createMesh());
-
-		// Create the game engine
-		gameEngine = new BabylonAdapter();
-		gameEngine.setCanvas("renderCanvas");
-
-		trackDisplay = new TrackDisplay(
-			"trackFamilies", "trackMembers", gameEngine, errorDisplay,
-			() => { ball.destroy() }, registerCallback);
-		ball = new Ball(gameEngine, trackDisplay, "go");
-
-	} catch (e) {
-		errorDisplay.showError(e);
-	}
-
-	const asyncEngineCreation = async function() {
-		try {
-			return gameEngine.createDefaultEngine();
-		} catch(e) {
-			console.log("the available createEngine function failed. Creating the default engine instead");
-			return gameEngine.createDefaultEngine();
-		}
-	}
-
-	window.engine = await asyncEngineCreation();
-	if (!window.engine) throw new Error('engine should not be null.');
-
-	await gameEngine.initializePhysics();
-
-	gameEngine.startRenderLoop();
-	window.scene = gameEngine.createScene();
-
-	// Get tracks
-	try {
-		defineTracks(trackDisplay);
-		trackDisplay.start();
-	} catch (e) {
-		errorDisplay.showError(e);
-	}*/
-};
-
-initFunction().then(() => { /*gameEngine.ready()*/ });
+	// Perform the initial draw the demos
+	for (let demo of demos) demo.draw();
+}();
+/*
+window.addEventListener('load', () => async function() {
+	console.log('load');
+	await onLoad();
+});*/

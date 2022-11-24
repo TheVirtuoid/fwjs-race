@@ -22,6 +22,11 @@ class bezier {
 		curve.points[3] = sp1.center;
 		curve.points[2] = curve.points[3].add(-sp1.backwardWeight, sp1.forward);
 
+		// If either up vector is not Vector3.up, disable the alternate down hack
+		if (Vector3.up.dot(sp0.up) !== 1 || Vector3.up.dot(sp1.up) !== 1) {
+			curve.useAlt = false;
+		}
+
 		// Fill out the curve
 		const bpt0 = bezier.#getPoint(curve, 0);
 		const bpt1 = bezier.#getPoint(curve, 1);
@@ -33,12 +38,9 @@ class bezier {
 
 	static getDown(sp) {
 
-		// We are done if we already have a vector
-		if (Vector3.is(sp.trackBank)) return new Vector3(sp.trackBank);
-
 		// Compute the true 'down' vector. This must be orthogonal to the forward vector.
 		// Remove any component of the down vector inline with the forward vector.
-		let down = Vector3.down;
+		let down = sp.up.scale(-1);
 		const dot = sp.forward.dot(down);
 		if (Math.abs(dot) > .0001)  {
 			down = down.add(-dot, sp.forward);
@@ -60,6 +62,7 @@ class bezier {
 		const vScalars = [olt * olt * olt, 3 * olt * olt * t, 3 * olt * t * t, t * t * t];
 		const center = Vector3.scaledSum(curve.points, vScalars);
 
+		// TODO: Need to verify; see analysis of source material in spiralParser
 		// Compute the forward vector with is the tangent at t
 		// v'(t) = 3*(1-t)^2*(p1 - p0) + 6*(1-t)*t*(p2-p1) + 3*t^2*(p3-p2).
 		// Note that we normalize this to get a unit vector.
@@ -77,16 +80,9 @@ class bezier {
 		const medianWidth = olt * curve.medianWidths[0] + t * curve.medianWidths[1];
 
 		// Interpolate the down vector
-		const down = curve.trackBanks[0].interpolate(curve.trackBanks[1], t).normalize();
+		const down = bezier.#interpolateDownHack(curve, forward, t);
 
-		return {
-			center: center,				// center line position at t
-			down: down,					// Down vector at t
-			forward: forward,			// Forward vector at t
-			medianWidth: medianWidth,
-			trackWidth: trackWidth,
-			wallHeight: wallHeight,
-		};
+		return { center, down, forward, medianWidth, trackWidth, wallHeight };
 	}
 
 	// Generate the Bezier cubic curve between t0 and t1
@@ -103,20 +99,40 @@ class bezier {
 		const midtime = (t0 + t1) / 2;
 		const lmp = bpt0.center.midpoint(bpt1.center);	// Linear midpoint
 		const bmp = bezier.#getPoint(curve, midtime);	// Bezier midpoint
+		const d0m = bpt0.center.toNormal(lmp);
+		const dm1 = lmp.toNormal(bpt1.center);
+		const dPrecision = 1 - precision;
 
-		// TODO: This precision test is insufficient. It is possible for the curve to pass
-		// through the linear midpoint but the tangent at the midpoint be different (e.g.,
-		// an 'S' curve passing through the midpoint).
-
-		// If the linear midpoint is close enough to the curve midpoint, add bmp0
-		// to the  track segment. Otherwise recursively add the sections of the curve
+		// If the linear midpoint is close enough to the curve midpoint and its forward
+		// direction is close enough to the endpoints, add bmp0 to the  track segment.
+		// Otherwise recursively add the sections of the curve
 		// (t0, midtime) and (midtime, t1). Note that the latter eventually adds
 		// the midpoint calcuated here.
-		if (lmp.distance(bmp.center) <= precision) {
+		const closeEnough = lmp.distance(bmp.center) <= precision &&
+			bpt0.forward.dot(d0m) >= dPrecision &&
+			 dm1.dot(bpt1.forward) >= dPrecision;
+		if (closeEnough) {
 			trackSegment.push(bpt0, vectorFactory);
 		} else {
 			bezier.#interpolate(trackSegment, curve, t0, midtime, bpt0, bmp, vectorFactory, precision);
 			bezier.#interpolate(trackSegment, curve, midtime, t1, bmp, bpt1, vectorFactory, precision);
+		}
+	}
+
+	static #interpolateDownHack(curve, forward, t) {
+
+		if (curve.useAlt === undefined && Math.abs(Vector3.up.dot(forward)) > .9) {
+			curve.useAlt = true;
+		}
+
+		if (!curve.useAlt) {
+			return curve.trackBanks[0].interpolate(curve.trackBanks[1], t).normalize();
+		} else {
+			const epForward = (t > .5 ?
+				curve.points[1].add(-1, curve.points[0]) :
+				curve.points[3].add(-1, curve.points[2]));
+			const axis = epForward.cross(forward).normalize();
+			return axis.rotate(forward, -90);
 		}
 	}
 }

@@ -15,6 +15,7 @@ class merge {
 		precision: .01,
 		trackBank: 0,
 		trackWidth: 1,
+		up: Vector3.up,
 		wallHeight: .5,
 	}
 
@@ -39,6 +40,7 @@ class merge {
 		{ key: 'precision', validator: validate.positiveNumber },
 		{ key: 'trackBank', validator: validate.trackBank, },
 		{ key: 'trackWidth', validator: validate.positiveNumber },
+		{ key: 'up', validator: Vector3.validateNormal },
 		{ key: 'wallHeight', validator: validate.positiveNumber },
 	]
 

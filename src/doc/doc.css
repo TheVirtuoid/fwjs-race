@@ -102,9 +102,9 @@ footer {
 .demo > .panel > canvas {
 	border-style: solid;
 	border-width: 1px;
-	display: block;
 	height: 300px;
 	width: 300px;
+	touch-action: none;
 }
 
 .demo > .panel > .input {
@@ -116,12 +116,54 @@ footer {
 
 .demo > .panel > .input > .label {
 	font-weight: bold;
+}
+
+.demo > .panel > .input > .coord {
+}
+
+.demo > .panel > .input > .posNumber {
+}
+
+.demo > .panel > .input > .nonNegInteger {
+}
+
+.demo > .panel > .input > select {
+}
+
+.demo > .panel > .input > .col1 {
 	grid-column-start: 1;
 }
 
-.demo > .panel > .input > .setting {
-	display: flex;
+.demo > .panel > .input > .col2 {
 	grid-column-start: 2;
+}
+
+.demo > .panel > .input > .col3 {
+	grid-column-start: 3;
+}
+
+.demo > .panel > .input > .col4 {
+	grid-column-start: 4;
+}
+
+.demo > .panel > .input > .col5 {
+	grid-column-start: 5;
+}
+
+.demo > .panel > .input > .col6 {
+	grid-column-start: 6;
+}
+
+.demo > .panel > .input > .col7 {
+	grid-column-start: 7;
+}
+
+.demo > .panel > .input > .col8 {
+	grid-column-start: 8;
+}
+
+.demo > .panel > .input > .col9 {
+	grid-column-start: 9;
 }
 
 .demo > .panel > .error {

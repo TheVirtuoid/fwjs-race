@@ -28,6 +28,7 @@
 					<a href="#yIsVertical" class="toc toch3">yIsVertical</a><br/>
 					<a href="#lanes" class="toc toch3">Lanes</a><br/>
 					<a href="#trackBank" class="toc toch3">Track Bank</a><br/>
+					<a href="#up" class="toc toch3">Up</a><br/>
 				<a href="#trackSpecs" class="toc toch2">Track Specifications</a><br/>
 					<a href="#trackDetails" class="toc toch3">Track Details</a><br/>
 					<a href="#segmentDetails" class="toc toch3">Segment Details</a><br/>
@@ -62,7 +63,7 @@
 				<p>
 					Throughout, <b>vertex</b> means a point in space while <b>vector</b>
 					means a direction in space. Both are represented by Euclidean coordinates
-					but their interpretaion differ.
+					(x, y, z) but their interpretaion differ.
 				</p><p>
 					The phrase <b>the algorithm</b> refers to how the <a href="#TrackPOC">
 					TrackPOC</a>
@@ -105,14 +106,10 @@
 					The argument <b>vectorFactory</b> is a function that converts internal
 					3D vertices into game engine vertices.
 					</p>
-					<code>const v = vectorFactory(x, y, z);</code>
+					<code>const v = vectorFactory(u);</code>
 					<ul>
 						<li>
-							<b>x</b> is the internal x-axis coordinate
-						</li><li>
-							<b>y</b> is the internal y-axis coordinate
-						</li><li>
-							<b>z</b> is the internal z-axis coordinate
+							<b>u</b> is the algorithm vector
 						</li><li>
 							<b>v</b> is the corresponding game engine vector
 						</li>
@@ -170,6 +167,10 @@
 						<b>trackWidth</b> (default 1) is the width of the track at the section
 						element
 					</li><li>
+						<b>up</b> (default is the geometric up vector) is the <em>up</em> vector,
+						relative to the track surface, at the section
+						element; see <a href='#up'>Up</a> for further details
+					</li><li>
 						<b>wallHeight</b> (default 0.5) is the height of the wall at the secion
 						element
 					</li><li id="yIsVertical">
@@ -194,37 +195,56 @@
 					<h3 id="trackBank">Track Bank</h3>
 					<p>
 						The <b>trackBank</b> setting affects the banking of the track in the
-						section. There are multiple ways to define the banking:
+						section. There are two ways to define the banking:
 					</p>
 					<ul>
 						<li>
 							a number representing the amount of banking in degrees, rotating
 							the track cross section around the point's <a href="#forward">
-							forward</a> vector,
-						</li><li>
-							a vector representing the desired <em>down</em> vector of the track,
-							rotating the track cross section around the point's <a href="#forward">
-							forward</a> vector until the downside of the track aligns with
-							the assigned vector,
+							forward</a> vector, and
 						</li><li>
 							an array of number pairs, the first number representing the
 							parametric <b><em>t</em></b> value (see <a href="#bezierCurves">
 							Bézier Curves</a> for details) and the second number representing
-							the amount of banking in degrees, and
-						</li><li>
-							<b>[NOT IMPLEMENTED]</b> an array of number-vector tuples, the
-							number representing the parametric <b><em>t</em></b> value
-							(see <a href="#bezierCurves">Bézier Curves</a> for details) and
-							the vector representing the desired <em>down</em> vector of the track.
+							the amount of banking in degrees.
 						</li>
 					</ul>
 					<p>
-						The array forms are valid only for the <a href="#spiralElement">spiral</a>
+						The array form is valid only for the <a href="#spiralElement">spiral</a>
 						and <a href="#straightElement">straight</a> sections.
+					</p><p>
+						At a particular point, the algorithm computes a <b>local up</b> (see
+						<a href="#up">Up</a>) and rotates this vector around the <b>forward</b>
+						vector by the number of degrees indicated. The rotated vector is the
+						direction that the walls arise from the track and also determines, along
+						with <b>forward</b>, the direction of the left and right sides of the track.
 					</p><p>
 						When determining the banking between a <a href="#pointElement">point</a>
 						and its adjacent section, the algorithm linearly interpolates between the
 						point and the appropriate endpoint of the adjacent section.
+					</p>
+					<h3 id="up">Up</h3>
+					<p>
+						The <b>up</b> vector, which defaults to the geometric <em>up</em> vector,
+						points away from the surface of the track in
+						the general direction that the walls rise.
+						The algorithm computes a <b>local up</b> by removing any contribution
+						of <b>forward</b> from the <b>up</b>.
+					</p><p>
+						Generally, <b>up</b> may be omitted.
+						However, there are cases where specification of <b>up</b> is required
+						or useful.
+						For example, on vertical sections where the geometric up
+						closely aligns with <b>forward</b>, the algorithm cannot
+						compute the <b>local up</b> and requires <b>up</b> to be defined.
+						In other cases, such as the top of a vertical loop, the algorithm will
+						erroneously compute the <b>local up</b> as being geometric up;
+						specifying <b>up</b> to be geometric <em>down</em> produces the desired
+						results.
+					</p><p>
+						Note that <a href="#trackBank">track banking</a> is related to <b>up</b>
+						as this rotates the <b>local up</b> around <b>forward</b>. It is possible,
+						though not advised, to implement track banking by solely using <b>up</b>.
 					</p>
 				</div>
 				<h2 id="trackSpecs">Track Specifications</h2>
@@ -354,34 +374,26 @@
 					<div class="panel">
 						<canvas></canvas>
 						<div class="input">
-							<p class="label">P<sub>0</sub></p>
-							<div class="setting">
-								<label for="demo-standard-p0x">X:&nbsp</label>
-								<input class="coord" id="demo-standard-x0" type="number" value="10"/>
-								<label for="demo-standard-p0y">Y:&nbsp</label>
-								<input class="coord" id="demo-standard-y0" type="number" value="0"/>
-							</div>
-							<p class="label">P<sub>1</sub></p>
-							<div class="setting">
-								<label for="demo-standard-p1x">X:&nbsp</label>
-								<input class="coord" id="demo-standard-x1" type="number" value="10"/>
-								<label for="demo-standard-p1y">Y:&nbsp</label>
-								<input class="coord" id="demo-standard-y1" type="number" value="1"/>
-							</div>
-							<p class="label">P<sub>2</sub></p>
-							<div class="setting">
-								<label for="demo-standard-p2x">X:&nbsp</label>
-								<input class="coord" id="demo-standard-x2" type="number" value="1"/>
-								<label for="demo-standard-p2y">Y:&nbsp</label>
-								<input class="coord" id="demo-standard-y2" type="number" value="10"/>
-							</div>
-							<p class="label">P<sub>3</sub></p>
-							<div class="setting">
-								<label for="demo-standard-p3x">X:&nbsp</label>
-								<input class="coord" id="demo-standard-x3" type="number" value="0"/>
-								<label for="demo-standard-p3y">Y:&nbsp</label>
-								<input class="coord" id="demo-standard-y3" type="number" value="10"/>
-							</div>
+							<p class="col1 label">P<sub>0</sub></p>
+							<p class="col2 label">X:</p>
+							<input type="number" class="col3 coord" id="demo-standard-x0"/>
+							<p class="col4 label">Y:</p>
+							<input type="number" class="col5 coord" id="demo-standard-y0"/>
+							<p class="col1 label">P<sub>1</sub></p>
+							<p class="col2 label">X:</p>
+							<input type="number" class="col3 coord" id="demo-standard-x1"/>
+							<p class="col4 label">Y:</p>
+							<input type="number" class="col5 coord" id="demo-standard-y1"/>
+							<p class="col1 label">P<sub>2</sub></p>
+							<p class="col2 label">X:</p>
+							<input type="number" class="col3 coord" id="demo-standard-x2"/>
+							<p class="col4 label">Y:</p>
+							<input type="number" class="col5 coord" id="demo-standard-y2"/>
+							<p class="col1 label">P<sub>3</sub></p>
+							<p class="col2 label">X:</p>
+							<input type="number" class="col3 coord" id="demo-standard-x3"/>
+							<p class="col4 label">Y:</p>
+							<input type="number" class="col5 coord" id="demo-standard-y3"/>
 							<button id="demo-standard-reset" type="button">Reset to Circle</button>
 						</div>
 						<div class="error">
@@ -413,7 +425,11 @@
 					<p>
 						Let S<sub>0</sub> be the directed line segment from P<sub>0</sub>
 						to P<sub>1</sub> and S<sub>3</sub> be the same from P<sub>3</sub>
-						to P<sub>2</sub>.
+						to P<sub>2</sub>. Let f<sub>0</sub> be the P<sub>0</sub> plus its
+						forward vector and f<sub>3</sub> be similarly defined for P<sub>3</sub>.
+					</p><p>
+						Note that below, the weight of P<sub>0</sub> refers to its forward weight
+						while the weight of P<sub>3</sub> refers to its backward weight.
 					</p>
 					<ul>
 						<li>
@@ -431,45 +447,31 @@
 					<div class="panel">
 						<canvas></canvas>
 						<div class="input">
-							<p class="label">P<sub>0</sub></p>
-							<div class="setting">
-								<label for="demo-tangentWeight-p0x">X:&nbsp</label>
-								<input class="coord" id="demo-tangentWeight-x0" type="number" value="10"/>
-								<label for="demo-tangentWeight-p0y">Y:&nbsp</label>
-								<input class="coord" id="demo-tangentWeight-y0" type="number" value="0"/>
-							</div>
-							<p class="label">Forward at P<sub>0</sub></p>
-							<div class="setting">
-								<label for="demo-tangentWeight-dx0">X:&nbsp</label>
-								<input class="coord" id="demo-tangentWeight-dx0" type="number" value="0"/>
-								<label for="demo-tangentWeight-dy0">Y:&nbsp</label>
-								<input class="coord" id="demo-tangentWeight-dy0" type="number" value="1"/>
-							</div>
-							<p class="label">Forward Weight at P<sub>3</sub></p>
-							<div class="setting">
-								<label for="demo-tangentWeight-w0">Weight:&nbsp</label>
-								<input id="demo-tangentWeight-w0" type="number" value="1"/>
-							</div>
-							<p class="label">P<sub>3</sub></p>
-							<div class="setting">
-								<label for="demo-tangentWeight-p3x">X:&nbsp</label>
-								<input class="coord" id="demo-tangentWeight-x3" type="number" value="0"/>
-								<label for="demo-tangentWeight-p3y">Y:&nbsp</label>
-								<input class="coord" id="demo-tangentWeight-y3" type="number" value="10"/>
-							</div>
-							<p class="label">Forward at P<sub>3</sub></p>
-							<div class="setting">
-								<label for="demo-tangentWeight-f3x">X:&nbsp</label>
-								<input class="coord" id="demo-tangentWeight-dx3" type="number" value="0"/>
-								<label for="demo-tangentWeight-f3y">Y:&nbsp</label>
-								<input class="coord" id="demo-tangentWeight-dy3" type="number" value="1"/>
-							</div>
-							<p class="label">Backward Weight at P<sub>3</sub></p>
-							<div class="setting">
-								<label for="demo-tangentWeight-w3">Weight:&nbsp</label>
-								<input id="demo-tangentWeight-w3" type="number" value="1"/>
-							</div>
-							<button id="demo-tangentWeight-reset" type="button">Reset to Circle</button>
+							<p class="col1 label">P<sub>0</sub></p>
+							<p class="col3 label">X:</p>
+							<input type="number" class="col4 coord" id="demo-tangentWeight-x0"/>
+							<p class="col5 label">Y:</p>
+							<input type="number" class="col6 coord" id="demo-tangentWeight-y0"/>
+							<p class="col2 label">Forward</p>
+							<p class="col3 label">X:</p>
+							<input type="number" class="col4 coord" id="demo-tangentWeight-dx0"/>
+							<p class="col5 label">Y:</p>
+							<input type="number" class="col6 coord" id="demo-tangentWeight-dy0"/>
+							<p class="col2 label">Weight</p>
+							<input type="number" class="col4 posNumber" id="demo-tangentWeight-w0"/>
+							<p class="col1 label">P<sub>3</sub></p>
+							<p class="col3 label">X:</p>
+							<input type="number" class="col4 coord" id="demo-tangentWeight-x3"/>
+							<p class="col5 label">Y:</p>
+							<input type="number" class="col6 coord" id="demo-tangentWeight-y3"/>
+							<p class="col2 label">Forward</p>
+							<p class="col3 label">X:</p>
+							<input type="number" class="col4 coord" id="demo-tangentWeight-dx3"/>
+							<p class="col5 label">Y:</p>
+							<input type="number" class="col6 coord" id="demo-tangentWeight-dy3"/>
+							<p class="col2 label">Weight</p>
+							<input type="number" class="col4 posNumber" id="demo-tangentWeight-w3"/>
+							<button type="button" class="col1" id="demo-tangentWeight-reset">Reset to Circle</button>
 						</div>
 						<div class="error">
 							<p class="alert">Error!</p>
@@ -513,10 +515,64 @@
 					</li><li>
 						<b>forwardWeight</b> (default 1) is the weight of the <b>forward</b>
 						vector used when the point is an entry point of a section
+					</li><li>
+						<b>type</b> may be set to <b>'point'</b>
 					</li>
 				</ul>
 				<div id="demo-point" class="demo">
-					<b>INSERT POINT-TO-POINT DEMO HERE</b>
+					<p>
+						Note that the weight for P<sub>0</sub> is its forward weight
+						while the weight for P<sub>1</sub> is its backward weight.
+					</p><p>
+						Also note that the y-axis is the vertical axis in 3D space. This
+						is contrary to standard mathematical usage where the z-axis is
+						the vertical axis.
+					</p>
+					<div class="panel">
+						<canvas></canvas>
+						<div class="input">
+							<p class="col1 label">P<sub>0</sub></p>
+							<p class="col2 label">Center</p>
+							<p class="col3 label">X:</p>
+							<input type="number" class="col4 coord" id="demo-point-c0X"/>
+							<p class="col5 label">Y:</p>
+							<input type="number" class="col6 coord" id="demo-point-c0Y"/>
+							<p class="col7 label">Z:</p>
+							<input type="number" class="col8 coord" id="demo-point-c0Z"/>
+							<p class="col2 label">Forward</p>
+							<p class="col3 label">X:</p>
+							<input type="number" class="col4 coord" id="demo-point-f0X"/>
+							<p class="col5 label">Y:</p>
+							<input type="number" class="col6 coord" id="demo-point-f0Y"/>
+							<p class="col7 label">Z:</p>
+							<input type="number" class="col8 coord" id="demo-point-f0Z"/>
+							<p class="col2 label">Weight</p>
+							<input type="number" class="col4 posNumber" id="demo-point-w0"/>
+							<p class="col1 label">P<sub>1</sub></p>
+							<p class="col2 label">Center</p>
+							<p class="col3 label">X:</p>
+							<input type="number" class="col4 coord" id="demo-point-c1X"/>
+							<p class="col5 label">Y:</p>
+							<input type="number" class="col6 coord" id="demo-point-c1Y"/>
+							<p class="col7 label">Z:</p>
+							<input type="number" class="col8 coord" id="demo-point-c1Z"/>
+							<p class="col2 label">Forward</p>
+							<p class="col3 label">X:</p>
+							<input type="number" class="col4 coord" id="demo-point-f1X"/>
+							<p class="col5 label">Y:</p>
+							<input type="number" class="col6 coord" id="demo-point-f1Y"/>
+							<p class="col7 label">Z:</p>
+							<input type="number" class="col8 coord" id="demo-point-f1Z"/>
+							<p class="col2 label">Weight</p>
+							<input type="number" class="col4 posNumber" id="demo-point-w1"/>
+							<button type="button" class="col1" id="demo-point-reset">Reset</button>
+							<button type="button" class="col2" id="demo-point-resetUgly">Reset Ugly</button>
+						</div>
+						<div class="error">
+							<p class="alert">Error!</p>
+							<p class="msg"></p>
+						</div>
+					</div>
 				</div>
 				<h2 id="spiralElement">Spiral Element</h2>
 				<p>
@@ -575,6 +631,8 @@
 					</li><li>
 						<b>turns</b> (default 0) is the number of complete 360&deg;
 						rotations of the spiral
+					</li><li>
+						<b>type</b> must be set to <b>'spiral'</b>
 					</li>
 				</ul>
 				<p>
@@ -583,7 +641,61 @@
 					designed. These may change.
 				</p>
 				<div id="demo-spiral" class="demo">
-					<b>INSERT SPIRAL DEMO HERE</b>
+					<div class="panel">
+						<canvas></canvas>
+						<div class="input">
+							<p class="col1 label">startsAt:</p>
+							<p class="col2 label">center:</p>
+							<p class="col3 label">x:</p>
+							<input type="number" class="col4 coord" id="demo-spiral-c0X"/>
+							<p class="col5 label">y:</p>
+							<input type="number" class="col6 coord" id="demo-spiral-c0Y"/>
+							<p class="col7 label">z:</p>
+							<input type="number" class="col8 coord" id="demo-spiral-c0Z"/>
+							<p class="col2 label">forward:</p>
+							<p class="col3 label">x:</p>
+							<input type="number" class="col4 coord" id="demo-spiral-f0X"/>
+							<p class="col5 label">y:</p>
+							<input type="number" class="col6 coord" id="demo-spiral-f0Y"/>
+							<p class="col7 label">z:</p>
+							<input type="number" class="col8 coord" id="demo-spiral-f0Z"/>
+							<p class="col1 label">endsAt:</p>
+							<p class="col2 label">center:</p>
+							<p class="col3 label">x:</p>
+							<input type="number" class="col4 coord" id="demo-spiral-c1X"/>
+							<p class="col5 label">y:</p>
+							<input type="number" class="col6 coord" id="demo-spiral-c1Y"/>
+							<p class="col7 label">z:</p>
+							<input type="number" class="col8 coord" id="demo-spiral-c1Z"/>
+							<p class="col2 label">forward:</p>
+							<p class="col3 label">x:</p>
+							<input type="number" class="col4 coord" id="demo-spiral-f1X"/>
+							<p class="col5 label">y:</p>
+							<input type="number" class="col6 coord" id="demo-spiral-f1Y"/>
+							<p class="col7 label">z:</p>
+							<input type="number" class="col8 coord" id="demo-spiral-f1Z"/>
+							<p class="col1 label centerVector">center:</p>
+							<p class="col3 label centerVector">x:</p>
+							<input type="number" class="col4 coord centerVector" id="demo-spiral-centerX"/>
+							<p class="col5 label centerVector">y:</p>
+							<input type="number" class="col6 coord centerVector" id="demo-spiral-centerY"/>
+							<p class="col7 label centerVector">z:</p>
+							<input type="number" class="col8 coord centerVector" id="demo-spiral-centerZ"/>
+							<p class="col1 label">rotate:</p>
+							<select class="col4" id="demo-spiral-rotate">
+								<option value="left">Left</option>
+								<option value="right">Right</option>
+							</select>
+							<p class="col1 label">turns:</p>
+							<input type="number" class="col4 nonNegInteger" id="demo-spiral-turns"/>
+							<button type="button" class="col1" id="demo-spiral-resetNoCenter">Reset w/o center</button>
+							<button type="button" class="col2" id="demo-spiral-resetCenter">Reset with center</button>
+						</div>
+						<div class="error">
+							<p class="alert">Error!</p>
+							<p class="msg"></p>
+						</div>
+					</div>
 				</div>
 				<h2 id="straightElement">Straight Element</h2>
 				<p>
@@ -615,9 +727,10 @@
 				</p>
 				<ul>
 					<li>
-						<b>backwardWeight</b> (default 1) sets the exit point's backward weight;
-						note this is effective only if the entry and exit point's forward vectors
-						differ and provides a counterbalance to <b>startingWeight</b>
+						<b>backwardWeight</b> (default 1; valid only if <b>startsAt</b> is not use or
+						<b>forward</b> is used) sets the exit point's backward weight;
+						this provides a counterbalance to the forward weight of the previous
+						section's exit point or to 	<b>startingWeight</b>
 					</li><li>
 						<b>endsAt</b> (required if <b>length</b> is not provided) sets the
 						exit point's center
@@ -631,17 +744,88 @@
 						exit point's center as a function of the entry point's center vertex
 						and forward vector (see above)
 					</li><li>
-						<b>startingWeight</b> (default 1; used only if <b>startsAt</b>
-						is defined) sets the forward weight of the entry point; this
+						<b>startingWeight</b> (default 1; valid only <b>startsAt</b> is not set
+						and <b>endsAt</b> is set) sets the forward weight of the entry point; this
 						is effective only if the entry point's forward vector is not
 						the direction of the straight
 					</li><li>
 						<b>startsAt</b> (required if the element is the first in its
 						segment; illegal otherwise) sets the center of the entry point
+					</li><li>
+						<b>type</b> must be set to <b>'straight'</b>
 					</li>
 				</ul>
+				<p>
+					<b>AUTHOR NOTES</b>
+				</p><p>
+					It appears that <b>startingWeight</b> is ill-defined and may be removed.
+				</p>
 				<div id="demo-straight" class="demo">
-					<b>INSERT STRAIGHT DEMO HERE</b>
+					<ul>
+						<li>
+							<b>forwardWeight</b> does not affect the straight
+							but only the following section. As such, it is not shown here.
+						</li><li>
+							Select 'yes' in <b>use startsAt</b> if you want to simulate a straight
+							that starts a segment. If set so, you must supply the <b>startsAt</b>
+							vertex and <b>forward</b> vector. If not, you must supply the point
+							<b>startsAt</b>, with a center vertex and forward vector, to simulate
+							the endpoint of the prior section.
+						</li><li>
+							Select 'yes' in <b>use endsAt</b> if you want to specify the
+							precise exit point of the straight. If not, you must supply the
+							length of the straight.
+						</li>
+					</ul>
+					<div class="panel">
+						<canvas></canvas>
+						<div class="input">
+							<p class="col1 label">use startsAt:</p>
+							<select class="col4" id="demo-straight-useStartsAt">
+								<option value="false">No</option>
+								<option value="true">Yes</option>
+							</select>
+							<p class="col1 label">use endsAt:</p>
+							<select class="col4" id="demo-straight-useEndsAt">
+								<option value="false">No</option>
+								<option value="true">Yes</option>
+							</select>
+							<p class="col1 label">startsAt:</p>
+							<p class="col2 label useInherited">center:</p>
+							<p class="col3 label">x:</p>
+							<input type="number" class="col4 coord" id="demo-straight-startX"/>
+							<p class="col5 label">y:</p>
+							<input type="number" class="col6 coord" id="demo-straight-startY"/>
+							<p class="col7 label">z:</p>
+							<input type="number" class="col8 coord" id="demo-straight-startZ"/>
+							<p class="col1 label useStartsAtAndLength">forward:</p>
+							<p class="col2 label useInherited">forward:</p>
+							<p class="col3 label useInheritedOrLength">x:</p>
+							<input type="number" class="col4 coord useInheritedOrLength" id="demo-straight-forwardX"/>
+							<p class="col5 label useInheritedOrLength">y:</p>
+							<input type="number" class="col6 coord useInheritedOrLength" id="demo-straight-forwardY"/>
+							<p class="col7 label useInheritedOrLength">z:</p>
+							<input type="number" class="col8 coord useInheritedOrLength" id="demo-straight-forwardZ"/>
+							<p class="col1 label useStartingWeight">startingWeight:</p>
+							<input type="number" class="col4 posNumber useStartingWeight" id="demo-straight-startingWeight"/>
+							<p class="col1 label useLength">length:</p>
+							<input type="number" class="col4 posNumber useLength" id="demo-straight-length"/>
+							<p class="col1 label useEndsAt">endsAt:</p>
+							<p class="col3 label useEndsAt">x:</p>
+							<input type="number" class="col4 coord useEndsAt" id="demo-straight-endsAtX"/>
+							<p class="col5 label useEndsAt">y:</p>
+							<input type="number" class="col6 coord useEndsAt" id="demo-straight-endsAtY"/>
+							<p class="col7 label useEndsAt">z:</p>
+							<input type="number" class="col8 coord useEndsAt" id="demo-straight-endsAtZ"/>
+							<p class="col1 label useBackwardWeight">backwardWeight:</p>
+							<input type="number" class="col4 posNumber useBackwardWeight" id="demo-straight-backwardWeight"/>
+							<button type="button" class="col1" id="demo-straight-reset">Reset</button>
+						</div>
+						<div class="error">
+							<p class="alert">Error!</p>
+							<p class="msg"></p>
+						</div>
+					</div>
 				</div>
 			</div>
 		</div>
