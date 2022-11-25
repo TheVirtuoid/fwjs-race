@@ -3,6 +3,7 @@ import startingGate from "./pieces/startingGate";
 import Straight from "./pieces/Straight";
 import Track from "./pieces/Track";
 import Section from "./pieces/Section";
+import finishLine from "./pieces/finishLine";
 
 const posX = Vector3.right;
 const negX = Vector3.left;
@@ -22,7 +23,7 @@ const trackWidth = 4;
 const trackRadius = trackWidth * radiusType.get('normal');
 
 // slope definitions
-const startingGateSlope = 40;
+const startingGateSlope = 55;
 const startingGateRiseRate = Math.tan(startingGateSlope * Math.PI / 180);
 const startingGateLength = 2;
 
@@ -77,18 +78,28 @@ export function testTrack(tracks, cars, scene) {
 		}
 	}
 
+	const finish = finishLine({
+		startsAt: {x: -110, y: -10, z: 0},
+		scene
+	});
+
+
 
 	const track1 = tracks.register({
 		family: "Simple slope",
 		runoutStart: {
 			center: zero,
 			forward: negX,
-			backwardWeight: 6,
+			backwardWeight: 10,
 		},
 		runoutStraight: {
 			type: 'straight',
-			length: 15,
-			backwardWeight: .01
+			endsAt: {
+				x: -15,
+				y: -1,
+				z: 0
+			},
+			/* length: 15, */
 		},
 		secondDip: {
 			center: {
@@ -102,6 +113,12 @@ export function testTrack(tracks, cars, scene) {
 		},
 		secondStraight: {
 			type: 'straight',
+			forward: negX,
+			startsAt: {
+				x: -70,
+				y: -10,
+				z: 0
+			},
 			length: 30
 		},
 
@@ -115,10 +132,17 @@ export function testTrack(tracks, cars, scene) {
 							gate.track.end,
 							this.runoutStart,
 							this.runoutStraight,
-								this.secondDip,
-								this.secondStraight
-
+							this.secondDip
 						],
+					},
+					{
+						physicsOptions: {
+							friction: 1000
+						},
+						points: [
+								this.secondStraight,
+								finish.track
+						]
 					}
 				],
 				options: { trackWidth },

@@ -33,7 +33,6 @@ class RaceTrackDisplay {
 
 		try {
 			const track = this.#track.track;
-			console.log(track);
 			const settings = track.options ? track.options : {};
 
 			// Produce the track segments
@@ -67,11 +66,12 @@ class RaceTrackDisplay {
 			// Produce the track
 			for (let i = 0; i < trackSegments.length; i++) {
 				const trackSegment = trackSegments[i];
+				const physicsOptions = { ...{ mass: 0, restitution: 0, friction: 2 }, ...trackSegment.physicsOptions };
 				this.#meshes.push(this.#gameEngine.createRibbon(
 					`Segment${i}`,
 					trackSegment.track.ribbon,
 					track.closed,
-					{ mass: 0, restitution: 0, friction: .2 }));
+					physicsOptions));
 				for (let j = 0; j < trackSegment.medians.length; j++) {
 					this.#meshes.push(this.#gameEngine.createRibbon(
 						`Segment${i}.median${j}`,

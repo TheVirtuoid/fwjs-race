@@ -52,7 +52,7 @@ function buildSegment(segment, vectorFactory, parentSettings, isClosed, name) {
 	if (!isClosed) {
 		trackSegment.push(lastPoint, vectorFactory, settings);
 	}
-
+	trackSegment.physicsOptions = segment.physicsOptions || {};
 	return trackSegment;
 }
 

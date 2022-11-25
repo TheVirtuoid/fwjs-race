@@ -13,7 +13,8 @@ const defaults = {
 	wheel: {
 		diameter: 1.5,
 		height: 1,
-		mass: zeroMass ? 0 : 23
+		mass: zeroMass ? 0 : 23,
+		friction: 50
 	},
 /*	wheelBase: {
 		depth: .25,
@@ -25,19 +26,22 @@ const defaults = {
 		depth: .1,
 		width: .5,
 		height: .5,
-		mass: zeroMass ? 0 : 1302
+		mass: zeroMass ? 0 : 1302,
+		friction: 5
 	},
 	chassis: {
 		depth: 3,
 		height: .5,
 		width: 8,
-		mass: 0
+		mass: 0,
+		friction: 0
 	},
 	box: {
 		depth: 4,
 		height: 2,
 		width: 8,
-		mass: zeroMass ? 0 : 200
+		mass: zeroMass ? 0 : 200,
+		friction: 0
 	}
 };
 
@@ -279,23 +283,23 @@ export default class CarOnTrack {
 
 	#setPhysics(args = {}) {
 		const { wheelBase, wheels, chassis, box } = args;
-		const { mass: wheelMass } = this.#defaults.wheel;
-		const { mass: wheelBaseMass, height } = this.#defaults.wheelBase;
-		const { mass: chassisMass } = this.#defaults.chassis;
-		const { mass: boxMass } = this.#defaults.box;
+		const { mass: wheelMass, friction: wheelFriction } = this.#defaults.wheel;
+		const { mass: wheelBaseMass, height, friction: wheelBaseFriction } = this.#defaults.wheelBase;
+		const { mass: chassisMass, friction: chassisFriction } = this.#defaults.chassis;
+		const { mass: boxMass, friction: boxFriction } = this.#defaults.box;
 
-		box.physicsImpostor = new PhysicsImpostor(box, PhysicsImpostor.BoxImpostor, { mass: boxMass, friction: 50, restitution: 0 });
-		chassis.physicsImpostor = new PhysicsImpostor(chassis, PhysicsImpostor.BoxImpostor, { mass: chassisMass, friction: 1, restitution: 0 });
-		wheelBase.physicsImpostor = new PhysicsImpostor(wheelBase, PhysicsImpostor.CylinderImpostor, { mass: wheelBaseMass, friction: 1, restitution: 0 });
+		box.physicsImpostor = new PhysicsImpostor(box, PhysicsImpostor.BoxImpostor, { mass: boxMass, friction: boxFriction, restitution: 0 });
+		chassis.physicsImpostor = new PhysicsImpostor(chassis, PhysicsImpostor.BoxImpostor, { mass: chassisMass, friction: chassisFriction, restitution: 0 });
+		wheelBase.physicsImpostor = new PhysicsImpostor(wheelBase, PhysicsImpostor.CylinderImpostor, { mass: wheelBaseMass, friction: wheelBaseFriction, restitution: 0 });
 		wheels.forEach((wheelData) => {
 			const { wheel, pivot } = wheelData;
 			switch(this.#wheelType) {
 				case 'round':
 				case 'ellipse':
-					wheel.physicsImpostor = new PhysicsImpostor(wheel, PhysicsImpostor.SphereImpostor, { mass: wheelMass, friction: 30, restitution: 0 });
+					wheel.physicsImpostor = new PhysicsImpostor(wheel, PhysicsImpostor.SphereImpostor, { mass: wheelMass, friction: wheelFriction, restitution: 0 });
 					break;
 				case 'cylinder':
-					wheel.physicsImpostor = new PhysicsImpostor(wheel, PhysicsImpostor.CylinderImpostor, { mass: wheelMass, friction: 1, restitution: 0 });
+					wheel.physicsImpostor = new PhysicsImpostor(wheel, PhysicsImpostor.CylinderImpostor, { mass: wheelMass, friction: 0, restitution: 0 });
 					break;
 			}
 			const joint = new HingeJoint({

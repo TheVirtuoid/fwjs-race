@@ -41,15 +41,17 @@ export default class Section {
 	#forwardWeight;
 	#length;
 	#endsAt;
+	#meshOptions;
 
 	constructor(args = {}) {
-		const { start, end, type, forwardWeight, length, endsAt } = args;
+		const { start, end, type, forwardWeight, length, endsAt, meshOptions } = args;
 		this.#start = start;
 		this.#end = end;
 		this.#type = type;
 		this.#length = length;
 		this.#forwardWeight = forwardWeight;
 		this.#endsAt = endsAt;
+		this.#meshOptions = meshOptions;
 	}
 
 	get start () {
@@ -66,6 +68,10 @@ export default class Section {
 
 	get endsAt() {
 		return this.#endsAt;
+	}
+
+	get meshOptions() {
+		return this.#meshOptions;
 	}
 
 	get endPosition() {
