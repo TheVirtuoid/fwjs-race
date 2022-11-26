@@ -6,10 +6,10 @@ import TrackDisplay from './TrackDisplay.js'
 
 import Ball from './Ball.js'
 import { defineTracks } from './defineTracks.js'
-import {testTrack} from "./tracks/testtrack";
-import Car from "./models/Car";
+import {testTrack} from "../../js/tracks/testtrack";
+import Car from "../../js/models/Car";
 import {Color3} from "@babylonjs/core";
-import Car2 from "./models/Car2";
+import Car2 from "../../js/models/Car2";
 
 //======================================================================
 // WINDOW INITIALIZATION
@@ -90,7 +90,7 @@ window.initFunction = async function() {
 
 	// Get tracks
 	try {
-		// defineTracks(trackDisplay);
+		defineTracks(trackDisplay);
 		testTrack(trackDisplay, cars, window.scene);
 		trackDisplay.start();
 	} catch (e) {

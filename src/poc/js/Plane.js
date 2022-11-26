@@ -1,7 +1,7 @@
 import CylindricalCoordinate from './CylindricalCoordinate.js'
 import is from './is.js'
 import Line from './Line.js'
-import NotImplementedError from './errors/NotImplementedError.js'
+import NotImplementedError from '../../js/errors/NotImplementedError.js'
 import trig from './trig.js'
 import Vector3 from './Vector3.js'
 

@@ -1,4 +1,4 @@
-import Vector3 from '../Vector3.js'
+import Vector3 from '../../poc/js/Vector3.js'
 import startingGate from "./pieces/startingGate";
 import Straight from "./pieces/Straight";
 

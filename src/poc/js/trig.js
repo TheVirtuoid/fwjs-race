@@ -1,5 +1,5 @@
 import is from './is.js'
-import StaticClassError from './errors/StaticClassError.js'
+import StaticClassError from '../../js/errors/StaticClassError.js'
 
 class trig {
 

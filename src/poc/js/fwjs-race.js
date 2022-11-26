@@ -1,4 +1,4 @@
-import styles from "../css/fwjs-race.pcss";
+import styles from "../../css/fwjs-race.pcss";
 import {
 	AmmoJSPlugin,
 	Engine, FreeCamera,
@@ -9,7 +9,7 @@ import {
 } from "@babylonjs/core";
 import "@babylonjs/loaders"
 
-import ammo from "ammo.js";
+import ammo from "../../../node_modules/ammo.js/builds/ammo";
 const Ammo = await ammo.bind(window)();
 
 const canvas = document.getElementById('world');

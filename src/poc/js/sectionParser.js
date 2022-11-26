@@ -3,7 +3,7 @@ import spiralParser from './spiralParser.js'
 import straightParser from './straightParser.js'
 
 import is from './is.js'
-import StaticClassError from './errors/StaticClassError.js'
+import StaticClassError from '../../js/errors/StaticClassError.js'
 import validate from './validate.js'
 
 class sectionParser {

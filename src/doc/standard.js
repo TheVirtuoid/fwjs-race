@@ -1,5 +1,5 @@
 import Demo2D from './Demo2D.js'
-import Vector2 from '../js/Vector2.js'
+import Vector2 from '../poc/js/Vector2.js'
 
 const circleWeight = 5.519150244935105707435627;
 
