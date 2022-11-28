@@ -11,6 +11,7 @@ import Car2 from "./../models/Car2";
 import CarOnTrack from "../models/CarOnTrack";
 import {Color3} from "@babylonjs/core";
 import countdown from "./environment/countdown";
+import Car3 from "../models/Car3";
 
 //======================================================================
 // WINDOW INITIALIZATION
@@ -21,7 +22,7 @@ function registerCallback(track) {
 	// debugDisplay.register(track);
 }
 
-const scale = .2;
+const scale = .25;
 const wheelType = 'ellipse';
 const cars = new Map();
 const runCars = true;
@@ -69,26 +70,8 @@ if (runCars) {
 }
 
 
-const leaderBoard = document.getElementById('leader-board');
-const renderLoopCallback = () => {
-/*
-	const list = cars.map((car) => {
-		car.setDistanceTravelled();
-		return { car, name: car.name, distance: car.distanceTravelled, element: `<li>${car.name}: ${car.distanceTravelled.toFixed(3)}</li>` };
-	});
-	list.sort((a, b) => b.distance - a.distance);
-	while(leaderBoard.firstChild) {
-		leaderBoard.removeChild(leaderBoard.firstChild);
-	}
-	const newList = list.map((li, index) => {
-		return `<li><span>${index + 1}</span><span>${li.name}</span></li>`;
-	})
-	// leaderBoard.insertAdjacentHTML('afterbegin', list.map((li) => li.element).join(''));
-	leaderBoard.insertAdjacentHTML('afterbegin', newList.join(''));
-	gameEngine.camera.lockedTarget = list[0].car.chassis;
-*/
-
-}
+const car3 = new Car3({ scene });
+const renderLoopCallback = () => {}
 gameEngine.startRenderLoop(renderLoopCallback);
 if (runCars) {
 	const lights = countdown();
