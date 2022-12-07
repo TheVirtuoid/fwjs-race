@@ -56,13 +56,15 @@ export default class Car {
 	#name;
 	#color;
 	#svg;
+	#model;
 
 	constructor(args = {}) {
-		const { name, color, id } = args;
+		const { name, color, id, model } = args;
 		this.#name = name;
 		this.#color = color;
 		this.#id = id;
 		this.#svg = null;
+		this.#model = model;
 	}
 
 	get name () {
@@ -75,6 +77,10 @@ export default class Car {
 
 	get id() {
 		return this.#id;
+	}
+
+	get model() {
+		return this.#model;
 	}
 
 	get carImage () {
@@ -94,7 +100,8 @@ export default class Car {
 		return {
 			name: this.#name,
 			color: this.#color,
-			id: this.#id
+			id: this.#id,
+			model: this.#model
 		}
 	}
 

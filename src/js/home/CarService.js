@@ -49,8 +49,8 @@ export default class CarService {
 	#createCars (carData) {
 		const cars = new Map();
 		carData.forEach((carDatum) => {
-			const { name, color, id } = carDatum;
-			const car = new Car({ name, color, id });
+			const { name, color, id, model } = carDatum;
+			const car = new Car({ name, color, id, model });
 			cars.set(id, car);
 		});
 		this.#cars = cars;

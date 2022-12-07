@@ -54,7 +54,7 @@ const wheelParameters = [
 	{ wheelName: 'leftRear', pivot: new Vector3(halfDepth + baseAdjust, -halfDepth, 0) }
 ];
 
-export default class CarOnTrack {
+export default class LowPolyCar {
 
 	#wheelBase;
 	#wheels;
@@ -76,6 +76,10 @@ export default class CarOnTrack {
 	#slot;
 
 	#model;
+
+	static Load(scene) {
+		return SceneLoader.ImportMeshAsync(null, '/models/', 'LowPolyCar.glb', scene);
+	}
 
 	constructor(args = {}) {
 		const { slot, scale = 1, scene, position, name, color, wheelType = 'ellipse', rotate = 0, model = null }= args;

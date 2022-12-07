@@ -9,7 +9,7 @@ import RaceTrackDisplay from './utilities/RaceTrackDisplay.js'
 import {testTrack} from "./tracks/testtrack";
 import Car2 from "./../models/Car2";
 import CarOnTrack from "../models/CarOnTrack";
-import {Color3} from "@babylonjs/core";
+import {Color3, SceneLoader} from "@babylonjs/core";
 import countdown from "./environment/countdown";
 import Car3 from "../models/Car3";
 
@@ -25,24 +25,13 @@ function registerCallback(track) {
 const scale = .25;
 const wheelType = 'ellipse';
 const cars = new Map();
-const runCars = false;
+const runCars = true;
 
 // Error Display
 const errorDisplay = new ErrorDisplay(
 		'track-error', 'track-error-text',
 		[],	// Disable ids
 		[]);
-
-// new Car2({ scale: carScale, name: 'Green Ghost', color: new Color3.Green(), wheelType: 'ellipse' }),
-let startingCarId = '';
-const slots = JSON.parse(sessionStorage.getItem('FWJS-Race'));
-slots.forEach((slot) => {
-	const { name, id, color } = slot.car;
-	cars.set(id, new CarOnTrack({ slot: slot.slot, scale, name, id, color, wheelType }));
-	if (slot.slot === 1) {
-		startingCarId = id;
-	}
-});
 
 const gameEngine = new BabylonAdapter();
 gameEngine.setCanvas("renderCanvas");
@@ -59,6 +48,29 @@ await BabylonAdapter.initializePhysics();
 // TODO Abstract out the scene, camera
 const scene = gameEngine.createScene();
 const camera = scene.cameras[0];
+
+// TODO Load car meshes in a separate routine
+let CarModel;
+const slots = JSON.parse(sessionStorage.getItem('FWJS-Race'));
+const models = [];
+for(let i = 0, l = slots.length; i < l; i++) {
+	const model = slots[i].car.model;
+	models.push(await SceneLoader.ImportMeshAsync(null, '/models/', `${model}.glb`, scene));
+	const { default: car } = await import('/models/LowPolyCar/LowPolyCar.js');
+	CarModel = car;
+}
+let startingCarId = '';
+let modelCount = 0;
+slots.forEach((slot) => {
+	const { name, id, color, model } = slot.car;
+	// cars.set(id, new CarOnTrack({ slot: slot.slot, scale, name, id, color, wheelType, model: models[modelCount] }));
+	cars.set(id, new CarModel({ slot: slot.slot, scale, name, id, color, wheelType, model: models[modelCount] }));
+	if (slot.slot === 1) {
+		startingCarId = id;
+	}
+	modelCount++;
+});
+
 gameEngine.ready();
 
 testTrack(trackDisplay, cars, scene);
@@ -70,8 +82,7 @@ if (runCars) {
 }
 
 
-const car3 = new Car3({ scene });
-const renderLoopCallback = () => {}
+const renderLoopCallback = () => {};
 gameEngine.startRenderLoop(renderLoopCallback);
 if (runCars) {
 	const lights = countdown();
@@ -80,8 +91,4 @@ if (runCars) {
 			.then(lights.off);
 }
 
-/*
-
-initFunction().then(() => { gameEngine.ready() });
-*/
 window.addEventListener("resize", gameEngine.resize());
