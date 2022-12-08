@@ -49,26 +49,24 @@ await BabylonAdapter.initializePhysics();
 const scene = gameEngine.createScene();
 const camera = scene.cameras[0];
 
-// TODO Load car meshes in a separate routine
-let CarModel;
 const slots = JSON.parse(sessionStorage.getItem('FWJS-Race'));
-const models = [];
 for(let i = 0, l = slots.length; i < l; i++) {
-	const model = slots[i].car.model;
-	models.push(await SceneLoader.ImportMeshAsync(null, '/models/', `${model}.glb`, scene));
-	const { default: car } = await import('/models/LowPolyCar/LowPolyCar.js');
-	CarModel = car;
+	const modelName = slots[i].car.model;
+	const modelPath = modelName ? `/models/${modelName}/${modelName}.js` : `/models/cars/CarBase.js`
+	const { default: car } = await import(modelPath);
+	slots[i].CarFactory = car;
+	slots[i].model = await car.Load(scene);
 }
+
 let startingCarId = '';
-let modelCount = 0;
 slots.forEach((slot) => {
-	const { name, id, color, model } = slot.car;
-	// cars.set(id, new CarOnTrack({ slot: slot.slot, scale, name, id, color, wheelType, model: models[modelCount] }));
-	cars.set(id, new CarModel({ slot: slot.slot, scale, name, id, color, wheelType, model: models[modelCount] }));
+	const { name, id, color } = slot.car;
+	const CarFactory = slot.CarFactory;
+	const model = slot.model;
+	cars.set(id, new CarFactory({ slot: slot.slot, scale, name, id, color, wheelType, model }));
 	if (slot.slot === 1) {
 		startingCarId = id;
 	}
-	modelCount++;
 });
 
 gameEngine.ready();

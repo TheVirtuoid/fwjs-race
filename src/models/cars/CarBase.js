@@ -1,37 +1,7 @@
-import CarBase from "./../cars/CarBase.js";
-import {Color3, SceneLoader, Vector3} from "@babylonjs/core";
-
-export default class LowPolyCar extends CarBase {
-	constructor(args) {
-		super(args);
-		this.model.meshes[1].material.albedoColor = this.color;
-		this.model.meshes[0].scaling.scaleInPlace(.9);
-	}
-
-	static Load(scene) {
-		return SceneLoader.ImportMeshAsync(null, '/models/', 'LowPolyCar.glb', scene);
-	}
-
-	addModel(args) {
-		const { name, scene, position, color, rotate, scale } = args;
-		const faceColors = [color, color, color, color, color, color];
-		const box = this.model.meshes[0];
-		box.scaling.scaleInPlace(scale);
-		box.position = position.clone();
-		box.rotate(new Vector3(0, 1, 0), rotate);
-		box.rotate(new Vector3(0, 1, 0), 3.75);
-		box.isVisible = true;
-		return box;
-	}
-}
-
-
-/*import {
-	Axis,
-	Color3, Color4,
-	CreateBoxVertexData,
-	CreateCylinderVertexData, HingeJoint,
-	Mesh, MeshBuilder, PhysicsImpostor, Quaternion, SceneLoader, Space, StandardMaterial, Texture,
+import {
+	Color3,
+	HingeJoint,
+	MeshBuilder, PhysicsImpostor, SceneLoader, StandardMaterial, Texture,
 	Vector3
 } from "@babylonjs/core";
 
@@ -44,12 +14,12 @@ const defaults = {
 		mass: zeroMass ? 0 : 23,
 		friction: 50
 	},
-/!*	wheelBase: {
+/*	wheelBase: {
 		depth: .25,
 		width: 1,
 		height: 2,
 		mass: 1302
-	},*!/
+	},*/
 		wheelBase: {
 		depth: .1,
 		width: .5,
@@ -82,7 +52,7 @@ const wheelParameters = [
 	{ wheelName: 'leftRear', pivot: new Vector3(halfDepth + baseAdjust, -halfDepth, 0) }
 ];
 
-export default class LowPolyCar {
+export default class CarBase {
 
 	#wheelBase;
 	#wheels;
@@ -106,7 +76,7 @@ export default class LowPolyCar {
 	#model;
 
 	static Load(scene) {
-		return SceneLoader.ImportMeshAsync(null, '/models/', 'LowPolyCar.glb', scene);
+		return Promise.resolve(null);
 	}
 
 	constructor(args = {}) {
@@ -118,11 +88,7 @@ export default class LowPolyCar {
 		this.#baseColor = color;
 		this.#model = model;
 		const { red, green, blue } = this.#hashToColor(color);
-		// console.log(models[0].meshes[1].material.albedoColor);
-		// models[0].meshes[1].material.albedoColor.g = 1;
 		this.#color = new Color3(red, green, blue);
-		this.#model.meshes[1].material.albedoColor = new Color3(red, green, blue);
-		// console.log(this.#color);
 		this.#wheelType = wheelType;
 		this.#rotate = rotate * Math.PI / 180;
 		this.#slot = slot;
@@ -157,23 +123,6 @@ export default class LowPolyCar {
 		}
 		this.#built = false;
 		this.#distanceTravelled = 0;
-		if (this.#model?.meshes) {
-			this.#model.meshes[0].scaling.scaleInPlace(.9);
-		}
-	}
-
-	#modelLoaded(model) {
-		this.#model = model;
-		model.meshes[0].scaling.scaleInPlace(this.#scale);
-		const car = model.meshes[0];
-		// const { name, scene, position, color } = args;
-		// const faceColors = [color, color, color, color, color, color];
-		// const { depth, height, width } = this.#defaults.box;
-		// const box = MeshBuilder.CreateBox(`${name}-box`, { depth, height, width, faceColors }, scene);
-		car.position = this.#position.clone();
-		// car.position.y += .25;
-		// car.isVisible = true;
-		return car;
 	}
 
 	build (args = {}) {
@@ -185,7 +134,6 @@ export default class LowPolyCar {
 			this.#color = inColor ?? this.#color;
 			this.#rotate = inRotate ? inRotate * Math.PI / 180 : this.#rotate;
 			const [scene, position, name, color, rotate, model] = [this.#scene, this.#position, this.#name, this.#color, this.#rotate, this.#model];
-			// model.meshes[0].posiiton = position.clone();
 			let wheelBase = this.#addWheelBase({ scene, position, name });
 			let wheels = this.#wheelParameters.map((wheel) => {
 				const { wheelName, pivot } = wheel;
@@ -193,7 +141,7 @@ export default class LowPolyCar {
 			});
 			let chassis = this.#addChassis({ name, scene, position, color });
 			let box = this.#addBox({ name, scene, position, color, rotate, scale: this.#scale + .2 });
-			// wheelBase.addChild(model.meshes[0]);
+
 			wheelBase.addChild(chassis);
 			wheelBase.addChild(box);
 			wheelBase.rotate(new Vector3(0, 1, 0), rotate);
@@ -259,6 +207,14 @@ export default class LowPolyCar {
 		return this.#slot;
 	}
 
+	get color () {
+		return this.#color;
+	}
+
+	get model () {
+		return this.#model;
+	}
+
 	get distanceTravelled () {
 		return this.#distanceTravelled;
 	}
@@ -272,6 +228,17 @@ export default class LowPolyCar {
 
 	resetDistanceTravelled(distance = 0) {
 		this.#distanceTravelled = distance;
+	}
+
+	addModel(args) {
+		const { name, scene, position, color, rotate, scale } = args;
+		const faceColors = [color, color, color, color, color, color];
+		const { depth, height, width } = this.#defaults.box;
+		const box = MeshBuilder.CreateBox(`${name}-box`, { depth, height, width, faceColors }, scene);
+		box.position = position.clone();
+		box.position.y += .25;
+		box.isVisible = true;
+		return box;
 	}
 
 
@@ -331,18 +298,7 @@ export default class LowPolyCar {
 	}
 
 	#addBox(args = {}){
-		const { name, scene, position, color, rotate, scale } = args;
-		const faceColors = [color, color, color, color, color, color];
-		const { depth, height, width } = this.#defaults.box;
-		// const box = MeshBuilder.CreateBox(`${name}-box`, { depth, height, width, faceColors }, scene);
-		const box = this.#model.meshes[0];
-		box.scaling.scaleInPlace(scale);
-		box.position = position.clone();
-		// box.position.y += .25;
-		box.rotate(new Vector3(0, 1, 0), rotate);
-		box.rotate(new Vector3(0, 1, 0), 3.75);
-		box.isVisible = true;
-		return box;
+		return this.addModel(args);
 	}
 
 	#setPhysics(args = {}) {
@@ -385,4 +341,4 @@ export default class LowPolyCar {
 		return { red, green, blue };
 	}
 
-}*/
+}
