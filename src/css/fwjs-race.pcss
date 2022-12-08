@@ -98,6 +98,9 @@ footer {
 
 #car-list {
     list-style-type: none;
+    display: flex;
+    flex-direction: row;
+    gap: .5rem;
 
     & li {
         border: .25rem ridge green;
@@ -113,18 +116,22 @@ footer {
 }
 
 #car-slots {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-around;
+    gap: 1rem;
+    margin: .5rem;
 
     & div {
         border: .25rem ridge red;
         width: 10rem;
         height: 3rem;
         padding: .1rem .25rem;
-        margin-bottom: .5rem;
         font-size: 2rem;
         text-align: center;
         display: flex;
         flex-direction: row;
-        justify-content: space-between;
+        justify-content: space-around;
     }
 
     & div.full {
