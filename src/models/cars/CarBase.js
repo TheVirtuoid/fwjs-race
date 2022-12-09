@@ -298,6 +298,7 @@ export default class CarBase {
 	}
 
 	#addBox(args = {}){
+		// console.log(this.model?.meshes);
 		return this.addModel(args);
 	}
 

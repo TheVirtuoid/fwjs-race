@@ -4,7 +4,7 @@ import {Color3, SceneLoader, Vector3} from "@babylonjs/core";
 export default class Cybertruck extends CarBase {
 	constructor(args) {
 		super(args);
-		this.model.meshes[1].material.albedoColor = this.color;
+		this.model.meshes[5].material.albedoColor = this.color;
 		this.model.meshes[0].scaling.scaleInPlace(.9);
 	}
 
@@ -18,8 +18,8 @@ export default class Cybertruck extends CarBase {
 		const box = this.model.meshes[0];
 		box.scaling.scaleInPlace(scale);
 		box.position = position.clone();
-		// box.rotate(new Vector3(0, 1, 0), rotate);
-		// box.rotate(new Vector3(0, 1, 0), 3.75);
+		box.position.x += 1;
+		//box.rotate(new Vector3(0, 1, 0), rotate);
 		box.isVisible = true;
 		return box;
 	}

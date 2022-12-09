@@ -53,7 +53,7 @@ const slots = JSON.parse(sessionStorage.getItem('FWJS-Race'));
 for(let i = 0, l = slots.length; i < l; i++) {
 	const modelName = slots[i].car.model;
 	const modelPath = modelName ? `/models/${modelName}/${modelName}.js` : `/models/cars/CarBase.js`
-	const { default: car } = await import(modelPath);
+	const { default: car } = await import(/* @vite-ignore */ modelPath);
 	slots[i].CarFactory = car;
 	slots[i].model = await car.Load(scene);
 }
