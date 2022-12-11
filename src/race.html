@@ -10,13 +10,23 @@
 		<title>Fun With JavaScript - Race Game</title>
 	</head>
 	<body>
-		<div id="countdown">
-			<span class="red off">&#x25cf;</span>
-			<span class="red off">&#x25cf;</span>
-			<span class="red off">&#x25cf;</span>
-			<span class="red off">&#x25cf;</span>
-			<span class="yellow off">&#x25cf;</span>
-			<span class="green off">&#x25cf;</span>
+		<div id="stat-board">
+			<div id="countdown">
+				<span class="red off">&#x25cf;</span>
+				<span class="red off">&#x25cf;</span>
+				<span class="red off">&#x25cf;</span>
+				<span class="red off">&#x25cf;</span>
+				<span class="yellow off">&#x25cf;</span>
+				<span class="green off">&#x25cf;</span>
+			</div>
+			<div id="race-timing" class="container">
+				<h2>Time of Race</h2>
+				<p>00:00:00</p>
+			</div>
+			<div id="order-of-finish" class="container">
+				<h2>Order Of Finish</h2>
+				<ol></ol>
+			</div>
 		</div>
 
 		<div id="track-renderer">

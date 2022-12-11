@@ -62,10 +62,13 @@ html, body {
     gap: 1rem;
 }
 
+#stat-board {
+    position: absolute;
+}
+
 #countdown {
     font-size: 4rem;
     background-color: black;
-    position: absolute;
 
     & span {
         &.red {
@@ -92,4 +95,28 @@ html, body {
     max-width: 30rem;
     padding: 1rem 2rem;
     font-size: 1rem;
+}
+
+.container {
+    border: 3px inset blue;
+    border-radius: 1rem;
+    background-color: white;
+    padding: .5rem 1rem;
+    text-align: center;
+
+    & h2 {
+        margin: 0 0 .5rem 0;
+    }
+}
+
+#race-timing p {
+    font-size: 2rem;
+    font-weight: bold;
+    margin: 0;
+    font-family: Verdana, sans-serif;
+}
+
+#order-of-finish ol {
+    margin: 0;
+    text-align: left;
 }

@@ -6,10 +6,10 @@ const carData = [
 	{ name: 'Red Ranger', color: '#ff0000', id: 'red-ranger', model: 'LowPolyCar' },
 	{ name: 'Blue Bull', color: '#0000ff', id: 'blue-bull', model: 'LowPolyCar' },
 	{ name: 'Yellow Yak', color: '#ffff00', id: 'yellow-yak', model: 'LowPolyCar' },
-	{ name: 'Pink Piranha ', color: '#ff00ff', id: 'pink-piranha', model: 'LowPolyCar' },
-	{ name: 'Cyan Cat', color: '#00ffff', id: 'cyan-cat', model: 'LowPolyCar' },
-	{ name: 'White Wallaby', color: '#dddddd', id: 'white-wallaby', model: 'LowPolyCar' },
-	{ name: 'Black Bart', color: '#222222', id: 'black-bart', model: 'LowPolyCar' }
+	{ name: 'Pink Piranha ', color: '#ff00ff', id: 'pink-piranha', model: '' },
+	{ name: 'Cyan Cat', color: '#00ffff', id: 'cyan-cat', model: '' },
+	{ name: 'White Wallaby', color: '#dddddd', id: 'white-wallaby', model: '' },
+	{ name: 'Black Bart', color: '#222222', id: 'black-bart', model: '' }
 ];
 
 const carService = new CarService({ carData });

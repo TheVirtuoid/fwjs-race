@@ -12,6 +12,8 @@ import CarOnTrack from "../models/CarOnTrack";
 import {Color3, SceneLoader} from "@babylonjs/core";
 import countdown from "./environment/countdown";
 import Car3 from "../models/Car3";
+import OrderOfFinish from "./environment/OrderOfFinish";
+import RaceTiming from "./environment/RaceTiming";
 
 //======================================================================
 // WINDOW INITIALIZATION
@@ -75,16 +77,33 @@ testTrack(trackDisplay, cars, scene);
 trackDisplay.start();
 const selectedTrack = trackDisplay.getSelectedTrack();
 selectedTrack.gate.dropCars();
+const carsByUniqueId = new Map();
+const carMeshCheck = [...cars].map((car) => {
+	carsByUniqueId.set(car[1].telemetryMesh.uniqueId, car[1]);
+	return car[1].telemetryMesh
+});
 if (runCars) {
 	camera.lockedTarget = cars.get(startingCarId).chassis;
 }
+const orderOfFinish = new OrderOfFinish({ dom: '#order-of-finish ol' });
+const raceTiming = new RaceTiming({ dom: '#race-timing p' });
+const renderLoopCallback = () => {
+	const carsCrossed = selectedTrack.crossedFinishLine(carMeshCheck);
+	if (carsCrossed.length) {
+		carsCrossed.forEach(({ pickedMesh }) => {
+			const car = carsByUniqueId.get(pickedMesh.uniqueId);
+			if (car) {
+				orderOfFinish.add(car, `${car.name} (${raceTiming.timingFormatted})`);
+			}
+		});
+	}
 
-
-const renderLoopCallback = () => {};
+};
 gameEngine.startRenderLoop(renderLoopCallback);
 if (runCars) {
 	const lights = countdown();
 	lights.start()
+			.then(raceTiming.start.bind(raceTiming))
 			.then(selectedTrack.gate.startRace)
 			.then(lights.off);
 }

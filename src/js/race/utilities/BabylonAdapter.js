@@ -261,9 +261,12 @@ class BabylonAdaptor {
 		}
 	}
 
-	startRenderLoop() {
+	startRenderLoop(callback) {
 		if (!this.#engine) throw new Error(errorMustInvokeCreateEngine);
-		this.#engine.runRenderLoop(() => this.#renderLoop());
+		this.#engine.runRenderLoop(() => {
+			this.#renderLoop();
+			callback();
+		});
 	}
 
 	static #createCamera(canvas, scene, name) {

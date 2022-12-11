@@ -75,6 +75,8 @@ export default class CarBase {
 
 	#model;
 
+	#telemetryMesh;
+
 	static Load(scene) {
 		return Promise.resolve(null);
 	}
@@ -123,6 +125,7 @@ export default class CarBase {
 		}
 		this.#built = false;
 		this.#distanceTravelled = 0;
+		this.#telemetryMesh = null;
 	}
 
 	build (args = {}) {
@@ -215,8 +218,16 @@ export default class CarBase {
 		return this.#model;
 	}
 
+	get telemetryMesh () {
+		return this.#telemetryMesh;
+	}
+
 	get distanceTravelled () {
 		return this.#distanceTravelled;
+	}
+
+	setTelemetryMesh(mesh) {
+		this.#telemetryMesh = mesh;
 	}
 
 	setDistanceTravelled() {
@@ -238,6 +249,7 @@ export default class CarBase {
 		box.position = position.clone();
 		box.position.y += .25;
 		box.isVisible = true;
+		this.setTelemetryMesh(box);
 		return box;
 	}
 
@@ -298,7 +310,6 @@ export default class CarBase {
 	}
 
 	#addBox(args = {}){
-		// console.log(this.model?.meshes);
 		return this.addModel(args);
 	}
 

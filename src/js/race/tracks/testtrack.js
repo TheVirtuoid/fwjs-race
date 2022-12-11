@@ -79,7 +79,8 @@ export function testTrack(tracks, cars, scene) {
 	}
 
 	const finish = finishLine({
-		startsAt: {x: -110, y: -10, z: 0},
+		startsAt: {x: -103, y: -10, z: 0},
+		finishLine: {x: -70, y: -10, z: 0},
 		scene
 	});
 
@@ -125,6 +126,7 @@ export function testTrack(tracks, cars, scene) {
 		init: function() {
 			this.track = {
 				gate,
+				crossedFinishLine: finish.finished,
 				segments: [
 					{
 						points: [
@@ -132,10 +134,12 @@ export function testTrack(tracks, cars, scene) {
 							gate.track.end,
 							this.runoutStart,
 							this.runoutStraight,
-							this.secondDip
+							this.secondDip,
+							this.secondStraight,
+							finish.track
 						],
 					},
-					{
+/*					{
 						physicsOptions: {
 							friction: 1000
 						},
@@ -143,7 +147,7 @@ export function testTrack(tracks, cars, scene) {
 								this.secondStraight,
 								finish.track
 						]
-					}
+					}*/
 				],
 				options: { trackWidth },
 			};
