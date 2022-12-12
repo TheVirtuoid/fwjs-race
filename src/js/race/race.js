@@ -1,4 +1,4 @@
-import styles from "./../../css/race.pcss";
+// import styles from "./../../css/race.pcss";
 
 import BabylonAdapter from './utilities/BabylonAdapter.js'
 

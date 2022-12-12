@@ -98,7 +98,7 @@ export default (args) => {
 	gate.startRace = startRace;
 
 
-	const gateColor = new Color3.Black().toColor4();
+	const gateColor = Color3.Black().toColor4();
 	const gateOptions = {
 		height: .5,
 		depth: 3,

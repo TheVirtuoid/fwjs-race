@@ -7,7 +7,7 @@ export default (args = {}) => {
 
 	const { startsAt, finishLine, scene } = args;
 	const stopWidth = .25;
-	const stopColor = new Color3.Black().toColor4();
+	const stopColor = Color3.Black().toColor4();
 	const stopOptions = {
 		height: 3,
 		depth: 3,

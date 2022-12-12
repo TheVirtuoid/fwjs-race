@@ -1,4 +1,3 @@
-import styles from "../../css/fwjs-race.pcss";
 import CarService from "./CarService";
 
 const carData = [
