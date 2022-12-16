@@ -15,6 +15,7 @@ export default class CarSlotItem {
 		this.#service = service;
 	}
 
+	// TODO: no need to add the id to data-id
 	addCar(car) {
 		if (this.#carId) {
 			this.#removeCar();
@@ -40,7 +41,7 @@ export default class CarSlotItem {
 		event.preventDefault();
 		event.dataTransfer.dropEffect = 'move';
 	}
-
+	// TODO: get carId from the instance.
 	#removeCar(event) {
 		const carId = this.#carId;
 		this.#deleteIcon.classList.add('hidden');

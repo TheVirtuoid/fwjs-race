@@ -1,1 +1,0 @@
-import styles from "../../css/fwjs-race.pcss";

@@ -20,7 +20,7 @@ export default class CarService {
 		this.#createCars(carData);
 		this.#createListItems(this.#cars);
 		this.#createCarSlots(this.#numberOfSlots);
-		this.#race.addEventListener('click', this.#startRace.bind(this));
+		this.#race.addEventListener('click', this.#startRace.bind(this), { once: true });
 	}
 
 	populateCarList(listElement) {
