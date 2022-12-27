@@ -2,14 +2,11 @@
 
 import BabylonAdapter from './utilities/BabylonAdapter.js'
 
-import DebugDisplay from './utilities/DebugDisplay.js'
+
 import ErrorDisplay from './utilities/ErrorDisplay.js'
 import RaceTrackDisplay from './utilities/RaceTrackDisplay.js'
 
 import {testTrack} from "./tracks/testtrack";
-import Car2 from "./../models/Car2";
-import CarOnTrack from "../models/CarOnTrack";
-import {Color3, SceneLoader} from "@babylonjs/core";
 import countdown from "./environment/countdown";
 import Car3 from "../models/Car3";
 import OrderOfFinish from "./environment/OrderOfFinish";
