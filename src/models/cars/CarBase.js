@@ -5,7 +5,7 @@ import {
 	Vector3
 } from "@babylonjs/core";
 
-const zeroMass = true;
+const zeroMass = false;
 
 const defaults = {
 	wheel: {

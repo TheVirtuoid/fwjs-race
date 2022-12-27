@@ -59,10 +59,12 @@ function buildMeshList (model) {
 	while (meshList.firstChild) {
 		meshList.removeChild(meshList.firstChild);
 	}
-	model.meshes.forEach((mesh, index) => {
-		const li = `<li><span>Mesh ${index}:</span><input type="checkbox" data-index="${index}" checked /></li>`
-		meshList.insertAdjacentHTML('beforeend', li);
-	});
+	if (model?.meshes) {
+		model.meshes.forEach((mesh, index) => {
+			const li = `<li><span>Mesh ${index}:</span><input type="checkbox" data-index="${index}" checked /></li>`
+			meshList.insertAdjacentHTML('beforeend', li);
+		});
+	}
 }
 
 function processClick(event) {
