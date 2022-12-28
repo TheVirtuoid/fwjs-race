@@ -25,10 +25,10 @@ function registerCallback(track) {
 const carScale = .25
 
 const cars = [
-	new Car2({ scale: carScale, name: 'Green Ghost', color: new Color3.Green(), wheelType: 'ellipse' }),
-	new Car2({ scale: carScale, name: 'Red Devil', color: new Color3.Red(), wheelType: 'ellipse' }),
-	new Car2({ scale: carScale, name: 'Yellow Belly', color: new Color3.Yellow(), wheelType: 'ellipse' }),
-	new Car2({ scale: carScale, name: 'Am I Blue', color: new Color3.Blue(), wheelType: 'ellipse' }),
+	new Car2({ scale: carScale, name: 'Green Ghost', color: Color3.Green(), wheelType: 'ellipse' }),
+	new Car2({ scale: carScale, name: 'Red Devil', color: Color3.Red(), wheelType: 'ellipse' }),
+	new Car2({ scale: carScale, name: 'Yellow Belly', color: Color3.Yellow(), wheelType: 'ellipse' }),
+	new Car2({ scale: carScale, name: 'Am I Blue', color: Color3.Blue(), wheelType: 'ellipse' }),
 ]
 
 window.initFunction = async function() {
