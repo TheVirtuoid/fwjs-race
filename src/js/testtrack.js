@@ -39,7 +39,7 @@ const camera = scene.cameras[0];
 
 gameEngine.ready();
 
-testTrackLive(trackDisplay, [], scene);
+testTrackLive(trackDisplay, scene);
 trackDisplay.start();
 const selectedTrack = trackDisplay.getSelectedTrack();
 const { x, y, z } = selectedTrack.last;
