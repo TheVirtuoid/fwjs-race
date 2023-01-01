@@ -1,5 +1,14 @@
 import Vector3 from './race/utilities/Vector3.js'
-import {Color3, MeshBuilder, Vector3 as BVector3} from "@babylonjs/core";
+import {
+	Color3,
+	MeshBuilder,
+	PhysicsImpostor,
+	Ray,
+	StandardMaterial,
+	Texture,
+	Vector3 as BVector3
+} from "@babylonjs/core";
+import Section from "./race/tracks/pieces/Section";
 
 const posX = Vector3.right;
 const negX = Vector3.left;
@@ -36,6 +45,10 @@ const next = (start, change) => {
 	});
 }
 
+const toRadians = (degrees) => {
+	return degrees * Math.PI / 180;
+}
+
 // const trackStart = new Vector3({x: 20, y:15, z: 0});
 
 
@@ -67,6 +80,115 @@ const next = (start, change) => {
 }*/
 
 // startingGate.init();
+
+const addStartingGate = (firstPoint, secondPoint, carLength, scene) => {
+	const black = Color3.Black().toColor4();
+	const faceColors = [black, black, black, black, black, black];
+	const carGap = .25;
+	const gateWidth = .5;
+	const gateGap = carGap + carLength;
+	const run = Math.max(Math.abs(firstPoint.center.x - secondPoint.center.x), Math.abs(firstPoint.center.z - secondPoint.center.z));
+	const ySlope = Math.abs(firstPoint.center.y - secondPoint.center.y) / run;
+	const upperGate = MeshBuilder.CreateBox('upperGate', { width: gateWidth, height: 1, depth: trackWidth, faceColors }, scene);
+	const lowerGate = MeshBuilder.CreateBox('lowerGate', { width: gateWidth, height: 1, depth: trackWidth, faceColors }, scene);
+	const upperGatePosition = new BVector3(
+			firstPoint.center.x + gateGap * firstPoint.forward.x,
+			firstPoint.center.y - ySlope * gateGap ,
+			firstPoint.center.z + gateGap * firstPoint.forward.z
+	);
+	const lowerGatePosition = new BVector3(
+			firstPoint.center.x + (gateGap * firstPoint.forward.x * 2) + gateWidth * firstPoint.forward.x,
+			firstPoint.center.y - ySlope * (gateGap * 2 + gateWidth),
+			firstPoint.center.z + (gateGap * firstPoint.forward.z * 2) + gateWidth * firstPoint.forward.z
+	);
+	upperGate.position = upperGatePosition;
+	lowerGate.position = lowerGatePosition;
+};
+
+const addFinishGate = (nextToLastPoint, lastPoint, scene) => {
+	const stopWidth = .25;
+	const stopColor = Color3.Black().toColor4();
+	const stopOptions = {
+		height: 3,
+		depth: trackWidth,
+		width: stopWidth,
+		faceColors: [stopColor, stopColor, stopColor, stopColor, stopColor, stopColor]
+	}
+	const stopGate = MeshBuilder.CreateBox('stopGate', stopOptions, scene);
+	stopGate.position = new BVector3(
+			lastPoint.center.x,
+			lastPoint.center.y,
+			lastPoint.center.z
+	);
+	stopGate.physicsImpostor = new PhysicsImpostor(stopGate, PhysicsImpostor.BoxImpostor, { friction: 5000, mass: 0, restitution: 0 });
+
+	const finishLineMaterial = new StandardMaterial('finish-line', scene);
+	finishLineMaterial.diffuseTexture = new Texture('/models/textures/checkerboard.jpg');
+
+	const finishLineLeft = MeshBuilder.CreateBox('finishLineLeft', { height: 4, depth: 1, width: stopWidth }, scene);
+	finishLineLeft.material = finishLineMaterial;
+	finishLineLeft.position = new BVector3(
+			nextToLastPoint.center.x,
+			nextToLastPoint.center.y + 2,
+			nextToLastPoint.center.z - 4
+	);
+
+	const finishLineRight = MeshBuilder.CreateBox('finishLineRight', { height: 4, depth: 1, width: stopWidth }, scene);
+	finishLineRight.material = finishLineMaterial;
+	finishLineRight.position = new BVector3(
+			nextToLastPoint.center.x,
+			nextToLastPoint.center.y + 2,
+			nextToLastPoint.center.z + 4);
+
+	const finishLineTop = MeshBuilder.CreateBox('finishLineTop', { height: 1, depth: 8, width: stopWidth }, scene);
+	finishLineTop.material = finishLineMaterial;
+	finishLineTop.position = new BVector3(
+			nextToLastPoint.center.x,
+			nextToLastPoint.center.y + 4,
+			nextToLastPoint.center.z);
+
+	const directionVectorOrigin = new BVector3(
+			finishLineLeft.position.x,
+			finishLineLeft.position.y - 1.5,
+			finishLineLeft.position.z
+	);
+	const directionVectorTerminator = new BVector3(
+			finishLineRight.position.x,
+			finishLineRight.position.y - 1.5,
+			finishLineRight.position.z
+	);
+	const directionVector = directionVectorTerminator.subtract(directionVectorOrigin);
+
+	const finishLine = MeshBuilder.CreateLines('test',
+			{
+				colors: [ Color3.Green().toColor4(), Color3.Green().toColor4()],
+				points: [directionVectorOrigin, directionVectorTerminator]
+			},
+			scene);
+
+	finishLineTop.addChild(finishLineLeft);
+	finishLineTop.addChild(finishLineRight);
+	finishLineTop.addChild(finishLine);
+
+	finishLineTop.rotate(BVector3.Up(), toRadians(90));
+	stopGate.rotate(BVector3.Up(), toRadians(90));
+
+	const finished = (carMeshes = []) => {
+		let gotAHit = { marker: false, other: false };
+		const origin = directionVectorOrigin;
+		const direction = directionVector;
+		const length = 10;
+		const ray = new Ray(origin, direction, length);
+		const meshHit = ray.intersectsMeshes(carMeshes);
+		return meshHit;
+	}
+
+
+	/*finishLine.track = Section.createStraight({ length: 3, physicsOptions: { friction: 1 } });
+	finishLine.finished = finished;
+	return finishLine;*/
+};
+
 
 /* ----------------------------------- TRACK LAYOUT --------------------------- */
 const trackStart = {
@@ -139,98 +261,6 @@ const finishLine = {
 	forward: posZ
 }
 
-
-
-/*const midSlope = {
-	center: next(firstSlope, { x: -10, y: -5, z: 0}),
-	// forward: negX,
-	forward: new Vector3({ x: -1, y: -1, z:0 })
-}*/
-/*
-const endSlope = {
-	center: new Vector3(-15, -1, 0),
-	forward: negX,
-	backwardWeight: 10
-}
-*/
-/*
-const endSlope = {
-	center: next(startingGate.end, {x: -35, y: -16, z:0 }),
-	forward: negX,
-	backwardWeight: 10
-}
-
-const nextSlope = {
-	center: next(endSlope, { x:-5, y: 0, z:0 }),
-	forward: negX,
-}
-*/
-
-
-/* ----------------------------------- curve definition ------------------------------------ */
-/*
-const curveStart = {
-	center: next(nextSlope, {x: -1, y: 0, z:0 }),
-	forward: negX,
-	forwardWeight: curveRadius,
-};
-
-const curveMiddle = {
-	backwardWeight: curveRadius,
-	forward: negZ,
-	center: next(curveStart, {x: -trackRadius, y: 0, z: -trackRadius })
-};
-
-
-const curveEnd = {
-	forward: negZ,
-	center: next(curveMiddle, {x: 0, y: 0, z: -5 }),
-	forwardWeight: 10
-};
-
-const middleStraight = {
-	center: next(curveEnd, { x: 0, y: -20, z: -40 }),
-	forward: negZ,
-	backwardWeight: 15
-}
-*/
-
-/*----------------------------- 180 curve ----------------------- */
-/*
-const curve180start = {
-	center: next(middleStraight, { x: 0, y: 0, z: -10 }),
-	forward: negZ,
-	forwardWeight: curveRadius,
-};
-const curve180Middle1 = {
-	backwardWeight: curveRadius,
-	forward: posX,
-	center: next(curve180start, { x: trackRadius, y: 0, z: -trackRadius })
-};
-const curve180Middle2 = {
-	backwardWeight: trackRadius,
-	forward: posZ,
-	center: next(curve180Middle1, { x: trackRadius, y: 0, z: trackRadius })
-};
-const curve180End = {
-	forward: posZ,
-	forwardWeight: 10,
-	center: next(curve180Middle2, { x: 0, y: 0, z: 5 })
-};
-
-const finalSlope = {
-	forward: posZ,
-	center: next(curve180End, { x: 0, y: -5, z: 40 })
-};
-
-const finishLine = {
-	forward: posZ,
-	backwardWeight: 10,
-	center: next(finalSlope, { x: 0, y: 0, z: 20 })
-}
-*/
-
-
 export function testTrackLive(tracks, scene) {
 	// See https://spencermortensen.com/articles/bezier-circle/
 	// If we want a closer approximation, we would need to break the
@@ -238,7 +268,8 @@ export function testTrackLive(tracks, scene) {
 	// forward rotated 180 degrees around down.
 	const circleWeight = 0.5519150244935105707435627;
 
-	// startingGate.build(scene);
+	addStartingGate(trackStart, firstSlope, 3, scene);
+	addFinishGate(finalSlope, finishLine, scene);
 
 	const track1 = tracks.register({
 		family,
@@ -258,23 +289,6 @@ export function testTrackLive(tracks, scene) {
 								curve180Landing,
 								finalSlope,
 								finishLine
-
-							//firstSlope,
-								//midSlope,
-/*								startingGate.start,
-								startingGate.end,
-							endSlope,
-							nextSlope,
-							curveStart,
-								curveMiddle,
-								curveEnd,
-								middleStraight,
-								curve180start,
-								curve180Middle1,
-								curve180Middle2,
-								curve180End,
-								finalSlope,
-								finishLine*/
 						],
 					},
 				],
