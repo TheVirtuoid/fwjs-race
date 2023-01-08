@@ -8,7 +8,6 @@ import {
 	Texture,
 	Vector3 as BVector3
 } from "@babylonjs/core";
-import Section from "./race/tracks/pieces/Section";
 
 const posX = Vector3.right;
 const negX = Vector3.left;
@@ -18,12 +17,6 @@ const posZ = Vector3.forward;
 const negZ = Vector3.backward;
 const zero = Vector3.zero;
 
-const negXnegY = new Vector3({ x: -1, y: -1, z: 0});
-
-const negXnegZ = new Vector3({x: -1, y:0, z:-1 });
-const negXposZ = new Vector3({x: -1, y:0, z:1 });
-const posXnegZ = new Vector3({x: 1, y:0, z:-1 });
-const posXposZ = new Vector3({x: 1, y:0, z:1 });
 
 // See https://spencermortensen.com/articles/bezier-circle/
 // If we want a closer approximation, we would need to break the
@@ -49,112 +42,104 @@ const toRadians = (degrees) => {
 	return degrees * Math.PI / 180;
 }
 
-// const trackStart = new Vector3({x: 20, y:15, z: 0});
-
-
-/*const startingGate = {
-	start: {
-		center: trackStart,
-		forward: new Vector3({ x: -1, y: -1, z:0 }),
-	},
-	end: {
-		center: {},
-		forward: new Vector3({ x: -1, y: -1, z:0 }),
-	},
-	init: () => {
-		startingGate.end.center = next(startingGate.start, { x: -10, y: -5, z: 0 });
-	},
-	build: (scene) => {
-		const black = Color3.Black().toColor4();
-		const faceColors = [black, black, black, black, black, black]
-		const lowerGate = MeshBuilder.CreateBox('lowerGate', {
-			width: .5, height: 1, depth: trackWidth, faceColors
-		}, scene);
-		const { x, y, z } = startingGate.end.center;
-		lowerGate.position = new BVector3(x, y + .5, z);
-		const upperGate = MeshBuilder.CreateBox('upperGate', {
-			width: .5, height: 1, depth: trackWidth, faceColors
-		}, scene);
-		upperGate.position = new BVector3(x + 5, y + 3, z);
-	}
-}*/
-
-// startingGate.init();
 
 const addStartingGate = (firstPoint, secondPoint, carLength, scene) => {
 	const black = Color3.Black().toColor4();
 	const faceColors = [black, black, black, black, black, black];
 	const carGap = .25;
 	const gateWidth = .5;
-	const gateGap = carGap + carLength;
-	const run = Math.max(Math.abs(firstPoint.center.x - secondPoint.center.x), Math.abs(firstPoint.center.z - secondPoint.center.z));
-	const ySlope = Math.abs(firstPoint.center.y - secondPoint.center.y) / run;
-	const upperGate = MeshBuilder.CreateBox('upperGate', { width: gateWidth, height: 1, depth: trackWidth, faceColors }, scene);
-	const lowerGate = MeshBuilder.CreateBox('lowerGate', { width: gateWidth, height: 1, depth: trackWidth, faceColors }, scene);
-	const upperGatePosition = new BVector3(
+	const gateHeight = 1.5;
+	const gateGap = carGap + carLength + gateWidth / 2;
+
+	const { x: fpx, y: fpy, z: fpz } = firstPoint.center;
+	const { x: spx, y: spy, z: spz } = secondPoint.center;
+
+	const xDiff = fpx - spx;
+	const zDiff = fpz - spz;
+	const yDiff = fpy - spy;
+
+	const run = Math.sqrt(firstPoint.forward.x ? xDiff * xDiff : zDiff * zDiff);
+	const ySlope = Math.abs( Math.sqrt(yDiff * yDiff)) / run;
+
+
+	// upper gate is placed firstPoint + carLength + carGap + gateWidth / 2;
+	const upperGate = MeshBuilder.CreateBox('upperGate', { width: gateWidth, height: gateHeight, depth: trackWidth, faceColors }, scene);
+	upperGate.position = new BVector3(
 			firstPoint.center.x + gateGap * firstPoint.forward.x,
 			firstPoint.center.y - ySlope * gateGap ,
 			firstPoint.center.z + gateGap * firstPoint.forward.z
 	);
-	const lowerGatePosition = new BVector3(
-			firstPoint.center.x + (gateGap * firstPoint.forward.x * 2) + gateWidth * firstPoint.forward.x,
+
+	const lowerGate = MeshBuilder.CreateBox('lowerGate', { width: gateWidth, height: gateHeight, depth: trackWidth, faceColors }, scene);
+	lowerGate.position = new BVector3(
+			firstPoint.center.x + gateGap * 2 * firstPoint.forward.x,
 			firstPoint.center.y - ySlope * (gateGap * 2 + gateWidth),
-			firstPoint.center.z + (gateGap * firstPoint.forward.z * 2) + gateWidth * firstPoint.forward.z
+			firstPoint.center.z + gateGap * 2 * firstPoint.forward.z
 	);
-	upperGate.position = upperGatePosition;
-	lowerGate.position = lowerGatePosition;
 };
 
 const addFinishGate = (nextToLastPoint, lastPoint, scene) => {
-	const stopWidth = .25;
+	// two pieces to the finish gate
+	//		1. The hard-stop at the end of the track (called 'stop')
+	//		2. The finish line itself (with green marker line and checkerboard gate)
+
+	// the stop gate
+	const stopDepth = .25;
 	const stopColor = Color3.Black().toColor4();
 	const stopOptions = {
 		height: 3,
-		depth: trackWidth,
-		width: stopWidth,
+		depth: stopDepth,
+		width: trackWidth,
 		faceColors: [stopColor, stopColor, stopColor, stopColor, stopColor, stopColor]
 	}
 	const stopGate = MeshBuilder.CreateBox('stopGate', stopOptions, scene);
 	stopGate.position = new BVector3(
-			lastPoint.center.x,
+			lastPoint.center.x + stopDepth / 2 * lastPoint.forward.x,
 			lastPoint.center.y,
-			lastPoint.center.z
+			lastPoint.center.z + stopDepth / 2 * lastPoint.forward.z
 	);
 	stopGate.physicsImpostor = new PhysicsImpostor(stopGate, PhysicsImpostor.BoxImpostor, { friction: 5000, mass: 0, restitution: 0 });
 
+
+	// the finish line
 	const finishLineMaterial = new StandardMaterial('finish-line', scene);
 	finishLineMaterial.diffuseTexture = new Texture('/models/textures/checkerboard.jpg');
 
-	const finishLineLeft = MeshBuilder.CreateBox('finishLineLeft', { height: 4, depth: 1, width: stopWidth }, scene);
+	const gateHeight = 4;
+	const gateDepth = .25;
+	const gateWidth = 1;
+
+	const finishLineLeft = MeshBuilder.CreateBox('finishLineLeft', { height: gateHeight, depth: gateDepth, width: gateWidth }, scene);
 	finishLineLeft.material = finishLineMaterial;
 	finishLineLeft.position = new BVector3(
-			nextToLastPoint.center.x,
-			nextToLastPoint.center.y + 2,
-			nextToLastPoint.center.z - 4
+			nextToLastPoint.center.x + trackWidth * (nextToLastPoint.forward.z * -1),
+			nextToLastPoint.center.y + gateHeight / 2,
+			nextToLastPoint.center.z + trackWidth * (nextToLastPoint.forward.x * -1)
 	);
 
-	const finishLineRight = MeshBuilder.CreateBox('finishLineRight', { height: 4, depth: 1, width: stopWidth }, scene);
+	console.log(nextToLastPoint.forward);
+	const finishLineRight = MeshBuilder.CreateBox('finishLineRight', { height: gateHeight, depth: gateDepth, width: gateWidth }, scene);
 	finishLineRight.material = finishLineMaterial;
 	finishLineRight.position = new BVector3(
-			nextToLastPoint.center.x,
-			nextToLastPoint.center.y + 2,
-			nextToLastPoint.center.z + 4);
+			nextToLastPoint.center.x + trackWidth * nextToLastPoint.forward.z,
+			nextToLastPoint.center.y + gateHeight / 2,
+			nextToLastPoint.center.z + trackWidth * nextToLastPoint.forward.x);
 
-	const finishLineTop = MeshBuilder.CreateBox('finishLineTop', { height: 1, depth: 8, width: stopWidth }, scene);
+	const finishLineTop = MeshBuilder.CreateBox('finishLineTop', { height: gateWidth, depth: gateDepth, width: trackWidth * 2 }, scene);
 	finishLineTop.material = finishLineMaterial;
 	finishLineTop.position = new BVector3(
 			nextToLastPoint.center.x,
-			nextToLastPoint.center.y + 4,
+			nextToLastPoint.center.y + gateHeight,
 			nextToLastPoint.center.z);
 
 	const directionVectorOrigin = new BVector3(
 			finishLineLeft.position.x,
-			finishLineLeft.position.y - 1.5,
+			finishLineLeft.position.y - gateHeight / 2 + wallHeight,
 			finishLineLeft.position.z
 	);
 	const directionVectorTerminator = new BVector3(
 			finishLineRight.position.x,
-			finishLineRight.position.y - 1.5,
+			finishLineRight.position.y - gateHeight / 2 + wallHeight,
 			finishLineRight.position.z
 	);
 	const directionVector = directionVectorTerminator.subtract(directionVectorOrigin);
@@ -166,14 +151,14 @@ const addFinishGate = (nextToLastPoint, lastPoint, scene) => {
 			},
 			scene);
 
-	finishLineTop.addChild(finishLineLeft);
+	/*finishLineTop.addChild(finishLineLeft);
 	finishLineTop.addChild(finishLineRight);
-	finishLineTop.addChild(finishLine);
+	finishLineTop.addChild(finishLine);*/
 
-	finishLineTop.rotate(BVector3.Up(), toRadians(90));
-	stopGate.rotate(BVector3.Up(), toRadians(90));
+	/*finishLineTop.rotate(BVector3.Up(), toRadians(90));
+	stopGate.rotate(BVector3.Up(), toRadians(90));*/
 
-	const finished = (carMeshes = []) => {
+	/*const finished = (carMeshes = []) => {
 		let gotAHit = { marker: false, other: false };
 		const origin = directionVectorOrigin;
 		const direction = directionVector;
@@ -181,7 +166,7 @@ const addFinishGate = (nextToLastPoint, lastPoint, scene) => {
 		const ray = new Ray(origin, direction, length);
 		const meshHit = ray.intersectsMeshes(carMeshes);
 		return meshHit;
-	}
+	}*/
 
 
 	/*finishLine.track = Section.createStraight({ length: 3, physicsOptions: { friction: 1 } });
