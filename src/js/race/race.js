@@ -1,4 +1,3 @@
-// import styles from "./../../css/race.pcss";
 
 import BabylonAdapter from './utilities/BabylonAdapter.js'
 
@@ -8,9 +7,9 @@ import RaceTrackDisplay from './utilities/RaceTrackDisplay.js'
 
 import {testTrack} from "./tracks/testtrack";
 import countdown from "./environment/countdown";
-import Car3 from "../models/Car3";
 import OrderOfFinish from "./environment/OrderOfFinish";
 import RaceTiming from "./environment/RaceTiming";
+import {testTrackLive} from "../testtrack-live";
 
 //======================================================================
 // WINDOW INITIALIZATION
@@ -70,18 +69,18 @@ slots.forEach((slot) => {
 
 gameEngine.ready();
 
-testTrack(trackDisplay, cars, scene);
+// testTrack(trackDisplay, cars, scene);
+testTrackLive(trackDisplay, cars, scene);
 trackDisplay.start();
 const selectedTrack = trackDisplay.getSelectedTrack();
-selectedTrack.gate.dropCars();
+selectedTrack.dropCars(cars);
 const carsByUniqueId = new Map();
 const carMeshCheck = [...cars].map((car) => {
 	carsByUniqueId.set(car[1].telemetryMesh.uniqueId, car[1]);
 	return car[1].telemetryMesh
 });
-if (runCars) {
-	camera.lockedTarget = cars.get(startingCarId).chassis;
-}
+camera.lockedTarget = cars.get(startingCarId).chassis;
+
 const orderOfFinish = new OrderOfFinish({ dom: '#order-of-finish ol' });
 const raceTiming = new RaceTiming({ dom: '#race-timing p' });
 const renderLoopCallback = () => {
@@ -94,14 +93,13 @@ const renderLoopCallback = () => {
 			}
 		});
 	}
-
 };
 gameEngine.startRenderLoop(renderLoopCallback);
 if (runCars) {
 	const lights = countdown();
 	lights.start()
 			.then(raceTiming.start.bind(raceTiming))
-			.then(selectedTrack.gate.startRace)
+			.then(selectedTrack.startRace)
 			.then(lights.off);
 }
 

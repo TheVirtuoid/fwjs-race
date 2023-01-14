@@ -1,5 +1,7 @@
 import CarBase from "./../cars/CarBase.js";
 import {SceneLoader, Vector3} from "@babylonjs/core";
+import "@babylonjs/loaders";
+
 
 export default class LowPolyCar extends CarBase {
 	constructor(args) {

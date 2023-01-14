@@ -1,5 +1,6 @@
 import CarBase from "./../cars/CarBase.js";
 import {Color3, SceneLoader, Vector3} from "@babylonjs/core";
+import "@babylonjs/loaders";
 
 export default class Cybertruck extends CarBase {
 	constructor(args) {

@@ -125,7 +125,8 @@ export function testTrack(tracks, cars, scene) {
 
 		init: function() {
 			this.track = {
-				gate,
+				dropCars: gate.dropCars,
+				startRace: gate.startRace,
 				crossedFinishLine: finish.finished,
 				segments: [
 					{

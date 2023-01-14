@@ -8,6 +8,8 @@ import {
 	Texture,
 	Vector3 as BVector3
 } from "@babylonjs/core";
+import "@babylonjs/loaders";
+
 
 const posX = Vector3.right;
 const negX = Vector3.left;
@@ -46,7 +48,7 @@ const toRadians = (degrees) => {
 const addStartingGate = (firstPoint, secondPoint, carLength, scene) => {
 	const black = Color3.Black().toColor4();
 	const faceColors = [black, black, black, black, black, black];
-	const carGap = .25;
+	const carGap = .5;
 	const gateWidth = .5;
 	const gateHeight = 1.5;
 	const gateGap = carGap + carLength + gateWidth / 2;
@@ -61,6 +63,9 @@ const addStartingGate = (firstPoint, secondPoint, carLength, scene) => {
 	const run = Math.sqrt(firstPoint.forward.x ? xDiff * xDiff : zDiff * zDiff);
 	const ySlope = Math.abs( Math.sqrt(yDiff * yDiff)) / run;
 
+	/* support for dropCars */
+	let raceStarted = false;
+
 
 	// upper gate is placed firstPoint + carLength + carGap + gateWidth / 2;
 	const upperGate = MeshBuilder.CreateBox('upperGate', { width: gateWidth, height: gateHeight, depth: trackWidth, faceColors }, scene);
@@ -69,6 +74,8 @@ const addStartingGate = (firstPoint, secondPoint, carLength, scene) => {
 			firstPoint.center.y - ySlope * gateGap ,
 			firstPoint.center.z + gateGap * firstPoint.forward.z
 	);
+	upperGate.physicsImpostor = new PhysicsImpostor(upperGate, PhysicsImpostor.BoxImpostor, { friction: 50, mass: 0, restitution: 0 });
+
 
 	const lowerGate = MeshBuilder.CreateBox('lowerGate', { width: gateWidth, height: gateHeight, depth: trackWidth, faceColors }, scene);
 	lowerGate.position = new BVector3(
@@ -76,6 +83,51 @@ const addStartingGate = (firstPoint, secondPoint, carLength, scene) => {
 			firstPoint.center.y - ySlope * (gateGap * 2 + gateWidth),
 			firstPoint.center.z + gateGap * 2 * firstPoint.forward.z
 	);
+	lowerGate.physicsImpostor = new PhysicsImpostor(lowerGate, PhysicsImpostor.BoxImpostor, { friction: 50, mass: 0, restitution: 0 });
+
+	const dropCars = (cars) => {
+		if (raceStarted) {
+			upperGate.position.y += gateHeight;
+			lowerGate.position.y += gateHeight;
+		}
+		cars.forEach((car) => {
+			car.junk();
+			const slot = car.slot - 1;
+			const slotPositionShift = slot % 2 === 0 ? trackWidth / 4 : trackWidth / 4 * -1;
+			// const carLengthPositionShift = carLength / 2 + gateGap;
+			const carLengthPositionShift = carLength / 2 + carGap;
+			const rotate = Math.atan(Math.abs(yDiff) / run);
+			const rToRads = rotate * 180 / Math.PI;
+			console.log(`ydiff, run, rotate, rToRads = ${yDiff}, ${run}, ${rotate}, ${rToRads}`);
+			const position = slot <= 1 ? lowerGate.position.clone() : upperGate.position.clone();
+
+			// this sets the position based upon the slot (perpendicular to the track)
+			position.x += slotPositionShift * firstPoint.forward.z;
+			position.z += slotPositionShift * firstPoint.forward.x;
+
+			// this sets the position based upon the car length (parallel to the track);
+			position.x -= carLengthPositionShift * firstPoint.forward.x;
+			position.z -= carLengthPositionShift * firstPoint.forward.z;
+
+			// this sets the Y position (regardless of the slot)
+			position.y += carLengthPositionShift * ySlope + .5;
+
+			// build the car!
+			car.build({ rotate: rToRads, position, scene });
+		});
+	}
+
+	const startRace = () => {
+		return new Promise((resolve, reject) => {
+			lowerGate.position.y -= gateHeight;
+			upperGate.position.y -= gateHeight;
+			setTimeout(() => {
+				resolve(true);
+			}, 3000);
+		});
+	}
+
+	return { dropCars, startRace };
 };
 
 const addFinishGate = (nextToLastPoint, lastPoint, scene) => {
@@ -117,7 +169,6 @@ const addFinishGate = (nextToLastPoint, lastPoint, scene) => {
 			nextToLastPoint.center.z + trackWidth * (nextToLastPoint.forward.x * -1)
 	);
 
-	console.log(nextToLastPoint.forward);
 	const finishLineRight = MeshBuilder.CreateBox('finishLineRight', { height: gateHeight, depth: gateDepth, width: gateWidth }, scene);
 	finishLineRight.material = finishLineMaterial;
 	finishLineRight.position = new BVector3(
@@ -151,27 +202,15 @@ const addFinishGate = (nextToLastPoint, lastPoint, scene) => {
 			},
 			scene);
 
-	/*finishLineTop.addChild(finishLineLeft);
-	finishLineTop.addChild(finishLineRight);
-	finishLineTop.addChild(finishLine);*/
-
-	/*finishLineTop.rotate(BVector3.Up(), toRadians(90));
-	stopGate.rotate(BVector3.Up(), toRadians(90));*/
-
-	/*const finished = (carMeshes = []) => {
-		let gotAHit = { marker: false, other: false };
+	const crossedFinishLine = (carMeshes = []) => {
 		const origin = directionVectorOrigin;
 		const direction = directionVector;
 		const length = 10;
 		const ray = new Ray(origin, direction, length);
-		const meshHit = ray.intersectsMeshes(carMeshes);
-		return meshHit;
-	}*/
+		return ray.intersectsMeshes(carMeshes);
+	}
 
-
-	/*finishLine.track = Section.createStraight({ length: 3, physicsOptions: { friction: 1 } });
-	finishLine.finished = finished;
-	return finishLine;*/
+	return { crossedFinishLine };
 };
 
 
@@ -181,7 +220,7 @@ const trackStart = {
 	forward: negX
 }
 
-const curve45Radius = trackWidth * 4;
+const curve45Radius = trackWidth * 8;
 const curve45Weight = curve45Radius * circleWeight;
 
 const firstSlope = {
@@ -195,7 +234,7 @@ const curve45 = {
 	center: next(firstSlope, {x: -curve45Radius, y: 0, z: -curve45Radius}),
 	forward: negZ,
 	backwardWeight: curve45Radius,
-	trackBank: 45
+	trackBank: 23
 }
 
 const curve45Landing = {
@@ -246,21 +285,23 @@ const finishLine = {
 	forward: posZ
 }
 
-export function testTrackLive(tracks, scene) {
-	// See https://spencermortensen.com/articles/bezier-circle/
-	// If we want a closer approximation, we would need to break the
-	// convention that backward = -forward and allow backward to be
-	// forward rotated 180 degrees around down.
-	const circleWeight = 0.5519150244935105707435627;
+export function testTrackLive(tracks, cars, scene) {
 
-	addStartingGate(trackStart, firstSlope, 3, scene);
-	addFinishGate(finalSlope, finishLine, scene);
+	const carLength = [...cars].reduce((carLength, car) => {
+		return Math.max(carLength, car.length);
+	}, -1);
+
+	const { dropCars, startRace } = addStartingGate(trackStart, firstSlope, carLength, scene);
+	const { crossedFinishLine } = addFinishGate(finalSlope, finishLine, scene);
 
 	const track1 = tracks.register({
 		family,
 		init: function() {
 			this.track = {
 				last: finalSlope.center,
+				dropCars,
+				crossedFinishLine,
+				startRace,
 				segments: [
 					{
 						points: [
