@@ -20,8 +20,8 @@ export default class LowPoly2 extends CarBase {
 		const box = this.model["meshes"][0];
 		box.scaling.scaleInPlace(scale);
 		box.position = position.clone();
-		box.rotate(new Vector3(0, 1, 0), rotate);
-		box.rotate(new Vector3(0, 1, 0), .15);
+		/*box.rotate(new Vector3(0, 1, 0), rotate);
+		box.rotate(new Vector3(0, 1, 0), .15);*/
 		box.isVisible = true;
 		this.setTelemetryMesh(this.model["meshes"][0]);
 		console.log(this.model["meshes"]);

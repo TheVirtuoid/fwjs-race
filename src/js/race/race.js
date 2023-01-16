@@ -23,7 +23,7 @@ function registerCallback(track) {
 const scale = .25;
 const wheelType = 'ellipse';
 const cars = new Map();
-const runCars = true;
+const runCars = false;
 
 // Error Display
 const errorDisplay = new ErrorDisplay(

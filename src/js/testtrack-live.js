@@ -113,7 +113,11 @@ const addStartingGate = (firstPoint, secondPoint, carLength, scene) => {
 			position.y += carLengthPositionShift * ySlope + .5;
 
 			// build the car!
-			car.build({ rotate: rToRads, position, scene });
+			// car.build({ rotate: rToRads, position, scene });
+			car.build({ position, scene });
+			car.adjustRotation(firstPoint.forward, rToRads);
+			// wheelBase.rotate(new Vector3(0, 1, 0), rotate);
+
 		});
 	}
 

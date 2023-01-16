@@ -2,11 +2,11 @@ import CarBase from "./../cars/CarBase.js";
 import {SceneLoader, Vector3} from "@babylonjs/core";
 import "@babylonjs/loaders";
 
-export default class Ferarri extends CarBase {
+export default class Ferrari extends CarBase {
 	constructor(args) {
 		super(args);
+		const { boundingVectors } = args;
 		this.model["meshes"][9].material.albedoColor = this.color;
-		this.model["meshes"][0].scaling.scaleInPlace(.9);
 	}
 
 	static Load(scene) {
@@ -14,13 +14,11 @@ export default class Ferarri extends CarBase {
 	}
 
 	addModel(args) {
-		const { name, scene, position, color, rotate, scale } = args;
-		const faceColors = [color, color, color, color, color, color];
+		const { position, scale } = args;
 		const box = this.model["meshes"][0];
-		box.scaling.scaleInPlace(scale);
+		// box.scaling.scaleInPlace(scale);
 		box.position = position.clone();
-		box.rotate(new Vector3(0, 1, 0), rotate);
-		box.rotate(new Vector3(0, 1, 0), 3.75);
+		box.rotate(new Vector3(0, 1, 0), -90 * Math.PI / 180);
 		box.isVisible = true;
 		this.setTelemetryMesh(this.model["meshes"][9]);
 		return box;

@@ -10,8 +10,6 @@ import {
 } from "@babylonjs/core";
 import ammo from "ammo.js";
 import "@babylonjs/loaders";
-import CarBase from "/models/cars/CarBase.js";
-import LowPoly2 from "../models/LowPoly2/LowPoly2";
 
 const canvas = document.getElementById('renderCanvas');
 const engine = new Engine(canvas);
@@ -29,8 +27,22 @@ scene.enablePhysics(new Vector3(0, -8.91, 0), new AmmoJSPlugin());
 
 // Create ground collider
 const ground = MeshBuilder.CreateGround("ground1", { width: 8, height: 8 }, scene);
-//ground.rotation = new Vector3(0, 0, Math.PI / 64 );
 ground.physicsImpostor = new PhysicsImpostor(ground, PhysicsImpostor.BoxImpostor, { mass: 0, friction: 100, restitution: 0 }, scene);
+
+
+// create walls so the car doesn't roll off screen
+const wall1 = MeshBuilder.CreateBox("wall1", { width: 8, height: 1, depth: .2 }, scene);
+wall1.position = new Vector3(0, 0 ,4);
+wall1.physicsImpostor = new PhysicsImpostor(wall1, PhysicsImpostor.BoxImpostor, { mass: 0 }, scene);
+const wall2 = MeshBuilder.CreateBox("wall2", { width: 8, height: 1, depth: .2 }, scene);
+wall2.position = new Vector3(0, 0 ,-4);
+wall2.physicsImpostor = new PhysicsImpostor(wall2, PhysicsImpostor.BoxImpostor, { mass: 0 }, scene);
+const wall3 = MeshBuilder.CreateBox("wall3", { width: .2, height: 1, depth: 8 }, scene);
+wall3.position = new Vector3(4, 0 ,0);
+wall3.physicsImpostor = new PhysicsImpostor(wall3, PhysicsImpostor.BoxImpostor, { mass: 0 }, scene);
+const wall4 = MeshBuilder.CreateBox("wall4", { width: .2, height: 1, depth: 8 }, scene);
+wall4.position = new Vector3(-4, 0 ,0);
+wall4.physicsImpostor = new PhysicsImpostor(wall4, PhysicsImpostor.BoxImpostor, { mass: 0 }, scene);
 
 const meshList = document.querySelector('#meshes ul');
 meshList.addEventListener('click', processClick);
@@ -38,16 +50,22 @@ meshList.addEventListener('click', processClick);
 const id = 'TestCar';
 const wheelType = 'ellipse';
 const scale = .3;
-const modelName = 'LowPolyCar';
+// const modelName = 'Ferrari';
+const modelName = 'Cybertruck';
 const color = "#FF0000";
 
 const modelPath = modelName ? `/models/${modelName}/${modelName}.js` : `/models/cars/CarBase.js`
 const { default: CarFactory } = await import(/* @vite-ignore */ modelPath);
 const model = await CarFactory.Load(scene);
+const boundingVectors = model.meshes[0].getHierarchyBoundingVectors();
 buildMeshList(model);
 
-const car = new CarFactory({ position: new Vector3(0, 1, 0), scale, name, id, color, model, wheelType });
+const car = new CarFactory({ position: new Vector3(0, 1, 0), scale, name, id, color, model, boundingVectors });
 car.build();
+
+car.chassis.isVisible = true;
+car.wheels.forEach((wheel) => wheel.isVisible = true);
+car.wheelBase.isVisible = true;
 
 
 engine.runRenderLoop(() => {
