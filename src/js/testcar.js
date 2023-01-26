@@ -52,6 +52,11 @@ selectCar.addEventListener('change', processCarSelection);
 loadCar(selectCar.value);
 let model;
 let car;
+const baseMeshListMap = new Map([
+	[-3, { text: 'Box', prop: 'box' }],
+	[-2, { text: 'Chassis', prop: 'chassis' }],
+	[-1, { text: 'Wheels', prop: 'wheels', meshArray: true }]
+]);
 
 async function loadCar(modelName) {
 	const id = 'TestCar';
@@ -77,28 +82,6 @@ async function loadCar(modelName) {
 
 }
 
-/*
-const id = 'TestCar';
-const scale = .3;
-const modelName = 'Cybertruck';
-const color = "#FF0000";
-
-const modelPath = modelName ? `/models/${modelName}/${modelName}.js` : `/models/cars/CarBase.js`
-const { default: CarFactory } = await import(/!* @vite-ignore *!/ modelPath);
-const model = await CarFactory.Load(scene);
-const boundingVectors = model.meshes[0].getHierarchyBoundingVectors();
-const { maximumWorld, minimumWorld } = model.meshes[5].getBoundingInfo().boundingBox;
-buildMeshList(model);
-
-const car = new CarFactory({ position: new Vector3(0, 1, 0), scale, name, id, color, model, boundingVectors });
-car.build();
-
-car.chassis.isVisible = true;
-car.wheels.forEach((wheel) => wheel.isVisible = true);
-car.wheelBase.isVisible = true;
-*/
-
-
 engine.runRenderLoop(() => {
 	scene.render();
 });
@@ -108,6 +91,14 @@ function buildMeshList (model) {
 	while (meshList.firstChild) {
 		meshList.removeChild(meshList.firstChild);
 	}
+	baseMeshListMap.forEach((baseMeshList, index) => {
+		const { text } = baseMeshList;
+		meshList.insertAdjacentHTML('beforeend', `
+		<li><span>${text}</span>
+			<input type="checkbox" data-tag="visible" data-index="${index}" checked />
+			<input type="checkbox" data-tag="box" data-index="${index}" />
+		</li>`);
+	});
 	if (model?.meshes) {
 		model.meshes.forEach((mesh, index) => {
 			const li = `<li><span>Mesh ${index}:</span>
@@ -122,13 +113,30 @@ function buildMeshList (model) {
 function processClick(event) {
 	const meshNumber = parseInt(event.target.getAttribute('data-index'));
 	const tag = event.target.getAttribute('data-tag');
-	const mesh = model.meshes[meshNumber];
+	let mesh;
+	let meshArray = false;
+	if (meshNumber < 0) {
+		const baseMeshList = baseMeshListMap.get(meshNumber);
+		const prop = baseMeshList.prop;
+		meshArray = baseMeshList.meshArray;
+		mesh = car[prop];
+	} else {
+		mesh = model.meshes[meshNumber];
+	}
 	switch(tag) {
 		case 'visible':
-			mesh.isVisible = !mesh.isVisible;
+			if (meshArray) {
+				mesh.forEach((subMesh) => subMesh.isVisible = !subMesh.isVisible);
+			} else {
+				mesh.isVisible = !mesh.isVisible;
+			}
 			break;
 		case 'box':
-			mesh.showBoundingBox = !mesh.showBoundingBox;
+			if (meshArray) {
+				mesh.forEach((subMesh) => subMesh.showBoundingBox = !subMesh.showBoundingBox);
+			} else {
+				mesh.showBoundingBox = !mesh.showBoundingBox;
+			}
 			break;
 	}
 }

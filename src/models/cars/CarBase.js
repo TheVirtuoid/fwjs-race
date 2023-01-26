@@ -205,6 +205,10 @@ export default class CarBase {
 		}
 	}
 
+	get box () {
+		return this.#box;
+	}
+
 	get chassis () {
 		return this.#chassis;
 	}
