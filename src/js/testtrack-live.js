@@ -9,6 +9,7 @@ import {
 	Vector3 as BVector3
 } from "@babylonjs/core";
 import "@babylonjs/loaders";
+import Cybertruck from "../models/Cybertruck/Cybertruck";
 
 
 const posX = Vector3.right;
@@ -31,6 +32,7 @@ const wallHeight = .5;				// height of the wall
 // const trackRadius = 8				// fixed radius of a curve
 // const curveRadius = trackRadius * circleWeight;		// radius applied to curves
 const family = 'TestTrack';		// family grouping in which the track belongs
+const carScale = .5;
 
 const next = (start, change) => {
 	return new Vector3({
@@ -44,6 +46,17 @@ const toRadians = (degrees) => {
 	return degrees * Math.PI / 180;
 }
 
+const adjustCars = (cars) => {
+	cars.forEach((car, index) => {
+		const mainMesh = car.model.meshes[0];
+		mainMesh.scaling.scaleInPlace(carScale);
+		car.wheels.forEach((wheel) => wheel.isVisible = true);
+		if (car.type === 'Cybertruck') {
+			car.model.meshes[0].position.x += 1.1;
+			console.log(car);
+		}
+	});
+}
 
 const addStartingGate = (firstPoint, secondPoint, carLength, scene) => {
 	const black = Color3.Black().toColor4();
@@ -98,7 +111,7 @@ const addStartingGate = (firstPoint, secondPoint, carLength, scene) => {
 			const carLengthPositionShift = carLength / 2 + carGap;
 			const rotate = Math.atan(Math.abs(yDiff) / run);
 			const rToRads = rotate * 180 / Math.PI;
-			console.log(`ydiff, run, rotate, rToRads = ${yDiff}, ${run}, ${rotate}, ${rToRads}`);
+			// console.log(`ydiff, run, rotate, rToRads = ${yDiff}, ${run}, ${rotate}, ${rToRads}`);
 			const position = slot <= 1 ? lowerGate.position.clone() : upperGate.position.clone();
 
 			// this sets the position based upon the slot (perpendicular to the track)
@@ -115,7 +128,7 @@ const addStartingGate = (firstPoint, secondPoint, carLength, scene) => {
 			// build the car!
 			// car.build({ rotate: rToRads, position, scene });
 			car.build({ position, scene });
-			car.adjustRotation(firstPoint.forward, rToRads);
+			// car.adjustRotation(firstPoint.forward, rToRads);
 			// wheelBase.rotate(new Vector3(0, 1, 0), rotate);
 
 		});
@@ -292,8 +305,10 @@ const finishLine = {
 export function testTrackLive(tracks, cars, scene) {
 
 	const carLength = [...cars].reduce((carLength, car) => {
-		return Math.max(carLength, car.length);
+		return Math.max(carLength, car[1].modelSize.width * carScale);
 	}, -1);
+
+	console.log(carLength);
 
 	const { dropCars, startRace } = addStartingGate(trackStart, firstSlope, carLength, scene);
 	const { crossedFinishLine } = addFinishGate(finalSlope, finishLine, scene);
@@ -304,6 +319,7 @@ export function testTrackLive(tracks, cars, scene) {
 			this.track = {
 				last: finalSlope.center,
 				dropCars,
+				adjustCars,
 				crossedFinishLine,
 				startRace,
 				segments: [

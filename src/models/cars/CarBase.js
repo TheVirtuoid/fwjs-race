@@ -12,10 +12,7 @@ const zeroMass = false;
 	depth = side-to-side axis
 	width = front-to-back axis
  */
-
-const carHeight = 2;
-const carDepth = 4;
-const carWidth = 8;
+import { carDefaults } from './carBase-defaults';
 
 const defaults = {
 	wheel: {
@@ -26,33 +23,25 @@ const defaults = {
 		restitution: 0
 	},
 	wheelBase: {
-		depth: carDepth * .1,
-		width: carWidth * .1,
-		height: carHeight * .25,
+		depth: carDefaults.depth * .1,
+		width: carDefaults.width * .1,
+		height: carDefaults.height * .25,
 		mass: zeroMass ? 0 : 1302,
 		friction: 5,
 		restitution: 0
 	},
 	chassis: {
-		depth: carDepth * .75,
-		height: carHeight * .25,
-		width: carWidth,
+		depth: carDefaults.depth * .75,
+		height: carDefaults.height * .25,
+		width: carDefaults.width,
 		mass: 1,
 		friction: 0,
 		restitution: 0
 	},
-	/*chassis: {
-		depth: .75,
-		height: .25,
-		width: 1,
-		mass: 1,
-		friction: 0,
-		restitution: 0
-	},*/
 	box: {
-		depth: carDepth,
-		height: carHeight,
-		width: carWidth,
+		depth: carDefaults.depth,
+		height: carDefaults.height,
+		width: carDefaults.width,
 		mass: zeroMass ? 0 : 200,
 		friction: 0,
 		restitution: 0
@@ -94,13 +83,14 @@ export default class CarBase {
 
 	#boundingVectors;
 	#modelSize;
+	#type;
 
 	static Load(scene) {
 		return Promise.resolve(null);
 	}
 
 	constructor(args = {}) {
-		const { slot, scale = 1, scene, position, name, color, rotate = 0, model = null, boundingVectors = null }= args;
+		const { slot, scale = 1, scene, position, name, color, rotate = 0, model = null, boundingVectors = null, type = 'CarBase' }= args;
 		this.#scale = scale;
 		this.#scene = scene;
 		this.#position = position;
@@ -116,8 +106,9 @@ export default class CarBase {
 			let { wheelName, pivot } = wheelParameter;
 			return { wheelName, pivot: this.#scaleVector3(pivot) };
 		});
+		this.#type = type;
 		this.setModelSize(this.#boundingVectors);
-		console.log(this.#boundingVectors, this.#modelSize);
+		// console.log(this.#boundingVectors, this.#modelSize);
 		this.#defaults = {
 			wheel: {
 				diameter: defaults.wheel.diameter * this.#scale,
@@ -157,15 +148,7 @@ export default class CarBase {
 	}
 
 	setModelSize(boundingVectors) {
-		let width = carWidth;
-		let height = carHeight;
-		let depth = carDepth;
-		if (boundingVectors) {
-			const { max, min } = boundingVectors;
-			height = (max.y - min.y) * 0.49222866454548153;
-			depth = (max.x - min.x) * 2.4063928768304086;
-			width = (max.z - min.z) * 2.0967996763358596;
-		}
+		let { width, height, depth } = carDefaults;
 		this.#modelSize = { width, height, depth };
 	}
 
@@ -272,6 +255,26 @@ export default class CarBase {
 
 	get wheels () {
 		return this.#wheels;
+	}
+
+	get modelSize() {
+		return this.#modelSize;
+	}
+
+	set modelSize(args) {
+		this.#modelSize = args;
+	}
+
+	get scale() {
+		return this.#scale;
+	}
+
+	set scale(scale) {
+		this.#scale = scale;
+	}
+
+	get type() {
+		return this.#type;
 	}
 
 	setTelemetryMesh(mesh) {

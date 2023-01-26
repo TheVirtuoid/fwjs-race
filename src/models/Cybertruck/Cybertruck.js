@@ -4,7 +4,7 @@ import "@babylonjs/loaders";
 
 export default class Cybertruck extends CarBase {
 	constructor(args) {
-		super(args);
+		super({...args, ...{ scale: .25, type: 'Cybertruck' }});
 		this.model.meshes[5].material.albedoColor = this.color;
 	}
 
@@ -12,13 +12,19 @@ export default class Cybertruck extends CarBase {
 		return SceneLoader.ImportMeshAsync(null, '/models/', 'cybertruck.glb', scene);
 	}
 
+	setModelSize(boundingVectors) {
+		const { maximumWorld, minimumWorld } = this.model.meshes[5].getBoundingInfo().boundingBox;
+		this.modelSize = {
+			width: Math.sqrt(maximumWorld.x * maximumWorld.x + minimumWorld.x * minimumWorld.x),
+			height: Math.sqrt(maximumWorld.y * maximumWorld.y + minimumWorld.y * minimumWorld.y),
+			depth: Math.sqrt(maximumWorld.z * maximumWorld.z + minimumWorld.z * minimumWorld.z)
+		};
+	}
+
 	addModel(args) {
 		const { position } = args;
 		const box = this.model.meshes[0];
 		box.position = position.clone();
-		// box.rotate(new Vector3(0, 1, 0), 90 * Math.PI / 180);
-		// box.position.x += 1;
-		box.scaling.scaleInPlace(.5);
 		box.isVisible = true;
 		this.setTelemetryMesh(this.model.meshes[5]);
 		return box;

@@ -11,6 +11,8 @@ import OrderOfFinish from "./environment/OrderOfFinish";
 import RaceTiming from "./environment/RaceTiming";
 import {testTrackLive} from "../testtrack-live";
 
+import { Vector3 as BVector3 } from "@babylonjs/core";
+
 //======================================================================
 // WINDOW INITIALIZATION
 
@@ -23,7 +25,7 @@ function registerCallback(track) {
 const scale = .25;
 const wheelType = 'ellipse';
 const cars = new Map();
-const runCars = false;
+const runCars = true;
 
 // Error Display
 const errorDisplay = new ErrorDisplay(
@@ -61,7 +63,7 @@ slots.forEach((slot) => {
 	const { name, id, color } = slot.car;
 	const CarFactory = slot.CarFactory;
 	const model = slot.model;
-	cars.set(id, new CarFactory({ slot: slot.slot, scale, name, id, color, wheelType, model }));
+	cars.set(id, new CarFactory({ slot: slot.slot, scale, name, id, color, wheelType, model,boundingVectors: model.meshes[0].getHierarchyBoundingVectors()}));
 	if (slot.slot === 1) {
 		startingCarId = id;
 	}
@@ -74,6 +76,7 @@ testTrackLive(trackDisplay, cars, scene);
 trackDisplay.start();
 const selectedTrack = trackDisplay.getSelectedTrack();
 selectedTrack.dropCars(cars);
+selectedTrack.adjustCars(cars);
 const carsByUniqueId = new Map();
 const carMeshCheck = [...cars].map((car) => {
 	carsByUniqueId.set(car[1].telemetryMesh.uniqueId, car[1]);

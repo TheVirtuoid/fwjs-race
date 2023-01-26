@@ -46,18 +46,48 @@ wall4.physicsImpostor = new PhysicsImpostor(wall4, PhysicsImpostor.BoxImpostor, 
 
 const meshList = document.querySelector('#meshes ul');
 meshList.addEventListener('click', processClick);
+const selectCar = document.getElementById('selectCar');
+selectCar.addEventListener('change', processCarSelection);
 
+loadCar(selectCar.value);
+let model;
+let car;
+
+async function loadCar(modelName) {
+	const id = 'TestCar';
+	const scale = .3;
+	const color = "#FF0000";
+
+	const modelPath = modelName ? `/models/${modelName}/${modelName}.js` : `/models/cars/CarBase.js`
+	const { default: CarFactory } = await import(/* @vite-ignore */ modelPath);
+	model = await CarFactory.Load(scene);
+
+	const boundingVectors = model?.meshes[0].getHierarchyBoundingVectors();
+	buildMeshList(model);
+
+	if (car) {
+		car.junk();
+	}
+	car = new CarFactory({ position: new Vector3(0, 1, 0), scene, scale, name, id, color, model, boundingVectors });
+	car.build();
+
+	car.chassis.isVisible = true;
+	car.wheels.forEach((wheel) => wheel.isVisible = true);
+	car.wheelBase.isVisible = true;
+
+}
+
+/*
 const id = 'TestCar';
-const wheelType = 'ellipse';
 const scale = .3;
-// const modelName = 'Ferrari';
 const modelName = 'Cybertruck';
 const color = "#FF0000";
 
 const modelPath = modelName ? `/models/${modelName}/${modelName}.js` : `/models/cars/CarBase.js`
-const { default: CarFactory } = await import(/* @vite-ignore */ modelPath);
+const { default: CarFactory } = await import(/!* @vite-ignore *!/ modelPath);
 const model = await CarFactory.Load(scene);
 const boundingVectors = model.meshes[0].getHierarchyBoundingVectors();
+const { maximumWorld, minimumWorld } = model.meshes[5].getBoundingInfo().boundingBox;
 buildMeshList(model);
 
 const car = new CarFactory({ position: new Vector3(0, 1, 0), scale, name, id, color, model, boundingVectors });
@@ -66,6 +96,7 @@ car.build();
 car.chassis.isVisible = true;
 car.wheels.forEach((wheel) => wheel.isVisible = true);
 car.wheelBase.isVisible = true;
+*/
 
 
 engine.runRenderLoop(() => {
@@ -79,7 +110,10 @@ function buildMeshList (model) {
 	}
 	if (model?.meshes) {
 		model.meshes.forEach((mesh, index) => {
-			const li = `<li><span>Mesh ${index}:</span><input type="checkbox" data-index="${index}" checked /></li>`
+			const li = `<li><span>Mesh ${index}:</span>
+					<input type="checkbox" data-tag="visible" data-index="${index}" checked />
+					<input type="checkbox" data-tag="box" data-index="${index}" />
+			</li>`
 			meshList.insertAdjacentHTML('beforeend', li);
 		});
 	}
@@ -87,6 +121,20 @@ function buildMeshList (model) {
 
 function processClick(event) {
 	const meshNumber = parseInt(event.target.getAttribute('data-index'));
-	model.meshes[meshNumber].isVisible = !model.meshes[meshNumber].isVisible;
+	const tag = event.target.getAttribute('data-tag');
+	const mesh = model.meshes[meshNumber];
+	switch(tag) {
+		case 'visible':
+			mesh.isVisible = !mesh.isVisible;
+			break;
+		case 'box':
+			mesh.showBoundingBox = !mesh.showBoundingBox;
+			break;
+	}
+}
+
+function processCarSelection(event) {
+	const carSelected = event.target.value;
+	loadCar(carSelected);
 }
 
