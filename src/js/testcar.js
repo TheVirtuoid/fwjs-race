@@ -26,22 +26,24 @@ await ammo.bind(window)();
 scene.enablePhysics(new Vector3(0, -8.91, 0), new AmmoJSPlugin());
 
 // Create ground collider
-const ground = MeshBuilder.CreateGround("ground1", { width: 8, height: 8 }, scene);
+const ground = MeshBuilder.CreateGround("ground1", { width: 12, height: 12 }, scene);
+// ground.rotate(new Vector3(0, 0, 1), 12 * Math.PI / 180);
 ground.physicsImpostor = new PhysicsImpostor(ground, PhysicsImpostor.BoxImpostor, { mass: 0, friction: 100, restitution: 0 }, scene);
 
 
 // create walls so the car doesn't roll off screen
-const wall1 = MeshBuilder.CreateBox("wall1", { width: 8, height: 1, depth: .2 }, scene);
-wall1.position = new Vector3(0, 0 ,4);
+const wallHeight = 1.75;
+const wall1 = MeshBuilder.CreateBox("wall1", { width: 12, height: wallHeight, depth: .2 }, scene);
+wall1.position = new Vector3(0, 0 ,6);
 wall1.physicsImpostor = new PhysicsImpostor(wall1, PhysicsImpostor.BoxImpostor, { mass: 0 }, scene);
-const wall2 = MeshBuilder.CreateBox("wall2", { width: 8, height: 1, depth: .2 }, scene);
-wall2.position = new Vector3(0, 0 ,-4);
+const wall2 = MeshBuilder.CreateBox("wall2", { width: 12, height: wallHeight, depth: .2 }, scene);
+wall2.position = new Vector3(0, 0 ,-6);
 wall2.physicsImpostor = new PhysicsImpostor(wall2, PhysicsImpostor.BoxImpostor, { mass: 0 }, scene);
-const wall3 = MeshBuilder.CreateBox("wall3", { width: .2, height: 1, depth: 8 }, scene);
-wall3.position = new Vector3(4, 0 ,0);
+const wall3 = MeshBuilder.CreateBox("wall3", { width: .2, height: wallHeight, depth: 12 }, scene);
+wall3.position = new Vector3(6, 0 ,0);
 wall3.physicsImpostor = new PhysicsImpostor(wall3, PhysicsImpostor.BoxImpostor, { mass: 0 }, scene);
-const wall4 = MeshBuilder.CreateBox("wall4", { width: .2, height: 1, depth: 8 }, scene);
-wall4.position = new Vector3(-4, 0 ,0);
+const wall4 = MeshBuilder.CreateBox("wall4", { width: .2, height: wallHeight, depth: 12 }, scene);
+wall4.position = new Vector3(-6, 0 ,0);
 wall4.physicsImpostor = new PhysicsImpostor(wall4, PhysicsImpostor.BoxImpostor, { mass: 0 }, scene);
 
 const meshList = document.querySelector('#meshes ul');
@@ -76,9 +78,9 @@ async function loadCar(modelName) {
 	car = new CarFactory({ position: new Vector3(0, 1, 0), scene, scale, name, id, color, model, boundingVectors });
 	car.build();
 
-	car.chassis.isVisible = true;
+	// car.chassis.isVisible = true;
 	car.wheels.forEach((wheel) => wheel.isVisible = true);
-	car.wheelBase.isVisible = true;
+	// car.wheelBase.isVisible = true;
 
 }
 

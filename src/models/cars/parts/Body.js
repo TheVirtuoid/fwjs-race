@@ -1,9 +1,11 @@
-import {MeshBuilder} from "@babylonjs/core";
+import {MeshBuilder, PhysicsImpostor} from "@babylonjs/core";
+import {carDefaults} from "../carBase-defaults";
+import Part from "./Part";
 
 const defaults = {
-	depth: 1,
-	height: 1,
-	width: 1,
+	depth: carDefaults.depth,
+	height: carDefaults.height,
+	width: carDefaults.width,
 	mass: 200,
 	friction: 0,
 	restitution: 0
@@ -11,10 +13,6 @@ const defaults = {
 export default class Body extends Part {
 	#color;
 	constructor(args) {
-		const { carDepth = 1, carWidth = 1, carHeight = 1 } = args;
-		defaults.depth *= carDepth;
-		defaults.width *= carWidth;
-		defaults.height *= carHeight;
 		super(defaults, args);
 		const { color } = args;
 		this.#color = color;
@@ -30,9 +28,19 @@ export default class Body extends Part {
 		const { depth, height, width, name } = this;
 		const box = MeshBuilder.CreateBox(`${name}-box`, { depth, height, width, faceColors }, scene);
 		box.position = position.clone();
-		box.position.y += .25;
+		box.position.y += height / 2;
 		box.isVisible = true;
-		this.part = box;
-		return box;
+		this.mesh = box;
+		return this;
+	}
+
+	applyPhysics() {
+		this.mesh.physicsImpostor = new PhysicsImpostor(
+				this.mesh, PhysicsImpostor.NoImpostor, {
+					mass: this.mass,
+					friction: this.friction,
+					restitution: this.restitution
+				});
+		return this;
 	}
 }

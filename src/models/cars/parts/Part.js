@@ -1,71 +1,55 @@
 export default class Part {
-	#height;
-	#depth;
-	#width;
+	height;
+	depth;
+	width;
 	#mass;
 	#zeroMass;
-	#friction;
-	#restitution;
-	#name;
-	#part;
+	friction;
+	restitution;
+	name;
+	mesh;
 
 	constructor(defaults, args) {
-		const { height, depth, width, mass, friction, restitution, zeroMass = false, name } = args;
-		this.#height = defaults.height ?? height;
-		this.#depth = defaults.depth ?? depth;
-		this.#width = defaults.width ?? width;
-		this.#mass = defaults.mass ?? mass;
+		const incomingData = {...defaults, ...args};
+		const { height, depth, width, mass, friction, restitution, zeroMass = false, name } = incomingData;
+		this.height = height;
+		this.depth = depth;
+		this.width = width;
+		this.#mass = mass;
 		this.#zeroMass = zeroMass;
-		this.#friction = defaults.friction ?? friction;
-		this.#restitution = defaults.restitution ?? restitution;
-		this.#name = name;
-		this.#part = null;
+		this.friction = friction;
+		this.restitution = restitution;
+		this.name = name;
+		this.mesh = null;
 	}
 
-	build () {}
-
-	get height() {
-		return this.#height;
+	build () {
+		return this;
 	}
 
-	get depth() {
-		return this.#depth;
+	addModel() {
+		return this;
 	}
 
-	get width() {
-		return this.#width;
+	applyPhysics () {
+		return this;
 	}
 
 	get mass() {
 		return this.#zeroMass ? 0 : this.#mass;
 	}
-
-	get zeroMass() {
-		return this.#zeroMass;
-	}
-
 	set zeroMass(setting) {
 		this.#zeroMass = !!setting;
 	}
 
-	get friction() {
-		return this.#friction;
+	get isBuilt() {
+		return !!this.mesh;
 	}
 
-	get restitution() {
-		return this.#restitution;
+	junk(scene) {
+		if (this.mesh) {
+			scene.removeMesh(this.mesh);
+			this.mesh = null;
+		}
 	}
-
-	get part() {
-		return this.#part;
-	}
-
-	set part(part) {
-		this.#part = part;
-	}
-
-	get name() {
-		return this.#name;
-	}
-
 }

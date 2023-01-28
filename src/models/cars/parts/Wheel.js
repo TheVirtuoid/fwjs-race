@@ -1,39 +1,69 @@
-import {MeshBuilder, StandardMaterial, Texture} from "@babylonjs/core";
+import {MeshBuilder, PhysicsImpostor, StandardMaterial, Texture} from "@babylonjs/core";
 import Part from "./Part";
-
+import {carDefaults} from "../carBase-defaults";
 const defaults = {
-	diameter: 1.5,
-	height: 1,
+	diameter: carDefaults.height *.75,
 	mass: 23,
 	friction: 50,
-	restitution: 0
+	restitution: 0,
+	textureUrl: 'https://i.imgur.com/JbvoYlB.png'
 };
 export default class Wheel extends Part {
 
 	#diameter = defaults.diameter;
+	#textureUrl = defaults.textureUrl;
+
+	#pivot;
+
+	#wheelName;
 	constructor(args) {
 		super(defaults, args);
-		const { diameter } = args;
+		const { diameter, textureUrl, pivot, wheelName } = args;
 		this.#diameter = diameter ?? this.#diameter;
+		this.#textureUrl = textureUrl ?? this.#textureUrl;
+		this.#pivot = pivot;
+		this.#wheelName = wheelName;
 	}
 
 	get diameter () {
 		return this.#diameter;
 	}
 
+	get textureUrl () {
+		return this.#textureUrl;
+	}
+
+	get pivot() {
+		return this.#pivot;
+	}
+
+	get wheelName() {
+		return this.#wheelName;
+	}
+
 	build(args) {
-		const { scene, position, wheelName, pivot } = args;
-		const wheel = MeshBuilder.CreateSphere(`${this.name}-wheel-${wheelName}`, {
+		const { scene, position } = args;
+		const wheel = MeshBuilder.CreateSphere(`${this.name}-wheel-${this.wheelName}`, {
 			diameterX: this.diameter,
 			diameterY: this.diameter / 2,
 			diameterZ: this.diameter
 		}, scene);
-		wheel.material = new StandardMaterial(`${name}-wheelmat-${wheelName}`, scene);
-		wheel.material.diffuseTexture = new Texture("https://i.imgur.com/JbvoYlB.png", scene);
+		wheel.material = new StandardMaterial(`${name}-wheelmat-${this.wheelName}`, scene);
+		wheel.material.diffuseTexture = new Texture(this.#textureUrl, scene);
 		wheel.rotation.x = Math.PI / 2;
 		wheel.position = position.clone();
-		wheel.isVisible = false;
-		this.part = wheel;
-		return { part: this.part, pivot };
+		this.mesh = wheel;
+		return this;
+	}
+
+	applyPhysics() {
+		this.mesh.physicsImpostor = new PhysicsImpostor(
+				this.mesh,
+				PhysicsImpostor.SphereImpostor, {
+					mass: this.mass,
+					friction: this.friction,
+					restitution: this.restitution
+				});
+		return this;
 	}
 }
