@@ -8,10 +8,11 @@ export default class Part {
 	restitution;
 	name;
 	mesh;
+	color;
 
 	constructor(defaults, args) {
 		const incomingData = {...defaults, ...args};
-		const { height, depth, width, mass, friction, restitution, zeroMass = false, name } = incomingData;
+		const { height, depth, width, mass, friction, restitution, zeroMass = false, name, color } = incomingData;
 		this.height = height;
 		this.depth = depth;
 		this.width = width;
@@ -21,6 +22,7 @@ export default class Part {
 		this.restitution = restitution;
 		this.name = name;
 		this.mesh = null;
+		this.color = color;
 	}
 
 	build () {

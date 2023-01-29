@@ -83,8 +83,8 @@ export default class CarBase {
 				return this.#addWheel({ name, scene, position, wheelName, pivot });
 			});
 			let body = this.#addBody({ name, scene, position, color });
-
 			transmission.mesh.addChild(body.mesh);
+
 			this.#setPhysics({ transmission, wheels, body });
 			this.#transmission = transmission;
 			this.#wheels = wheels;
@@ -205,8 +205,8 @@ export default class CarBase {
 
 	#setPhysics(args = {}) {
 		const { transmission, wheels, chassis, body } = args;
-		transmission.applyPhysics();
 		body.applyPhysics();
+		transmission.applyPhysics();
 		wheels.forEach((wheel) => {
 			wheel.applyPhysics();
 			const joint = new HingeJoint({
@@ -218,7 +218,6 @@ export default class CarBase {
 			});
 			transmission.mesh.physicsImpostor.addJoint(wheel.mesh.physicsImpostor, joint);
 		});
-		return { transmission, wheels, chassis, body };
 	}
 
 	#hashToColor(hash) {

@@ -6,7 +6,7 @@ const defaults = {
 	depth: carDefaults.depth,
 	height: carDefaults.height,
 	width: carDefaults.width,
-	mass: 200,
+	mass: 2000,
 	friction: 0,
 	restitution: 0
 }
@@ -36,7 +36,7 @@ export default class Body extends Part {
 
 	applyPhysics() {
 		this.mesh.physicsImpostor = new PhysicsImpostor(
-				this.mesh, PhysicsImpostor.NoImpostor, {
+				this.mesh, PhysicsImpostor.BoxImpostor, {
 					mass: this.mass,
 					friction: this.friction,
 					restitution: this.restitution

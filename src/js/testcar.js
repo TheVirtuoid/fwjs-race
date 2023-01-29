@@ -55,8 +55,8 @@ loadCar(selectCar.value);
 let model;
 let car;
 const baseMeshListMap = new Map([
-	[-3, { text: 'Box', prop: 'box' }],
-	[-2, { text: 'Chassis', prop: 'chassis' }],
+	[-3, { text: 'Body', prop: 'body' }],
+	[-2, { text: 'Transmission', prop: 'transmission' }],
 	[-1, { text: 'Wheels', prop: 'wheels', meshArray: true }]
 ]);
 
@@ -77,11 +77,6 @@ async function loadCar(modelName) {
 	}
 	car = new CarFactory({ position: new Vector3(0, 1, 0), scene, scale, name, id, color, model, boundingVectors });
 	car.build();
-
-	// car.chassis.isVisible = true;
-	car.wheels.forEach((wheel) => wheel.isVisible = true);
-	// car.wheelBase.isVisible = true;
-
 }
 
 engine.runRenderLoop(() => {
@@ -121,21 +116,25 @@ function processClick(event) {
 		const baseMeshList = baseMeshListMap.get(meshNumber);
 		const prop = baseMeshList.prop;
 		meshArray = baseMeshList.meshArray;
-		mesh = car[prop];
+		if (meshArray) {
+			mesh = car[prop];
+		} else {
+			mesh = car[prop].mesh;
+		}
 	} else {
 		mesh = model.meshes[meshNumber];
 	}
 	switch(tag) {
 		case 'visible':
 			if (meshArray) {
-				mesh.forEach((subMesh) => subMesh.isVisible = !subMesh.isVisible);
+				mesh.forEach((subMesh) => subMesh.mesh.isVisible = !subMesh.mesh.isVisible);
 			} else {
 				mesh.isVisible = !mesh.isVisible;
 			}
 			break;
 		case 'box':
 			if (meshArray) {
-				mesh.forEach((subMesh) => subMesh.showBoundingBox = !subMesh.showBoundingBox);
+				mesh.forEach((subMesh) => subMesh.mesh.showBoundingBox = !subMesh.mesh.showBoundingBox);
 			} else {
 				mesh.showBoundingBox = !mesh.showBoundingBox;
 			}
