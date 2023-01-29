@@ -10,6 +10,8 @@ export default class Part {
 	mesh;
 	color;
 
+	colliderMesh;
+
 	constructor(defaults, args) {
 		const incomingData = {...defaults, ...args};
 		const { height, depth, width, mass, friction, restitution, zeroMass = false, name, color } = incomingData;
@@ -23,6 +25,7 @@ export default class Part {
 		this.name = name;
 		this.mesh = null;
 		this.color = color;
+		this.colliderMesh = null;
 	}
 
 	build () {
@@ -49,9 +52,13 @@ export default class Part {
 	}
 
 	junk(scene) {
-		if (this.mesh) {
-			scene.removeMesh(this.mesh);
-			this.mesh = null;
-		}
+		['mesh', 'colliderMesh'].forEach((mesh) => {
+			if (this[mesh]) {
+				scene.removeMesh(this[mesh]);
+				this[mesh].physicsImpostor?.dispose();
+				this[mesh].dispose();
+				this[mesh] = null;
+			}
+		});
 	}
 }

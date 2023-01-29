@@ -48,7 +48,7 @@ export default class Wheel extends Part {
 			diameterY: this.diameter / 2,
 			diameterZ: this.diameter
 		}, scene);
-		wheel.material = new StandardMaterial(`${name}-wheelmat-${this.wheelName}`, scene);
+		wheel.material = new StandardMaterial(`${this.name}-wheelmat-${this.wheelName}`, scene);
 		wheel.material.diffuseTexture = new Texture(this.#textureUrl, scene);
 		wheel.rotation.x = Math.PI / 2;
 		wheel.position = position.clone();

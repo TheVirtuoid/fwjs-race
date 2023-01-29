@@ -17,11 +17,11 @@ export default class Transmission extends Part {
 	build (args) {
 		const { scene, position } = args;
 		const { depth, width, height } = this;
-		const wheelBase = MeshBuilder.CreateBox(`${name}-wheelbase`, { depth, width, height }, scene);
-		wheelBase.rotation.x = Math.PI / 2;
-		wheelBase.position = position.clone();
-		wheelBase.isVisible = true;
-		this.mesh = wheelBase;
+		const transmission = MeshBuilder.CreateBox(`${this.name}-transmission`, { depth, width, height }, scene);
+		transmission.rotation.x = Math.PI / 2;
+		transmission.position = position.clone();
+		transmission.isVisible = true;
+		this.mesh = transmission;
 		return this;
 	}
 

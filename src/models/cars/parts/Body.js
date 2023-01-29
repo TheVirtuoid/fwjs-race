@@ -12,21 +12,29 @@ const defaults = {
 }
 export default class Body extends Part {
 	#color;
+
+	#model;
+
 	constructor(args) {
 		super(defaults, args);
-		const { color } = args;
+		const { color, model = null } = args;
 		this.#color = color;
+		this.#model = model;
 	}
 
 	build(args) {
 		return this.addModel(args);
 	}
 
+	get model() {
+		return this.#model;
+	}
+
 	addModel(args) {
 		const { scene, position } = args;
 		const faceColors = new Array(6).fill(this.color);
 		const { depth, height, width, name } = this;
-		const box = MeshBuilder.CreateBox(`${name}-box`, { depth, height, width, faceColors }, scene);
+		const box = MeshBuilder.CreateBox(`${name}-body`, { depth, height, width, faceColors }, scene);
 		box.position = position.clone();
 		box.position.y += height / 2;
 		box.isVisible = true;

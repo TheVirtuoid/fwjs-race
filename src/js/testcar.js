@@ -1,7 +1,6 @@
 import {
-	AmmoJSPlugin, ArcRotateCamera, Color3,
+	AmmoJSPlugin, ArcRotateCamera,
 	Engine,
-	FreeCamera,
 	HemisphericLight,
 	MeshBuilder,
 	PhysicsImpostor,
@@ -51,7 +50,9 @@ meshList.addEventListener('click', processClick);
 const selectCar = document.getElementById('selectCar');
 selectCar.addEventListener('change', processCarSelection);
 
-loadCar(selectCar.value);
+const name = 'TestCar';
+
+loadCar(selectCar.value, name);
 let model;
 let car;
 const baseMeshListMap = new Map([
@@ -60,9 +61,8 @@ const baseMeshListMap = new Map([
 	[-1, { text: 'Wheels', prop: 'wheels', meshArray: true }]
 ]);
 
-async function loadCar(modelName) {
+async function loadCar(modelName, name) {
 	const id = 'TestCar';
-	const scale = .3;
 	const color = "#FF0000";
 
 	const modelPath = modelName ? `/models/${modelName}/${modelName}.js` : `/models/cars/CarBase.js`
@@ -72,11 +72,8 @@ async function loadCar(modelName) {
 	const boundingVectors = model?.meshes[0].getHierarchyBoundingVectors();
 	buildMeshList(model);
 
-	if (car) {
-		car.junk();
-	}
-	car = new CarFactory({ position: new Vector3(0, 1, 0), scene, scale, name, id, color, model, boundingVectors });
-	car.build();
+	car = new CarFactory({ position: new Vector3(0, 1, 0), scene, name, id, color, model, boundingVectors });
+	car.build({ name });
 }
 
 engine.runRenderLoop(() => {
@@ -144,6 +141,8 @@ function processClick(event) {
 
 function processCarSelection(event) {
 	const carSelected = event.target.value;
+	car.junk();
+	car = null;
 	loadCar(carSelected);
 }
 

@@ -43,13 +43,15 @@ export default class CarBase {
 	#modelSize;
 	#type;
 
+	// public
+	BodyFactory;
 
 	static Load(scene) {
 		return Promise.resolve(null);
 	}
 
 	constructor(args = {}) {
-		const { slot, scene, position, name, color, model = null, boundingVectors = null, type = 'CarBase' }= args;
+		const { slot, scene, position, name, color, model = null, type = 'CarBase', BodyFactory = Body }= args;
 		this.#scene = scene;
 		this.#position = position;
 		this.#name = name;
@@ -60,6 +62,7 @@ export default class CarBase {
 		this.#type = type;
 		this.#built = false;
 		this.#telemetryMesh = null;
+		this.BodyFactory = BodyFactory;
 		this.setModelSize();
 	}
 
@@ -82,7 +85,7 @@ export default class CarBase {
 				const { wheelName, pivot } = wheel;
 				return this.#addWheel({ name, scene, position, wheelName, pivot });
 			});
-			let body = this.#addBody({ name, scene, position, color });
+			let body = this.#addBody({ name, scene, position, color, model });
 			transmission.mesh.addChild(body.mesh);
 
 			this.#setPhysics({ transmission, wheels, body });
@@ -102,16 +105,13 @@ export default class CarBase {
 
 	junk () {
 		if (this.#built) {
-			this.#scene.removeMesh(this.#transmission.mesh);
-			this.#transmission.mesh.physicsImpostor.dispose();
-			this.#transmission.mesh.dispose();
-			this.#transmission = null;
 			this.#wheels.forEach((wheel) => {
-				this.#scene.removeMesh(wheel.mesh);
-				wheel.mesh.physicsImpostor.dispose();
-				wheel.mesh.dispose();
+				wheel.junk(this.#scene);
 			});
+			this.#body.junk(this.#scene);
+			this.#transmission.junk(this.#scene);
 			this.#wheels = [];
+			this.#model = null;
 			this.#built = false;
 		}
 	}
@@ -199,12 +199,12 @@ export default class CarBase {
 	}
 
 	#addBody(args = {}){
-		const body = new Body(args);
+		const body = new this.BodyFactory(args);
 		return body.build(args);
 	}
 
 	#setPhysics(args = {}) {
-		const { transmission, wheels, chassis, body } = args;
+		const { transmission, wheels, body } = args;
 		body.applyPhysics();
 		transmission.applyPhysics();
 		wheels.forEach((wheel) => {
