@@ -11,16 +11,16 @@ class FerrariBody extends Body {
 
 	addModel(args) {
 		const { position } = args;
+		const { depth, height, width, name, scene } = this;
+
 		const body = this.model.meshes[0];
 		body.position = position.clone();
-		body.position.y -= .5;
-		body.position.x -= .2;
+		body.position.y -= height * .25;
+		body.position.x -= depth * .05;
 		body.rotate(new Vector3(0, 1, 0), -90 * Math.PI / 180);
 		body.scaling.scaleInPlace(2.25);
 		body.isVisible = true;
 		this.mesh = body;
-
-		const { depth, height, width, name, scene } = this;
 
 		const colliderMesh = MeshBuilder.CreateBox(`${name}-body-collider`, { depth, height: height - .25, width: width + 1.75 }, scene);
 		colliderMesh.position = position.clone();
@@ -54,7 +54,6 @@ export default class Ferrari extends CarBase {
 		super({ ...args, ...{ BodyFactory: FerrariBody } });
 		this.model.meshes[9].material.albedoColor = this.color;
 		this.setTelemetryMesh(this.model.meshes[9]);
-		// this.model.meshes[0].scaling.scaleInPlace(2.2);
 	}
 
 	/*setModelSize(boundingVectors) {

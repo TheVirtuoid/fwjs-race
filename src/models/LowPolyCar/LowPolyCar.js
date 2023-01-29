@@ -27,7 +27,6 @@ class LowPolyCarBody extends Body {
 		colliderMesh.showBoundingBox = true;
 		this.colliderMesh = colliderMesh;
 		this.model.meshes[0].addChild(this.colliderMesh);
-		console.log(this.colliderMesh);
 		return this;
 	}
 
