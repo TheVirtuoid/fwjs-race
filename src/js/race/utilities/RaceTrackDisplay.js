@@ -66,7 +66,7 @@ class RaceTrackDisplay {
 			// Produce the track
 			for (let i = 0; i < trackSegments.length; i++) {
 				const trackSegment = trackSegments[i];
-				const physicsOptions = { ...{ mass: 0, restitution: 0, friction: 2 }, ...trackSegment.physicsOptions };
+				const physicsOptions = { ...{ mass: 0, restitution: 0, friction: 1 }, ...trackSegment.physicsOptions };
 				this.#meshes.push(this.#gameEngine.createRibbon(
 					`Segment${i}`,
 					trackSegment.track.ribbon,

@@ -27,12 +27,12 @@ const zero = Vector3.zero;
 // forward rotated 180 degrees around down.
 const circleWeight = 0.5519150244935105707435627;
 
-const trackWidth = 4;					// width of the track
-const wallHeight = .5;				// height of the wall
+const trackWidth = 24;					// width of the track
+const wallHeight = 3;				// height of the wall
 // const trackRadius = 8				// fixed radius of a curve
 // const curveRadius = trackRadius * circleWeight;		// radius applied to curves
 const family = 'TestTrack';		// family grouping in which the track belongs
-const carScale = .5;
+// const carScale = .5;
 
 const next = (start, change) => {
 	return new Vector3({
@@ -48,23 +48,23 @@ const toRadians = (degrees) => {
 
 const adjustCars = (cars) => {
 	cars.forEach((car, index) => {
-		const mainMesh = car.model.meshes[0];
-		mainMesh.scaling.scaleInPlace(carScale);
+		// const mainMesh = car.model?.meshes[0] ?? car.body;
+		// mainMesh.scaling.scaleInPlace(carScale);
 		car.wheels.forEach((wheel) => wheel.isVisible = true);
-		if (car.type === 'Cybertruck') {
+		/*if (car.type === 'Cybertruck') {
 			car.model.meshes[0].position.x += 1.1;
 			console.log(car);
-		}
+		}*/
 	});
 }
 
 const addStartingGate = (firstPoint, secondPoint, carLength, scene) => {
 	const black = Color3.Black().toColor4();
 	const faceColors = [black, black, black, black, black, black];
-	const carGap = .5;
+	const carGap = carLength * .25;
 	const gateWidth = .5;
-	const gateHeight = 1.5;
-	const gateGap = carGap + carLength + gateWidth / 2;
+	const gateHeight = 3;
+	const gateGap = carGap * 2 + carLength + gateWidth / 2;
 
 	const { x: fpx, y: fpy, z: fpz } = firstPoint.center;
 	const { x: spx, y: spy, z: spz } = secondPoint.center;
@@ -123,12 +123,14 @@ const addStartingGate = (firstPoint, secondPoint, carLength, scene) => {
 			position.z -= carLengthPositionShift * firstPoint.forward.z;
 
 			// this sets the Y position (regardless of the slot)
-			position.y += carLengthPositionShift * ySlope + .5;
+			position.y += carLengthPositionShift * ySlope + carLength * .5;
 
 			// build the car!
 			// car.build({ rotate: rToRads, position, scene });
+			// position.y += 2;
 			car.build({ position, scene });
 			// car.adjustRotation(firstPoint.forward, rToRads);
+			// car.adjustRotation({ x: 0, y: 1, z: 0 }, toRadians(25));
 			// wheelBase.rotate(new Vector3(0, 1, 0), rotate);
 
 		});
@@ -136,8 +138,8 @@ const addStartingGate = (firstPoint, secondPoint, carLength, scene) => {
 
 	const startRace = () => {
 		return new Promise((resolve, reject) => {
-			lowerGate.position.y -= gateHeight;
-			upperGate.position.y -= gateHeight;
+			lowerGate.position.y -= gateHeight * 2;
+			upperGate.position.y -= gateHeight * 2;
 			setTimeout(() => {
 				resolve(true);
 			}, 3000);
@@ -241,7 +243,7 @@ const curve45Radius = trackWidth * 8;
 const curve45Weight = curve45Radius * circleWeight;
 
 const firstSlope = {
-	center: next(trackStart, { x: -40, y: -20, z: 0}),
+	center: next(trackStart, { x: -trackWidth * 10, y: -trackWidth * 5, z: 0}),
 	forward: negX,
 	backwardWeight: 10,
 	forwardWeight: curve45Weight
@@ -251,11 +253,11 @@ const curve45 = {
 	center: next(firstSlope, {x: -curve45Radius, y: 0, z: -curve45Radius}),
 	forward: negZ,
 	backwardWeight: curve45Radius,
-	trackBank: 23
+	// trackBank: 23
 }
 
 const curve45Landing = {
-	center: next(curve45, { x: 0, y: 0, z: -10 }),
+	center: next(curve45, { x: 0, y: 0, z: -trackWidth * 2.5 }),
 	forward: negZ,
 	forwardWeight: 20
 }
@@ -264,7 +266,7 @@ const curve180Radius = trackWidth * 4;
 const curve180Weight = curve180Radius * circleWeight;
 
 const secondSlope = {
-	center: next(curve45Landing, { x: 0, y: -30, z: -60 }),
+	center: next(curve45Landing, { x: 0, y: -trackWidth * 7.5, z: -trackWidth * 15 }),
 	forward: negZ,
 	forwardWeight: curve180Weight,
 	backwardWeight: 20
@@ -275,40 +277,39 @@ const curve180_1 = {
 	forward: posX,
 	backwardWeight: curve180Weight,
 	forwardWeight: curve180Weight,
-	trackBank: 45
+	// trackBank: 45
 }
 
 const curve180_2 = {
 	center: next(curve180_1, { x: curve180Radius, y: 0, z: curve180Radius }),
 	forward: posZ,
 	backwardWeight: curve180Weight,
-	trackBank: 45
+	// trackBank: 45
 }
 
 const curve180Landing = {
-	center: next(curve180_2, { x: 0, y: 0, z: 10 }),
+	center: next(curve180_2, { x: 0, y: 0, z: trackWidth * 2.5 }),
 	forward: posZ,
 	forwardWeight: 10
 }
 
 const finalSlope = {
-	center: next(curve180Landing, { x: 0, y: -10, z: 40  }),
+	center: next(curve180Landing, { x: 0, y: -trackWidth * 2.5, z: trackWidth * 10  }),
 	forward: posZ,
 	backwardWeight: 10
 }
 
 const finishLine = {
-	center: next(finalSlope, { x: 0, y: 0, z: 20 }),
+	center: next(finalSlope, { x: 0, y: 0, z: trackWidth * 5 }),
 	forward: posZ
 }
 
 export function testTrackLive(tracks, cars, scene) {
 
 	const carLength = [...cars].reduce((carLength, car) => {
-		return Math.max(carLength, car[1].modelSize.width * carScale);
+		// return Math.max(carLength, car[1].modelSize.width * carScale);
+		return Math.max(carLength, car[1].modelSize.width);
 	}, -1);
-
-	console.log(carLength);
 
 	const { dropCars, startRace } = addStartingGate(trackStart, firstSlope, carLength, scene);
 	const { crossedFinishLine } = addFinishGate(finalSlope, finishLine, scene);
@@ -317,7 +318,7 @@ export function testTrackLive(tracks, cars, scene) {
 		family,
 		init: function() {
 			this.track = {
-				last: finalSlope.center,
+				last: trackStart.center,
 				dropCars,
 				adjustCars,
 				crossedFinishLine,

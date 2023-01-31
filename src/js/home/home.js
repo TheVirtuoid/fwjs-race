@@ -1,7 +1,8 @@
 import CarService from "./CarService";
 
 const carData = [
-	{ name: 'Green Ghost', color: '#00ff00', id: 'green-ghost', model: 'cybertruck' },
+	// { name: 'Green Ghost', color: '#00ff00', id: 'green-ghost', model: 'cybertruck' },
+	{ name: 'Green Ghost', color: '#00ff00', id: 'green-ghost', model: 'Ferrari' },
 	{ name: 'Red Ranger', color: '#ff0000', id: 'red-ranger', model: 'Ferrari' },
 	{ name: 'Blue Bull', color: '#0000ff', id: 'blue-bull', model: 'LowPolyCar' },
 	{ name: 'Yellow Yak', color: '#ffff00', id: 'yellow-yak', model: 'LowPolyCar' },

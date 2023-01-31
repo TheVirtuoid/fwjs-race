@@ -3,8 +3,8 @@ import Part from "./Part";
 import {carDefaults} from "../carBase-defaults";
 const defaults = {
 	diameter: carDefaults.height *.75,
-	mass: 20,
-	friction: 50,
+	mass: 1,
+	friction: 1,
 	restitution: 0,
 	textureUrl: 'https://i.imgur.com/JbvoYlB.png'
 };

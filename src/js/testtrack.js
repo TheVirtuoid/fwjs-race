@@ -16,6 +16,8 @@ import {testTrackLive} from "./testtrack-live";
 import countdown from "./race/environment/countdown";
 import RaceTrackDisplay from "./race/utilities/RaceTrackDisplay";
 
+import {carDefaults} from "../models/cars/carBase-defaults";
+
 const gameEngine = new BabylonAdapter();
 gameEngine.setCanvas("renderCanvas");
 
@@ -39,7 +41,15 @@ const camera = scene.cameras[0];
 
 gameEngine.ready();
 
-testTrackLive(trackDisplay, scene);
+const carLength = Math.max(carDefaults.depth, carDefaults.height, carDefaults.width);
+const cars = [
+	[1, { modelSize: { width: carLength } }],
+	[2, { modelSize: { width: carLength } }],
+	[3, { modelSize: { width: carLength } }],
+	[4, { modelSize: { width: carLength } }],
+];
+
+testTrackLive(trackDisplay, cars, scene);
 trackDisplay.start();
 const selectedTrack = trackDisplay.getSelectedTrack();
 const { x, y, z } = selectedTrack.last;

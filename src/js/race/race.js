@@ -63,7 +63,7 @@ slots.forEach((slot) => {
 	const { name, id, color } = slot.car;
 	const CarFactory = slot.CarFactory;
 	const model = slot.model;
-	cars.set(id, new CarFactory({ slot: slot.slot, scale, name, id, color, wheelType, model,boundingVectors: model.meshes[0].getHierarchyBoundingVectors()}));
+	cars.set(id, new CarFactory({ slot: slot.slot, scale, name, id, color, wheelType, model }));
 	if (slot.slot === 1) {
 		startingCarId = id;
 	}
@@ -82,7 +82,8 @@ const carMeshCheck = [...cars].map((car) => {
 	carsByUniqueId.set(car[1].telemetryMesh.uniqueId, car[1]);
 	return car[1].telemetryMesh
 });
-camera.lockedTarget = cars.get(startingCarId).chassis;
+camera.position = new BVector3(0, 60, -60);
+camera.lockedTarget = cars.get(startingCarId).telemetryMesh;
 
 const orderOfFinish = new OrderOfFinish({ dom: '#order-of-finish ol' });
 const raceTiming = new RaceTiming({ dom: '#race-timing p' });
@@ -98,6 +99,15 @@ const renderLoopCallback = () => {
 	}
 };
 gameEngine.startRenderLoop(renderLoopCallback);
+/*
+selectedTrack.dropCars(cars);
+selectedTrack.adjustCars(cars);
+const carsByUniqueId = new Map();
+const carMeshCheck = [...cars].map((car) => {
+	carsByUniqueId.set(car[1].telemetryMesh.uniqueId, car[1]);
+	return car[1].telemetryMesh
+});
+*/
 if (runCars) {
 	const lights = countdown();
 	lights.start()

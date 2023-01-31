@@ -87,6 +87,7 @@ export default class CarBase {
 			});
 			let body = this.#addBody({ name, scene, position, color, model });
 			transmission.mesh.addChild(body.mesh);
+			// transmission.mesh.addChild(body.colliderMesh);
 
 			this.#setPhysics({ transmission, wheels, body });
 			this.#transmission = transmission;
@@ -94,13 +95,16 @@ export default class CarBase {
 			this.#scene = scene;
 			this.#body = body;
 			this.#model = model;
+			if (!this.#telemetryMesh) {
+				this.#telemetryMesh = this.#body.mesh;
+			}
 			this.#built = true;
 		}
 	}
 
 	adjustRotation(forwardVector, radians) {
 		const { x, y, z } = forwardVector;
-		this.#transmission.rotate(new Vector3(x, y, z), radians);
+		this.#transmission.mesh.rotate(new Vector3(x, y, z), radians);
 	}
 
 	junk () {

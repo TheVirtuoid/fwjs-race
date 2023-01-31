@@ -6,8 +6,8 @@ const defaults = {
 	depth: carDefaults.depth * .1,
 	width: carDefaults.width * .1,
 	height: carDefaults.height * .25,
-	mass: 200,
-	friction: 5,
+	mass: 10,
+	friction: 1,
 	restitution: 0
 }
 export default class Transmission extends Part {
