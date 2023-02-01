@@ -28,7 +28,7 @@ const zero = Vector3.zero;
 const circleWeight = 0.5519150244935105707435627;
 
 const trackWidth = 24;					// width of the track
-const wallHeight = 3;				// height of the wall
+const wallHeight = 5;				// height of the wall
 // const trackRadius = 8				// fixed radius of a curve
 // const curveRadius = trackRadius * circleWeight;		// radius applied to curves
 const family = 'TestTrack';		// family grouping in which the track belongs
@@ -239,13 +239,13 @@ const trackStart = {
 	forward: negX
 }
 
-const curve45Radius = trackWidth * 8;
+const curve45Radius = trackWidth * 4;
 const curve45Weight = curve45Radius * circleWeight;
 
 const firstSlope = {
 	center: next(trackStart, { x: -trackWidth * 10, y: -trackWidth * 5, z: 0}),
 	forward: negX,
-	backwardWeight: 10,
+	backwardWeight: 40,
 	forwardWeight: curve45Weight
 }
 
@@ -253,11 +253,11 @@ const curve45 = {
 	center: next(firstSlope, {x: -curve45Radius, y: 0, z: -curve45Radius}),
 	forward: negZ,
 	backwardWeight: curve45Radius,
-	// trackBank: 23
+	// trackBank: 45
 }
 
 const curve45Landing = {
-	center: next(curve45, { x: 0, y: 0, z: -trackWidth * 2.5 }),
+	center: next(curve45, { x: 0, y: 0, z: -trackWidth * 1 }),
 	forward: negZ,
 	forwardWeight: 20
 }
@@ -277,14 +277,14 @@ const curve180_1 = {
 	forward: posX,
 	backwardWeight: curve180Weight,
 	forwardWeight: curve180Weight,
-	// trackBank: 45
+	trackBank: 45
 }
 
 const curve180_2 = {
 	center: next(curve180_1, { x: curve180Radius, y: 0, z: curve180Radius }),
 	forward: posZ,
 	backwardWeight: curve180Weight,
-	// trackBank: 45
+	trackBank: 23
 }
 
 const curve180Landing = {
@@ -318,7 +318,7 @@ export function testTrackLive(tracks, cars, scene) {
 		family,
 		init: function() {
 			this.track = {
-				last: trackStart.center,
+				last: firstSlope.center,
 				dropCars,
 				adjustCars,
 				crossedFinishLine,
