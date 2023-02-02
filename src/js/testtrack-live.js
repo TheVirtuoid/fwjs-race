@@ -239,25 +239,25 @@ const trackStart = {
 	forward: negX
 }
 
-const curve45Radius = trackWidth * 4;
-const curve45Weight = curve45Radius * circleWeight;
+const curve90Radius = trackWidth * 4;
+const curve90Weight = curve90Radius * circleWeight;
 
 const firstSlope = {
 	center: next(trackStart, { x: -trackWidth * 10, y: -trackWidth * 5, z: 0}),
 	forward: negX,
 	backwardWeight: 40,
-	forwardWeight: curve45Weight
+	forwardWeight: curve90Weight
 }
 
-const curve45 = {
-	center: next(firstSlope, {x: -curve45Radius, y: 0, z: -curve45Radius}),
+const curve90 = {
+	center: next(firstSlope, {x: -curve90Radius, y: 0, z: -curve90Radius}),
 	forward: negZ,
-	backwardWeight: curve45Radius,
+	backwardWeight: curve90Radius,
 	trackBank: 45
 }
 
-const curve45Landing = {
-	center: next(curve45, { x: 0, y: 0, z: -trackWidth * 2.5 }),
+const curve90Landing = {
+	center: next(curve90, { x: 0, y: 0, z: -trackWidth * 2.5 }),
 	forward: negZ,
 	forwardWeight: 20
 }
@@ -266,7 +266,7 @@ const curve180Radius = trackWidth * 4;
 const curve180Weight = curve180Radius * circleWeight;
 
 const secondSlope = {
-	center: next(curve45Landing, { x: 0, y: -trackWidth * 7.5, z: -trackWidth * 15 }),
+	center: next(curve90Landing, { x: 0, y: -trackWidth * 7.5, z: -trackWidth * 15 }),
 	forward: negZ,
 	forwardWeight: curve180Weight,
 	backwardWeight: 20
@@ -319,7 +319,7 @@ export function testTrackLive(tracks, cars, scene) {
 		init: function() {
 			this.track = {
 				// set 'last' to the point to which the camera points
-				last: curve45.center,
+				last: curve90.center,
 				dropCars,
 				adjustCars,
 				crossedFinishLine,
@@ -329,8 +329,8 @@ export function testTrackLive(tracks, cars, scene) {
 						points: [
 								trackStart,
 								firstSlope,
-								curve45,
-								curve45Landing,
+								curve90,
+								curve90Landing,
 								secondSlope,
 								curve180_1,
 								curve180_2,
