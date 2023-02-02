@@ -257,7 +257,7 @@ const curve90 = {
 }
 
 const curve90Landing = {
-	center: next(curve90, { x: 0, y: 0, z: -trackWidth * 2.5 }),
+	center: next(curve90, { x: 0, y: -8, z: -trackWidth * 2.5 }),
 	forward: negZ,
 	forwardWeight: 20
 }

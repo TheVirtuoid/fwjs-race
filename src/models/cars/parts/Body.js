@@ -6,7 +6,7 @@ const defaults = {
 	depth: carDefaults.depth,
 	height: carDefaults.height,
 	width: carDefaults.width,
-	mass: 200,
+	mass: 1000,
 	friction: 0,
 	restitution: 0
 };
@@ -45,9 +45,9 @@ export default class Body extends Part {
 		const { scene, position } = args;
 		const faceColors = new Array(6).fill(this.color);
 		const { depth, height, width, name } = this;
-		const box = MeshBuilder.CreateBox(`${name}-body`, { depth: depth, height: .1, width: width * .75, faceColors }, scene);
+		const box = MeshBuilder.CreateBox(`${name}-body`, { depth: depth, height, width: width * .75, faceColors }, scene);
 		box.position = position.clone();
-		// box.position.y += height / 2;
+		box.position.y += height / 2;
 		box.isVisible = true;
 		// box.showBoundingBox = true;
 		this.mesh = box;

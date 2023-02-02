@@ -6,7 +6,7 @@ const defaults = {
 	depth: carDefaults.depth * .1,
 	width: carDefaults.width * .1,
 	height: carDefaults.height * .25,
-	mass: 10,
+	mass: 200,
 	friction: 1,
 	restitution: 0
 }
