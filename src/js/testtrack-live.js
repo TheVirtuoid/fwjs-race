@@ -253,11 +253,11 @@ const curve45 = {
 	center: next(firstSlope, {x: -curve45Radius, y: 0, z: -curve45Radius}),
 	forward: negZ,
 	backwardWeight: curve45Radius,
-	// trackBank: 45
+	trackBank: 45
 }
 
 const curve45Landing = {
-	center: next(curve45, { x: 0, y: 0, z: -trackWidth * 1 }),
+	center: next(curve45, { x: 0, y: 0, z: -trackWidth * 2.5 }),
 	forward: negZ,
 	forwardWeight: 20
 }
@@ -318,7 +318,8 @@ export function testTrackLive(tracks, cars, scene) {
 		family,
 		init: function() {
 			this.track = {
-				last: firstSlope.center,
+				// set 'last' to the point to which the camera points
+				last: curve45.center,
 				dropCars,
 				adjustCars,
 				crossedFinishLine,
