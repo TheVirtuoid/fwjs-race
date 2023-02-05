@@ -311,7 +311,6 @@ export function defineTracks(tracks) {
 				y: this.curveEnd.center.y - jump.descent / 8,
 				z: this.curveEnd.center.z + Math.SQRT2 * jump.radius
 			}
-			console.log("start", this.curveStart.center, "top", this.curveTop.center, "left", this.curveLeft.center, "end", this.curveEnd.center, "end315", this.curveEnd315.center);
 			this.track = {
 				segments: [
 					jump.launchSegment,
@@ -372,7 +371,7 @@ export function defineTracks(tracks) {
 	});
 	tracks.register({
 		sibling: track2,
-		member: "315&#176; sweep, 45&#176; bank",
+		member: "Ugly 315&#176; sweep, 45&#176; bank",
 		track: {
 			segments: [
 				jump.launchSegment,
@@ -741,6 +740,15 @@ export function defineTracks(tracks) {
 			segments[segment].points.push(p);
 			return p;
 		},
+		dump: function(o) {
+			o = o || this;
+			console.log(o.sibling ? o.sibling.family : o.family, o.member || "Original");
+			for (let i = 0; i < o.track.segments.length; i++) {
+				for (let j = 0; j < o.track.segments[i].points.length; j++) {
+					console.log(i, j, o.track.segments[i].points[j]);
+				}
+			}
+		},
 
 		init: function() {
 			this._weight = this._radius * circleWeight;
@@ -768,6 +776,8 @@ export function defineTracks(tracks) {
 			this.pushPoint(segments, 1, 2, posX, ['backwardWeight', 'forwardWeight']);
 			this.pushPoint(segments, 1, 1, negZ, ['backwardWeight']);
 			this.pushPoint(segments, 1, 0, negZ);
+
+			this.dump();
 		},
 
 		_pushVertex: function(x, z) {
@@ -806,6 +816,8 @@ export function defineTracks(tracks) {
 				rotate: 'right',
 			});
 			track5.pushPoint(segments, 2, runout);
+
+			//track5.dump(this);
 		},
 	});
 

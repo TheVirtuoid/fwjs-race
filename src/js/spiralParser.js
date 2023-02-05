@@ -276,20 +276,36 @@ class spiralParser {
 		p.trackBank = this.#processInterpolationArray(specs.trackBank, 0, specs.trackBankMultiplier);
 
 		// Add the interior points
+		const endPoints = []
 		const parts = Math.ceil(specs.sweep / 90);
-		for (let i = 1; i < parts; i++) {
-			this.#addPoint(builders, points, i / parts, specs, helix, rawSpiral, parentSettings, name);
+		for (let i = 1; i <= parts; i++) {
+			endPoints.push(this.#addPoint(90 * i / specs.sweep, helix, specs, rawSpiral, parentSettings, name));
 		}
 
-		// Add the last point
-		weight = this.#getForward(specs.exit, helix).weight;
-		specs.endsAt.backwardWeight = weight;
-		specs.endsAt.trackBank = this.#processInterpolationArray(specs.trackBank, 1, specs.trackBankMultiplier);
-		points.push(specs.endsAt);
-		builders.push(createBuilder(parentSettings));
+		// Construct the break point array
+		const breakpoints = {
+			points: [],
+			next: 0,
+
+			add(t) { this.points.push(t) },
+			nextBP() { return this.next == this.points.length ? 1 : this.points[this.next] },
+			consume() { this.next++ }
+		};
+
+		if (Array.isArray(specs.trackBank)) {
+			// Ignore the first element t = 0 as it is alreay in 'points'
+			for (let i = 1; i < specs.trackBank.length; i++) breakpoints.add(specs.trackBank[i].t);
+		}
+
+		// Generate the curves
+		for (let i = 0; i < endPoints.length; i++) {
+			const start_t = 90 * i / specs.sweep;
+			const end_t = 90 * (i + 1) / specs.sweep;
+			this.#DeCasteljau(builders, points, endPoints[i], 90 * i / specs.sweep, 90 * (i + 1) / specs.sweep, breakpoints, specs, rawSpiral, parentSettings, name);
+		}
 	}
 
-	static #addPoint(builders, points, t, specs, helix, rawSpiral, parentSettings, name) {
+	static #addPoint(t, helix, specs, rawSpiral, parentSettings, name) {
 		const cylPoint = specs.entry.interpolate(specs.exit, t);
 		if (specs.debug) {
 			console.log('spiralParser.#addPoint(%f): entry %o, exit %o, interpolated %o',
@@ -297,8 +313,11 @@ class spiralParser {
 		}
 
 		const { center, forward, weight } = this.#getHelixAt(cylPoint, helix);
+		return this.#buildPoint(t, center, forward, weight, specs, rawSpiral, parentSettings, name);
+	}
 
-		const pointName = `${name}@${cylPoint.angle}`;
+	static #buildPoint(t, center, forward, weight, specs, rawSpiral, parentSettings, name) {
+		const pointName = `${name}@${specs.sweep * t}`;
 		const point = merge.settings(parentSettings, rawSpiral, pointName);
 		point.backwardWeight = weight;
 		point.center = center;
@@ -306,9 +325,7 @@ class spiralParser {
 		point.forwardWeight = weight;
 		point.name = pointName;
 		point.trackBank = this.#processInterpolationArray(specs.trackBank, t, specs.trackBankMultiplier);
-
-		points.push(point);
-		builders.push(createBuilder(parentSettings));
+		return point;
 	}
 
 	static #getHelixAt(cylPoint, helix) {
@@ -399,6 +416,76 @@ class spiralParser {
 			}
 		}
 		throw new Error('#processInterpolationArray: Something went wrong');
+	}
+
+	static #DeCasteljau(builders, points, endPoint, start_t, end_t, breakpoints, specs, rawSpiral, parentSettings, name) {
+
+		// Just add the point if there are no break points
+		let bp = breakpoints.nextBP();
+		while (bp <= start_t) {
+			breakpoints.consume();
+			bp = breakpoints.nextBP();
+		}
+		if (bp >= end_t) {
+			points.push(endPoint);
+			builders.push(createBuilder(parentSettings));
+			console.log("DeCasteljau pushes", endPoint);
+			return;
+		}
+		console.log("start_t", start_t, "end_t", end_t, "bp", bp);
+
+		// Consume the breakpoint and split the curve into Bezier
+		// curves (q0, q1, q2, q3) and (r0, r1, r2, r3) where
+		// a) q0 = points[-1].center
+		// b) q3 = r0 = curve at bp
+		// c) r3 = endPoint.center
+		breakpoints.consume();
+		const q = (bp - start_t) / (end_t / start_t);
+		const p = 1 - q;
+		console.log("p", p, "q", q);
+
+		// Bottom level
+		const lastElement = points[points.length - 1];
+		const p0 = lastElement.center;
+		const p1 = p0.add(lastElement.forwardWeight, lastElement.forward);
+		const p3 = endPoint.center;
+		const p2 = p3.add(-endPoint.backwardWeight, endPoint.forward);
+		const q0 = p0;
+		const r3 = p3;
+
+		// First level
+		const q1 = p0.scale(q).add(p, p1);
+		const m1 = p1.scale(q).add(p, p2);
+		const r2 = p2.scale(q).add(p, p3);
+
+		// Second level
+		const q2 = q1.scale(q).add(p, m1);
+		const r1 = m1.scale(q).add(p, r2);
+
+		// Top level
+		const q3 = q2.scale(q).add(p, r1);
+		const r0 = q3;
+
+		// Adjust the last point on the stack with the new forward data
+		let v = q0.to(q1);
+		lastElement.forward = v.normalize();
+		lastElement.forwardWeight = v.length();
+
+		// Add the midpoint
+		console.log("q3", q3, "q2", q2, "q3.to.q2", q3.to(q2));
+		console.log("mid", "backward", q3.to(q2).normalize(), "forward", r0.to(r1).normalize());
+		v = r0.to(r1);
+		const mid = this.#buildPoint(bp, q3, v.normalize(), v.length(), specs, rawSpiral, parentSettings, name);
+		points.push(mid);
+		builders.push(createBuilder(parentSettings));
+
+		// Construct a new endpoint and recurse
+		if (bp < 1) {
+			console.log("end", "backward", r3.to(r2).normalize(), "forward", endPoint.forward);
+			const end = this.#buildPoint(bp, r3, endPoint.forward, r3.distance(r2), specs, rawSpiral, parentSettings, name);
+			end.forwardWeight = endPoint.forwardWeight;
+			this.#DeCasteljau(builders, points, end, bp, end_t, breakpoints, specs, rawSpiral, parentSettings, name);
+		}
 	}
 }
 
