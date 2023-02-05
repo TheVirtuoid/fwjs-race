@@ -307,9 +307,9 @@ export function defineTracks(tracks) {
 				z: this.curveLeft.center.z + jump.radius
 			}
 			this.curveEnd315.center = {
-				x: this.curveEnd.center.x - Math.SQRT2 * jump.radius,
+				x: this.curveEnd.center.x + this.curveEnd315.forward.x * jump.radius,
 				y: this.curveEnd.center.y - jump.descent / 8,
-				z: this.curveEnd.center.z + Math.SQRT2 * jump.radius
+				z: this.curveEnd.center.z + this.curveEnd315.forward.z * jump.radius
 			}
 			this.track = {
 				segments: [
@@ -498,6 +498,10 @@ export function defineTracks(tracks) {
 			backwardWeight: circleWeight * jump.radius,
 			forward: negZ,
 		},
+		curveEnd315: {
+			backwardWeight: circleWeight * jump.radius / 2,
+			forward: new Vector3(-Math.SQRT2, 0, -Math.SQRT2)
+		},
 		curveRight: {
 			backwardWeight: circleWeight * jump.radius,
 			forward: posX,
@@ -525,6 +529,11 @@ export function defineTracks(tracks) {
 				x: this.curveRight.center.x + jump.radius,
 				y: this.curveRight.center.y - jump.descent / 4,
 				z: this.curveRight.center.z - jump.radius
+			}
+			this.curveEnd315.center = {
+				x: this.curveEnd.center.x + this.curveEnd315.forward.x * jump.radius,
+				y: this.curveEnd.center.y - jump.descent / 8,
+				z: this.curveEnd.center.z + this.curveEnd315.forward.z * jump.radius
 			}
 			this.track = {
 				segments: [
@@ -582,6 +591,53 @@ export function defineTracks(tracks) {
 	});
 	tracks.register({
 		sibling: track3,
+		member: "Ugly 315&#176; sweep, 45&#176; bank",
+		track: {
+			segments: [
+				jump.launchSegment,
+				{
+					points: [
+						jump.catchStart,
+						{
+							center: track3.curveStart.center,
+							forward: track3.curveStart.forward,
+							forwardWeight: track3.curveStart.forwardWeight,
+							trackBank: -10,
+						},
+						{
+							backwardWeight: track3.curveTop.backwardWeight,
+							center: track3.curveTop.center,
+							forward: track3.curveTop.forward,
+							forwardWeight: track3.curveTop.forwardWeight,
+							trackBank: -45,
+						},
+						{
+							backwardWeight: track3.curveRight.backwardWeight,
+							center: track3.curveRight.center,
+							forward: track3.curveRight.forward,
+							forwardWeight: track3.curveRight.forwardWeight,
+							trackBank: -45,
+						},
+						{
+							backwardWeight: track3.curveEnd.backwardWeight,
+							center: track3.curveEnd.center,
+							forward: track3.curveEnd.forward,
+							forwardWeight: track3.curveRight.forwardWeight,
+							trackBank: -10,
+						},
+						{
+							backwardWeight: track3.curveRight.forwardWeight,
+							center: track3.curveEnd315.center,
+							forward: track3.curveEnd315.forward,
+						},
+						jump.runout
+					],
+				}
+			],
+		},
+	});
+	tracks.register({
+		sibling: track3,
 		member: "Using spiral",
 		track: {
 			segments: [ jump.launchSegment, {
@@ -621,6 +677,31 @@ export function defineTracks(tracks) {
 					jump.runout
 				],
 			}],
+		},
+	});
+	tracks.register({
+		sibling: track3,
+		member: "Using spiral with 23&#176; bank and 315&#176; turn",
+		track: {
+			segments: [
+				jump.launchSegment,
+				{
+					points: [
+						jump.catchStart,
+						jump.catchEnd,
+						{
+							type: 'spiral',
+							endsAt: {
+								center: track3.curveEnd315.center,
+								forward: track3.curveEnd315.forward,
+							},
+							rotate: 'right',
+							trackBank: parametricBank,
+						},
+						jump.runout
+					],
+				}
+			],
 		},
 	});
 
