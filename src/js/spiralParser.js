@@ -270,7 +270,7 @@ class spiralParser {
 		// Insert the entry point if this is the first point of the segment.
 		// Otherwise patch its forwardWeight if required.
 		if (points.length === 0) points.push(specs.startsAt);
-		let { forward, weight } = this.#getForward(specs.entry, helix);
+		const { forward, weight } = this.#getForward(specs.entry, helix);
 		const p = points[points.length - 1];
 		p.forwardWeight = weight;
 		p.trackBank = this.#processInterpolationArray(specs.trackBank, 0, specs.trackBankMultiplier);
@@ -281,6 +281,7 @@ class spiralParser {
 		for (let i = 1; i <= parts; i++) {
 			endPoints.push(this.#addPoint(90 * i / specs.sweep, helix, specs, rawSpiral, parentSettings, name));
 		}
+		endPoints[endPoints.length - 1].forwardWeight = specs.forwardWeight ?? specs.endsAt.forwardWeight;
 
 		// Construct the break point array
 		const breakpoints = {
@@ -429,7 +430,6 @@ class spiralParser {
 		if (bp >= end_t) {
 			points.push(endPoint);
 			builders.push(createBuilder(parentSettings));
-			console.log("DeCasteljau pushes", endPoint);
 			return;
 		}
 		console.log("start_t", start_t, "end_t", end_t, "bp", bp);
