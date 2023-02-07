@@ -271,8 +271,7 @@ export function defineTracks(tracks) {
 			forward: posZ,
 		},
 		curveEnd315: {
-			backwardWeight: circleWeight * jump.radius / 2,
-			forward: new Vector3(-Math.SQRT2, 0, Math.SQRT2)
+			backwardWeight: circleWeight * jump.radius / 2 // estimate
 		},
 		curveLeft: {
 			backwardWeight: circleWeight * jump.radius,
@@ -306,10 +305,34 @@ export function defineTracks(tracks) {
 				y: this.curveLeft.center.y - jump.descent / 4,
 				z: this.curveLeft.center.z + jump.radius
 			}
-			this.curveEnd315.center = {
-				x: this.curveEnd.center.x + this.curveEnd315.forward.x * jump.radius,
+			const center = {
+				x: (this.curveStart.center.x + this.curveLeft.center.x) / 2,
 				y: this.curveEnd.center.y - jump.descent / 8,
-				z: this.curveEnd.center.z + this.curveEnd315.forward.z * jump.radius
+				z: (this.curveStart.center.z + this.curveLeft.center.z) / 2
+			}
+			const end2start = {
+				x: this.curveStart.center.x - this.curveEnd.center.x,
+				z: this.curveStart.center.z - this.curveEnd.center.z,
+			}
+			const end2start_length = Math.sqrt(end2start.x * end2start.x + end2start.z * end2start.z);
+			this.curveEnd315.forward = {
+				x: end2start.x / end2start_length,
+				y: 0,
+				z: end2start.z / end2start_length,
+			}
+			const top2start = {
+				x: this.curveStart.center.x - this.curveTop.center.x,
+				z: this.curveStart.center.z - this.curveTop.center.z,
+			}
+			const top2start_length = Math.sqrt(top2start.x * top2start.x + top2start.z * top2start.z);
+			const top2start_normal = {
+				x: top2start.x / top2start_length,
+				z: top2start.z / top2start_length,
+			}
+			this.curveEnd315.center = {
+				x: center.x + jump.radius * top2start_normal.x,
+				y: center.y,
+				z: center.z + jump.radius * top2start_normal.z,
 			}
 			this.track = {
 				segments: [
@@ -499,8 +522,7 @@ export function defineTracks(tracks) {
 			forward: negZ,
 		},
 		curveEnd315: {
-			backwardWeight: circleWeight * jump.radius / 2,
-			forward: new Vector3(-Math.SQRT2, 0, -Math.SQRT2)
+			backwardWeight: circleWeight * jump.radius / 2, // Estimate
 		},
 		curveRight: {
 			backwardWeight: circleWeight * jump.radius,
@@ -530,10 +552,34 @@ export function defineTracks(tracks) {
 				y: this.curveRight.center.y - jump.descent / 4,
 				z: this.curveRight.center.z - jump.radius
 			}
-			this.curveEnd315.center = {
-				x: this.curveEnd.center.x + this.curveEnd315.forward.x * jump.radius,
+			const center = {
+				x: (this.curveStart.center.x + this.curveRight.center.x) / 2,
 				y: this.curveEnd.center.y - jump.descent / 8,
-				z: this.curveEnd.center.z + this.curveEnd315.forward.z * jump.radius
+				z: (this.curveStart.center.z + this.curveRight.center.z) / 2
+			}
+			const end2start = {
+				x: this.curveStart.center.x - this.curveEnd.center.x,
+				z: this.curveStart.center.z - this.curveEnd.center.z,
+			}
+			const end2start_length = Math.sqrt(end2start.x * end2start.x + end2start.z * end2start.z);
+			this.curveEnd315.forward = {
+				x: end2start.x / end2start_length,
+				y: 0,
+				z: end2start.z / end2start_length,
+			}
+			const top2start = {
+				x: this.curveStart.center.x - this.curveTop.center.x,
+				z: this.curveStart.center.z - this.curveTop.center.z,
+			}
+			const top2start_length = Math.sqrt(top2start.x * top2start.x + top2start.z * top2start.z);
+			const top2start_normal = {
+				x: top2start.x / top2start_length,
+				z: top2start.z / top2start_length,
+			}
+			this.curveEnd315.center = {
+				x: center.x + jump.radius * top2start_normal.x,
+				y: center.y,
+				z: center.z + jump.radius * top2start_normal.z,
 			}
 			this.track = {
 				segments: [

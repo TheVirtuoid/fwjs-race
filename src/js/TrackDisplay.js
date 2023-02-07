@@ -43,10 +43,7 @@ class TrackDisplay {
 
 			// Produce the track segments
 			this.#registerCallback(track);
-			const trackSegments = TrackPOC(
-				track,
-				(u) => { return this.#gameEngine.createVector(u) },
-				settings);
+			const trackSegments = TrackPOC(track, this.#gameEngine.createVector, settings);
 
 			// Save the start location
 			const trackSegment = trackSegments[0];

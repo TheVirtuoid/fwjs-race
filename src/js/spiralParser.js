@@ -53,14 +53,9 @@ class spiralParser {
 	/*--------------------------------------------------------------------------
 	SPECIFICATION
 
-	For convenience, define a 'point-forward' to be an object with two members:
-		'vector': object having 'x', 'y', and 'z' keys defining numeric
-			coordinate values
-		'point': a vector defining a point in space
-		'direction': a vector defining a direction
-
-	Using these, define:
-		'center-forward': object with a 'center' point and 'forward' direction
+	For convenience, define a 'center-forward' to be an object with two members:
+		'center': a vector defining a point in space
+		'forward': a vector defining a direction
 
 	'center' (required if some situations, illegal in others)
 		If specified, a point setting the center of rotation.
@@ -462,7 +457,6 @@ class spiralParser {
 		breakpoints.consume();
 		const a = (bp - start_t) / (end_t - start_t);
 		const b = 1 - a;
-		console.log("start_t", start_t, "end_t", end_t, "bp", bp, "a", a, "b", b);
 
 		// Using de Casteljau's algortim, split the curve into Bezier curves at t
 		// Using the notation 'plo', where l is the level and o is the order,
@@ -471,28 +465,22 @@ class spiralParser {
 
 		// Bottom level
 		const lastElement = points[points.length - 1];
-		console.log("lastElement", lastElement.center, lastElement.forward, lastElement.forwardWeight);
-		console.log("endPoint", endPoint.center, endPoint.forward, endPoint.forwardWeight);
 		const p00 = lastElement.center;
 		const p01 = p00.add(lastElement.forwardWeight, lastElement.forward);
 		const p03 = endPoint.center;
 		const p02 = p03.add(-endPoint.backwardWeight, endPoint.forward);
-		console.log("p00", p00, "p01", p01, "p02", p02, "p03", p03);
 
 		// First level
 		const p10 = p00.scale(b).add(a, p01);
 		const p11 = p01.scale(b).add(a, p02);
 		const p12 = p02.scale(b).add(a, p03);
-		console.log("p10", p10, "p11", p11, "p12", p12);
 
 		// Second level
 		const p20 = p10.scale(b).add(a, p11);
 		const p21 = p11.scale(b).add(a, p12);
-		console.log("p20", p20, "p21", p21);
 
 		// Last level
 		const p30 = p20.scale(b).add(a, p21);
-		console.log("p30", p30);
 
 		// Adjust the last point on the stack with the new forward data
 		lastElement.forwardWeight = p00.distance(p10);
