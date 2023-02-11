@@ -256,8 +256,8 @@ class BabylonAdaptor {
 		const scene = view ? view.scene : this.#sceneManager.scene;
 		const positions = [];
 		const leftWallMesh = new Mesh(name + ' left wall', scene);
-		const trackMesh = new Mesh(name + ' track', scene);
 		const rightWallMesh = new Mesh(name + ' right wall', scene);
+		const trackMesh = new Mesh(name + ' track', scene);
 		const leftWallIndices = [];
 		const trackIndices = [];
 		const rightWallIndices = [];
@@ -417,13 +417,13 @@ class BabylonAdaptor {
 			copyVertex(vLeftTrackTop);						// 1: Left track top, left inner wall middle
 			copyVertex(vRightTrackTop);						// 2: Right track top, right inner wall middle
 			copyVertex(vRightWallTop);						// 3: Right inner wall top
-			copyVertex(vLeftTrackTop.add(vLeft));			// 4: Left outer wall top
-			const leftTrackBottom =
+			copyVertex(vLeftWallTop.add(vLeft));			// 4: Left outer wall top
+			const vLeftTrackBottom =
 				copyVertex(vLeftTrackTop.add(vDown));		// 5: Left track bottom, left inner wall bottom
-			copyVertex(leftTrackBottom.add(vLeft));			// 6: Left outer wall bottom
-			const rightTrackBottom =
+			copyVertex(vLeftTrackBottom.add(vLeft));		// 6: Left outer wall bottom
+			const vRightTrackBottom =
 				copyVertex(vRightTrackTop.add(vDown));		// 7: Right track bottom, right inner wall bottom
-			copyVertex(rightTrackBottom.subtract(vLeft));	// 8: Right outer wall bottom
+			copyVertex(vRightTrackBottom.subtract(vLeft));	// 8: Right outer wall bottom
 			copyVertex(vRightWallTop.subtract(vLeft));		// 9: Right outer wall top
 				
 			// If this is not the first slice, create triangles to back to the
@@ -493,25 +493,27 @@ class BabylonAdaptor {
 		setMesh(trackMesh, trackIndices);
 		
 		// DEBUG: Should be removed
+		/*
 		const redMat = new StandardMaterial(scene);
 		redMat.alpha = 1;
 		redMat.diffuseColor = new Color3(1, 0, 0);
-		leftWallMesh.material = redMat;
 		const greenMat = new StandardMaterial(scene);
 		greenMat.alpha = 1;
 		greenMat.diffuseColor = new Color3(0, 1, 0);
-		rightWallMesh.material = greenMat;
 		const blueMat = new StandardMaterial(scene);
 		blueMat.alpha = 1;
 		blueMat.diffuseColor = new Color3(0, 0, 1);
+		leftWallMesh.material = redMat;
+		rightWallMesh.material = greenMat;
 		trackMesh.material = blueMat;
+		*/
 		
 		// Apply the physics
 		leftWallMesh.physicsImpostor = new PhysicsImpostor(leftWallMesh, PhysicsImpostor.MeshImpostor, meshOptions, scene);
 		rightWallMesh.physicsImpostor = new PhysicsImpostor(rightWallMesh, PhysicsImpostor.MeshImpostor, meshOptions, scene);
 		trackMesh.physicsImpostor = new PhysicsImpostor(trackMesh, PhysicsImpostor.MeshImpostor, meshOptions, scene);
 		
-		return [leftWallMesh, rightWallMesh, trackMesh];
+		return [ leftWallMesh, rightWallMesh, trackMesh ];
 	}
 
 	createVector(u) {return new Vector3(u.x, u.y, u.z) }
