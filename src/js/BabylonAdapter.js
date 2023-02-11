@@ -1,13 +1,12 @@
 import {
 	AmmoJSPlugin, ArcRotateCamera,
 	ArcRotateCameraPointersInput,	// TODO: Remove when finished debugging
-	Color3,							// TODO: Remove when finished debugging
+	Color3,
 	Engine,
 	HemisphericLight,
 	Mesh, MeshBuilder,
 	PhysicsImpostor,
-	Scene,
-	StandardMaterial,				// TODO: Remove when finished debugging
+	Scene, StandardMaterial,
 	Vector3, VertexData,
 } from "@babylonjs/core";
 
@@ -133,6 +132,7 @@ class BabylonAdaptor {
 	#engine;
 	#ready;
 	#sceneManager;
+	#materials = [];
 	
 	get buildOptions() {
 		return [
@@ -140,6 +140,28 @@ class BabylonAdaptor {
 			{ key: boSeparateRibbons, text: botSeparateRibbons },
 			{ key: boDepthMesh, text: botDepthMesh },
 		];
+	}
+	
+	get #trackMaterial() {
+		const scene = this.#sceneManager.scene;
+		if (!(scene in this.#materials)) this.#materials[scene] = [];
+		if ("track" in this.#materials[scene]) return this.#materials[scene]["track"];
+		const mat = new StandardMaterial(scene);
+		mat.alpha = 1;
+		mat.diffuseColor = new Color3(.1, .1, .1);
+		this.#materials[scene]["track"] = mat;
+		return mat;
+	}
+	
+	get #wallMaterial() {
+		const scene = this.#sceneManager.scene;
+		if (!(scene in this.#materials)) this.#materials[scene] = [];
+		if ("wall" in this.#materials[scene]) return this.#materials[scene]["wall"];
+		const mat = new StandardMaterial(scene);
+		mat.alpha = 1;
+		mat.diffuseColor = new Color3(211 / 255, 211 / 255, 211 / 255);
+		this.#materials[scene]["wall"] = mat;
+		return mat;
 	}
 
 	addView(view) {
@@ -236,11 +258,13 @@ class BabylonAdaptor {
 		if (buildOption == boDepthMesh) {
 			return this.#createTrackMesh(name, ribbon, closed, buildOption, meshOptions, view);
 		} else if (buildOption == boSeparateRibbons) {
-			return [
-				this.createRibbon(name + " left wall", [ ribbon[0], ribbon[1] ], closed, meshOptions, view),
-				this.createRibbon(name + " track surface", [ ribbon[1], ribbon[2] ], closed, meshOptions, view),
-				this.createRibbon(name + " right wall", [ ribbon[2], ribbon[3] ], closed, meshOptions, view),
-			];
+			const leftWall = this.createRibbon(name + " left wall", [ ribbon[0], ribbon[1] ], closed, meshOptions, view);
+			const rightWall = this.createRibbon(name + " right wall", [ ribbon[2], ribbon[3] ], closed, meshOptions, view);
+			const track = this.createRibbon(name + " track surface", [ ribbon[1], ribbon[2] ], closed, meshOptions, view);
+			leftWall.material = this.#wallMaterial;
+			rightWall.material = this.#wallMaterial;
+			track.material = this.#trackMaterial;
+			return [ leftWall, rightWall, track ];
 		} else if (buildOption == boSingleRibbon) {
 			return [ this.createRibbon(name, ribbon, closed, meshOptions, view) ];
 			
@@ -492,21 +516,10 @@ class BabylonAdaptor {
 		setMesh(rightWallMesh, rightWallIndices);
 		setMesh(trackMesh, trackIndices);
 		
-		// DEBUG: Should be removed
-		/*
-		const redMat = new StandardMaterial(scene);
-		redMat.alpha = 1;
-		redMat.diffuseColor = new Color3(1, 0, 0);
-		const greenMat = new StandardMaterial(scene);
-		greenMat.alpha = 1;
-		greenMat.diffuseColor = new Color3(0, 1, 0);
-		const blueMat = new StandardMaterial(scene);
-		blueMat.alpha = 1;
-		blueMat.diffuseColor = new Color3(0, 0, 1);
-		leftWallMesh.material = redMat;
-		rightWallMesh.material = greenMat;
-		trackMesh.material = blueMat;
-		*/
+		// Add materials
+		leftWallMesh.material = this.#wallMaterial;
+		rightWallMesh.material = this.#wallMaterial;
+		trackMesh.material = this.#trackMaterial;
 		
 		// Apply the physics
 		leftWallMesh.physicsImpostor = new PhysicsImpostor(leftWallMesh, PhysicsImpostor.MeshImpostor, meshOptions, scene);
