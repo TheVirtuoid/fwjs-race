@@ -1,11 +1,13 @@
 import {
 	AmmoJSPlugin, ArcRotateCamera,
 	ArcRotateCameraPointersInput,	// TODO: Remove when finished debugging
+	Color3,							// TODO: Remove when finished debugging
 	Engine,
 	HemisphericLight,
 	Mesh, MeshBuilder,
 	PhysicsImpostor,
 	Scene,
+	StandardMaterial,				// TODO: Remove when finished debugging
 	Vector3, VertexData,
 } from "@babylonjs/core";
 
@@ -466,6 +468,7 @@ class BabylonAdaptor {
 				lastSlice + oLeftWallInnerTop, lastSlice + oLeftWallOuterTop,
 				lastSlice + oLeftWallOuterBottom, lastSlice + oLeftWallInnerBottom);
 			pushWallEnd(rightWallIndices,
+				lastSlice + oRightWallInnerMiddle,
 				lastSlice + oRightWallInnerBottom, lastSlice + oRightWallOuterBottom,
 				lastSlice + oRightWallOuterTop, lastSlice + oRightWallInnerTop);
 			pushRectangle(trackIndices,
@@ -488,6 +491,20 @@ class BabylonAdaptor {
 		setMesh(leftWallMesh, leftWallIndices);
 		setMesh(rightWallMesh, rightWallIndices);
 		setMesh(trackMesh, trackIndices);
+		
+		// DEBUG: Should be removed
+		const redMat = new StandardMaterial(scene);
+		redMat.alpha = 1;
+		redMat.diffuseColor = new Color3(1, 0, 0);
+		leftWallMesh.material = redMat;
+		const greenMat = new StandardMaterial(scene);
+		greenMat.alpha = 1;
+		greenMat.diffuseColor = new Color3(0, 1, 0);
+		rightWallMesh.material = greenMat;
+		const blueMat = new StandardMaterial(scene);
+		blueMat.alpha = 1;
+		blueMat.diffuseColor = new Color3(0, 0, 1);
+		trackMesh.material = blueMat;
 		
 		// Apply the physics
 		leftWallMesh.physicsImpostor = new PhysicsImpostor(leftWallMesh, PhysicsImpostor.MeshImpostor, meshOptions, scene);
