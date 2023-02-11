@@ -167,11 +167,11 @@ class BabylonAdaptor {
 	createMedian(name, ribbon, closed, buildOption, meshOptions, view) {
 		// Because it is coming from HTML, buildOption is a string
 		if (buildOption == boDepthMesh) {
-			this.createRibbon(name, ribbon, closed, meshOptions, view);
+			return [ this.createRibbon(name, ribbon, closed, meshOptions, view) ];
 		} else if (buildOption == boSeparateRibbons) {
-			this.createRibbon(name, ribbon, closed, meshOptions, view);
+			return [ this.createRibbon(name, ribbon, closed, meshOptions, view) ];
 		} else if (buildOption == boSingleRibbon) {
-			this.createRibbon(name, ribbon, closed, meshOptions, view);
+			return [ this.createRibbon(name, ribbon, closed, meshOptions, view) ];
 		} else {
 			throw new Error(buildOption);
 		}
@@ -232,14 +232,15 @@ class BabylonAdaptor {
 
 		// Because it is coming from HTML, buildOption is a string
 		if (buildOption == boDepthMesh) {
-			this.#createTrackMesh(name, ribbon, closed, buildOption, meshOptions, view);
+			return this.#createTrackMesh(name, ribbon, closed, buildOption, meshOptions, view);
 		} else if (buildOption == boSeparateRibbons) {
-			this.createRibbon(name + " left wall", [ ribbon[0], ribbon[1] ], closed, meshOptions, view);
-			this.createRibbon(name + " track surface", [ ribbon[1], ribbon[2] ], closed, meshOptions, view);
-			this.createRibbon(name + " right wall", [ ribbon[2], ribbon[3] ], closed, meshOptions, view);
-			
+			return [
+				this.createRibbon(name + " left wall", [ ribbon[0], ribbon[1] ], closed, meshOptions, view),
+				this.createRibbon(name + " track surface", [ ribbon[1], ribbon[2] ], closed, meshOptions, view),
+				this.createRibbon(name + " right wall", [ ribbon[2], ribbon[3] ], closed, meshOptions, view),
+			];
 		} else if (buildOption == boSingleRibbon) {
-			this.createRibbon(name, ribbon, closed, meshOptions, view);
+			return [ this.createRibbon(name, ribbon, closed, meshOptions, view) ];
 			
 		} else {
 			throw new Error("Invalid build option " + buildOption);
@@ -492,6 +493,8 @@ class BabylonAdaptor {
 		leftWallMesh.physicsImpostor = new PhysicsImpostor(leftWallMesh, PhysicsImpostor.MeshImpostor, meshOptions, scene);
 		rightWallMesh.physicsImpostor = new PhysicsImpostor(rightWallMesh, PhysicsImpostor.MeshImpostor, meshOptions, scene);
 		trackMesh.physicsImpostor = new PhysicsImpostor(trackMesh, PhysicsImpostor.MeshImpostor, meshOptions, scene);
+		
+		return [leftWallMesh, rightWallMesh, trackMesh];
 	}
 
 	createVector(u) {return new Vector3(u.x, u.y, u.z) }

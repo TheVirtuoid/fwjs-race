@@ -80,14 +80,14 @@ class TrackDisplay {
 			const buildOption = this.#buildSelector.value;
 			for (let i = 0; i < trackSegments.length; i++) {
 				const trackSegment = trackSegments[i];
-				this.#meshes.push(this.#gameEngine.createTrack(
+				this.#meshes.push(... this.#gameEngine.createTrack(
 					`Segment${i}`,
 					trackSegment.track.ribbon,
 					track.closed,
 					buildOption,
 					{ mass: 0 }));
 				for (let j = 0; j < trackSegment.medians.length; j++) {
-					this.#meshes.push(this.#gameEngine.createMedian(
+					this.#meshes.push(... this.#gameEngine.createMedian(
 						`Segment${i}.median${j}`,
 						trackSegment.medians[j].ribbon,
 						track.closed,
