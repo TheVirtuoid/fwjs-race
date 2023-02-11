@@ -247,6 +247,7 @@ class BabylonAdaptor {
 	}
 
 	#createTrackMesh(name, ribbon, closed, buildOption, meshOptions, view) {
+		// See https://doc.babylonjs.com/features/featuresDeepDive/mesh/creation/custom/custom
 		
 		// Set up the meshes
 		const scene = view ? view.scene : this.#sceneManager.scene;
@@ -475,12 +476,12 @@ class BabylonAdaptor {
 			
 		// Apply the vertices and faces to the meshes
 		const setMesh = function(mesh, indices) {
-			const normals = [];
-			VertexData.ComputeNormals(positions, indices, normals);
+			//const normals = [];
+			//VertexData.ComputeNormals(positions, indices, normals);
 			const vertexData = new VertexData();
 			vertexData.positions = positions;
 			vertexData.indices = indices;
-			vertexData.normals = normals;
+			//vertexData.normals = normals;
 			vertexData.applyToMesh(mesh);
 		}
 		setMesh(leftWallMesh, leftWallIndices);
