@@ -6,7 +6,7 @@ import {
 	Mesh, MeshBuilder,
 	PhysicsImpostor,
 	Scene,
-	Vector3,
+	Vector3, VertexData,
 } from "@babylonjs/core";
 
 import ammo from "ammo.js";
@@ -229,18 +229,268 @@ class BabylonAdaptor {
 	}
 	
 	createTrack(name, ribbon, closed, buildOption, meshOptions, view) {
+
 		// Because it is coming from HTML, buildOption is a string
 		if (buildOption == boDepthMesh) {
-			this.createRibbon(name, ribbon, closed, meshOptions, view);
+			this.#createTrackMesh(name, ribbon, closed, buildOption, meshOptions, view);
 		} else if (buildOption == boSeparateRibbons) {
 			this.createRibbon(name + " left wall", [ ribbon[0], ribbon[1] ], closed, meshOptions, view);
 			this.createRibbon(name + " track surface", [ ribbon[1], ribbon[2] ], closed, meshOptions, view);
 			this.createRibbon(name + " right wall", [ ribbon[2], ribbon[3] ], closed, meshOptions, view);
+			
 		} else if (buildOption == boSingleRibbon) {
 			this.createRibbon(name, ribbon, closed, meshOptions, view);
+			
 		} else {
 			throw new Error("Invalid build option " + buildOption);
 		}
+	}
+
+	#createTrackMesh(name, ribbon, closed, buildOption, meshOptions, view) {
+		
+		// Set up the meshes
+		const scene = view ? view.scene : this.#sceneManager.scene;
+		const positions = [];
+		const leftWallMesh = new Mesh(name + ' left wall', scene);
+		const trackMesh = new Mesh(name + ' track', scene);
+		const rightWallMesh = new Mesh(name + ' right wall', scene);
+		const leftWallIndices = [];
+		const trackIndices = [];
+		const rightWallIndices = [];
+			
+		// HACK: Use a fraction of the wall height to determine the depth
+		const toWallTop = ribbon[1][0].subtract(ribbon[0][0]);
+		const depth = toWallTop.length() / 10;
+			
+		// Define a function to copy vertices into positions
+		const copyVertex = function(v) {
+			positions.push(v.x);
+			positions.push(v.y);
+			positions.push(v.z);
+			return v;
+		};
+			
+		// Define a function to push a rectangle into indices
+		const pushRectangle = function(indices, clockwise0, clockwise1, clockwise2, clockwise3) {
+			indices.push(clockwise0);
+			indices.push(clockwise1);
+			indices.push(clockwise2);
+			indices.push(clockwise0);
+			indices.push(clockwise2);
+			indices.push(clockwise3);
+		}
+		
+		// Define a function to push a wall cap
+		// NOTE: The vertices clockwise3, middle, clockwise0 must themselves be in clockwise order
+		const pushWallEnd = function(indices, middle, clockwise0, clockwise1, clockwise2, clockwise3) {
+			indices.push(middle);
+			indices.push(clockwise0);
+			indices.push(clockwise1);
+			indices.push(middle);
+			indices.push(clockwise1);
+			indices.push(clockwise2);
+			indices.push(middle);
+			indices.push(clockwise2);
+			indices.push(clockwise3);
+		}
+			
+		// Define readability constants
+		const verticesPerSlice = 10;
+			
+		const oLeftWallInnerTop = 0;			// Offset of ...
+		const oLeftWallInnerMiddle = 1;
+		const oLeftWallInnerBottom = 5;
+		const oLeftWallOuterTop = 4;
+		const oLeftWallOuterBottom = 6;
+			
+		const oRightWallInnerTop = 3;
+		const oRightWallInnerMiddle = 2;
+		const oRightWallInnerBottom = 7;
+		const oRightWallOuterTop = 9;
+		const oRightWallOuterBottom = 8;
+			
+		const oTrackLeftTop = 1;
+		const oTrackLeftBottom = 5;
+		const oTrackRightTop = 2;
+		const oTrackRightBottom = 7;
+		
+		const fillLeftWall = function(curSlice, prevSlice) {
+			pushRectangle(leftWallIndices,			// Top
+				prevSlice + oLeftWallInnerTop,
+				prevSlice + oLeftWallOuterTop,
+				curSlice + oLeftWallOuterTop,
+				curSlice + oLeftWallInnerTop);
+			pushRectangle(leftWallIndices,			// Upper inner
+				curSlice + oLeftWallInnerMiddle,
+				prevSlice + oLeftWallInnerMiddle,
+				prevSlice + oLeftWallInnerTop,
+				curSlice + oLeftWallInnerTop);
+			pushRectangle(leftWallIndices,			// Lower inner
+				curSlice + oLeftWallInnerBottom,
+				prevSlice + oLeftWallInnerBottom,
+				prevSlice + oLeftWallInnerMiddle,
+				curSlice + oLeftWallInnerMiddle);
+			pushRectangle(leftWallIndices,			// Bottom
+				curSlice + oLeftWallInnerBottom,
+				curSlice + oLeftWallOuterBottom,
+				prevSlice + oLeftWallOuterBottom,
+				prevSlice + oLeftWallInnerBottom);
+			pushRectangle(leftWallIndices,			// Outer
+				prevSlice + oLeftWallOuterBottom,
+				curSlice + oLeftWallOuterBottom,
+				curSlice + oLeftWallOuterTop,
+				prevSlice + oLeftWallOuterTop);
+		}
+		
+		const fillRightWall = function(curSlice, prevSlice) {
+			pushRectangle(rightWallIndices,			// Top
+				prevSlice + oRightWallOuterTop,
+				prevSlice + oRightWallInnerTop,
+				curSlice + oRightWallInnerTop,
+				curSlice + oRightWallOuterTop);
+			pushRectangle(rightWallIndices,			// Upper inner
+				prevSlice + oRightWallInnerMiddle,
+				curSlice + oRightWallInnerMiddle,
+				curSlice + oRightWallInnerTop,
+				prevSlice + oRightWallInnerTop);
+			pushRectangle(rightWallIndices,			// Lower inner
+				prevSlice + oRightWallInnerBottom,
+				curSlice + oRightWallInnerBottom,
+				curSlice + oRightWallInnerMiddle,
+				prevSlice + oRightWallInnerMiddle);
+			pushRectangle(rightWallIndices,			// Bottom
+				curSlice + oRightWallOuterBottom,
+				curSlice + oRightWallInnerBottom,
+				prevSlice + oRightWallInnerBottom,
+				prevSlice + oRightWallOuterBottom);
+			pushRectangle(rightWallIndices,			// Outer
+				curSlice + oRightWallOuterBottom,
+				prevSlice + oRightWallOuterBottom,
+				prevSlice + oRightWallOuterTop,
+				curSlice + oRightWallOuterTop);
+		}
+		
+		const fillTrack = function(curSlice, prevSlice) {
+			pushRectangle(trackIndices,				// Top
+				prevSlice + oTrackRightTop,
+				prevSlice + oTrackLeftTop,
+				curSlice + oTrackLeftTop,
+				curSlice + oTrackRightTop);
+			pushRectangle(trackIndices,				// Left side
+				prevSlice + oTrackLeftBottom,
+				curSlice + oTrackLeftBottom,
+				curSlice + oTrackLeftTop,
+				prevSlice + oTrackLeftTop);
+			pushRectangle(trackIndices,				// Right side
+				curSlice + oTrackRightBottom,
+				prevSlice + oTrackRightBottom,
+				prevSlice + oTrackRightTop,
+				curSlice + oTrackRightTop);
+			pushRectangle(trackIndices,				// Bottom
+				curSlice + oTrackRightBottom,
+				curSlice + oTrackLeftBottom,
+				prevSlice + oTrackLeftBottom,
+				prevSlice + oTrackRightBottom);
+		}
+			
+		// Loop over each slice in the ribbon
+		for (let slice = 0; slice < ribbon[0].length; slice++) {
+				
+			// For convenience, get the slice vertices
+			const vLeftWallTop = ribbon[0][slice];
+			const vLeftTrackTop = ribbon[1][slice];
+			const vRightTrackTop = ribbon[2][slice];
+			const vRightWallTop = ribbon[3][slice];
+				
+			// Compute the left and down vectors for the slice
+			const vLeft = vLeftTrackTop.subtract(vRightTrackTop).normalize().scaleInPlace(depth);
+			const vDown = vLeftTrackTop.subtract(vLeftWallTop).normalize().scaleInPlace(depth);
+				
+			// Push the vertices into the position array
+			// NOTE: The wall meshes have inner middle vertices so that they fit snuggly against
+			// the track mesh
+			copyVertex(vLeftWallTop);						// 0: Left inner wall top
+			copyVertex(vLeftTrackTop);						// 1: Left track top, left inner wall middle
+			copyVertex(vRightTrackTop);						// 2: Right track top, right inner wall middle
+			copyVertex(vRightWallTop);						// 3: Right inner wall top
+			copyVertex(vLeftTrackTop.add(vLeft));			// 4: Left outer wall top
+			const leftTrackBottom =
+				copyVertex(vLeftTrackTop.add(vDown));		// 5: Left track bottom, left inner wall bottom
+			copyVertex(leftTrackBottom.add(vLeft));			// 6: Left outer wall bottom
+			const rightTrackBottom =
+				copyVertex(vRightTrackTop.add(vDown));		// 7: Right track bottom, right inner wall bottom
+			copyVertex(rightTrackBottom.subtract(vLeft));	// 8: Right outer wall bottom
+			copyVertex(vRightWallTop.subtract(vLeft));		// 9: Right outer wall top
+				
+			// If this is not the first slice, create triangles to back to the
+			// previous level
+			if (slice > 0) {
+					
+				// Determine where the two slices start
+				const curSlice = slice * verticesPerSlice;
+				const prevSlice = curSlice - verticesPerSlice;
+				
+				// Fill in the meshes
+				fillLeftWall(curSlice, prevSlice);
+				fillRightWall(curSlice, prevSlice);
+				fillTrack(curSlice, prevSlice);
+			}
+		}
+		
+		// If the track is closed, join the last and first slices
+		const lastSlice = (ribbon[0].length - 1) * verticesPerSlice;
+		if (closed) {
+			fillLeftWall(0, lastSlice);
+			fillRightWall(0, lastSlice);
+			fillTrack(0, lastSlice);
+		}
+		
+		// Otherwise cap the ends
+		else {
+			// Cap front ends of the meshes
+			pushWallEnd(leftWallIndices,
+				oLeftWallInnerMiddle,
+				oLeftWallInnerBottom, oLeftWallOuterBottom,
+				oLeftWallOuterTop, oLeftWallInnerTop);
+			pushWallEnd(rightWallIndices,
+				oRightWallInnerMiddle,
+				oRightWallInnerTop, oRightWallOuterTop,
+				oRightWallOuterBottom, oRightWallInnerBottom);
+			pushRectangle(trackIndices, oTrackRightBottom, oTrackLeftBottom, oTrackLeftTop, oTrackRightTop);
+				
+			// Cap the back ends of the meshes
+			pushWallEnd(leftWallIndices,
+				lastSlice + oLeftWallInnerMiddle,
+				lastSlice + oLeftWallInnerTop, lastSlice + oLeftWallOuterTop,
+				lastSlice + oLeftWallOuterBottom, lastSlice + oLeftWallInnerBottom);
+			pushWallEnd(rightWallIndices,
+				lastSlice + oRightWallInnerBottom, lastSlice + oRightWallOuterBottom,
+				lastSlice + oRightWallOuterTop, lastSlice + oRightWallInnerTop);
+			pushRectangle(trackIndices,
+				lastSlice + oTrackLeftBottom,
+				lastSlice + oTrackRightBottom,
+				lastSlice + oTrackRightTop,
+				lastSlice + oTrackLeftTop);
+		}
+			
+		// Apply the vertices and faces to the meshes
+		const setMesh = function(mesh, indices) {
+			const normals = [];
+			VertexData.ComputeNormals(positions, indices, normals);
+			const vertexData = new VertexData();
+			vertexData.positions = positions;
+			vertexData.indices = indices;
+			vertexData.normals = normals;
+			vertexData.applyToMesh(mesh);
+		}
+		setMesh(leftWallMesh, leftWallIndices);
+		setMesh(rightWallMesh, rightWallIndices);
+		setMesh(trackMesh, trackIndices);
+		
+		// Apply the physics
+		leftWallMesh.physicsImpostor = new PhysicsImpostor(leftWallMesh, PhysicsImpostor.MeshImpostor, meshOptions, scene);
+		rightWallMesh.physicsImpostor = new PhysicsImpostor(rightWallMesh, PhysicsImpostor.MeshImpostor, meshOptions, scene);
+		trackMesh.physicsImpostor = new PhysicsImpostor(trackMesh, PhysicsImpostor.MeshImpostor, meshOptions, scene);
 	}
 
 	createVector(u) {return new Vector3(u.x, u.y, u.z) }
