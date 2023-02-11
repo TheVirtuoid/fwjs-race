@@ -117,11 +117,28 @@ const errorMustInvokeCreateEngine = 'Must invoke createDefaultEngine first'
 const errorMustInvokeCreateViews = 'Must invoke createViews first'
 const errorMustInvokeSetAdd = 'Must invoke setCanvas or addView first'
 
+// Build options
+const boSingleRibbon = 0;
+const boSeparateRibbons = boSingleRibbon + 1;
+const boDepthMesh = boSeparateRibbons + 1;
+
+const botSingleRibbon = 'Single ribbon';
+const botSeparateRibbons = 'Separate ribbons';
+const botDepthMesh = 'Mesh with depth';
+
 class BabylonAdaptor {
 
 	#engine;
 	#ready;
 	#sceneManager;
+	
+	get buildOptions() {
+		return [
+			{ key: boSingleRibbon, text: botSingleRibbon },
+			{ key: boSeparateRibbons, text: botSeparateRibbons },
+			{ key: boDepthMesh, text: botDepthMesh },
+		];
+	}
 
 	addView(view) {
 		if (!this.#sceneManager) {
@@ -145,6 +162,19 @@ class BabylonAdaptor {
 				disableWebGL2Support: false
 			});
 		return this.#engine;
+	}
+	
+	createMedian(name, ribbon, closed, buildOption, meshOptions, view) {
+		// Because it is coming from HTML, buildOption is a string
+		if (buildOption == boDepthMesh) {
+			this.createRibbon(name, ribbon, closed, meshOptions, view);
+		} else if (buildOption == boSeparateRibbons) {
+			this.createRibbon(name, ribbon, closed, meshOptions, view);
+		} else if (buildOption == boSingleRibbon) {
+			this.createRibbon(name, ribbon, closed, meshOptions, view);
+		} else {
+			throw new Error(buildOption);
+		}
 	}
 
 	createRibbon(name, ribbon, closed, meshOptions, view) {
@@ -196,6 +226,21 @@ class BabylonAdaptor {
 		const mesh = MeshBuilder.CreateSphere(name, sphereOptions, scene);
 		mesh.physicsImpostor = new PhysicsImpostor(mesh, PhysicsImpostor.SphereImpostor, impostorOptions, scene);
 		return mesh;
+	}
+	
+	createTrack(name, ribbon, closed, buildOption, meshOptions, view) {
+		// Because it is coming from HTML, buildOption is a string
+		if (buildOption == boDepthMesh) {
+			this.createRibbon(name, ribbon, closed, meshOptions, view);
+		} else if (buildOption == boSeparateRibbons) {
+			this.createRibbon(name + " left wall", [ ribbon[0], ribbon[1] ], closed, meshOptions, view);
+			this.createRibbon(name + " track surface", [ ribbon[1], ribbon[2] ], closed, meshOptions, view);
+			this.createRibbon(name + " right wall", [ ribbon[2], ribbon[3] ], closed, meshOptions, view);
+		} else if (buildOption == boSingleRibbon) {
+			this.createRibbon(name, ribbon, closed, meshOptions, view);
+		} else {
+			throw new Error("Invalid build option " + buildOption);
+		}
 	}
 
 	createVector(u) {return new Vector3(u.x, u.y, u.z) }

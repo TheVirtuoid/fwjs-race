@@ -37,7 +37,7 @@ window.initFunction = async function() {
 		gameEngine.setCanvas("renderCanvas");
 
 		trackDisplay = new TrackDisplay(
-			"trackFamilies", "trackMembers", gameEngine, errorDisplay,
+			"trackFamilies", "trackMembers", "trackBuilds", gameEngine, errorDisplay,
 			() => { ball.destroy() }, registerCallback);
 		ball = new Ball(gameEngine, trackDisplay, "go");
 

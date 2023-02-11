@@ -4,6 +4,7 @@ class TrackDisplay {
 
 	static #originalMember = 'Original';
 
+	#buildSelector;
 	#errorDisplay;
 	#families;
 	#familySelector;
@@ -15,7 +16,7 @@ class TrackDisplay {
 	#start;
 	#tracks;
 
-	constructor(familyId, membersId, gameEngine, errorDisplay, resetCallback, registerCallback) {
+	constructor(familyId, membersId, buildId, gameEngine, errorDisplay, resetCallback, registerCallback) {
 		this.#gameEngine = gameEngine;
 		this.#errorDisplay = errorDisplay;
 		this.#resetCallback = resetCallback;
@@ -23,8 +24,17 @@ class TrackDisplay {
 
 		this.#familySelector = document.getElementById(familyId);
 		this.#memberSelector = document.getElementById(membersId);
+		this.#buildSelector = document.getElementById(buildId);
 		this.#familySelector.addEventListener("change", () => this.#onFamilyChanged());
 		this.#memberSelector.addEventListener("change", () => this.#onMemberChanged());
+		this.#buildSelector.addEventListener("change", () => this.#onBuildChanged());
+		
+		for (let buildOption of gameEngine.buildOptions) {
+			const option = document.createElement("option");
+			option.setAttribute('value', buildOption.key);
+			option.innerHTML = buildOption.text;
+			this.#buildSelector.appendChild(option);
+		}
 
 		this.#families = {};
 		this.#tracks = {};
@@ -67,18 +77,21 @@ class TrackDisplay {
 			}
 
 			// Produce the track
+			const buildOption = this.#buildSelector.value;
 			for (let i = 0; i < trackSegments.length; i++) {
 				const trackSegment = trackSegments[i];
-				this.#meshes.push(this.#gameEngine.createRibbon(
+				this.#meshes.push(this.#gameEngine.createTrack(
 					`Segment${i}`,
 					trackSegment.track.ribbon,
 					track.closed,
+					buildOption,
 					{ mass: 0 }));
 				for (let j = 0; j < trackSegment.medians.length; j++) {
-					this.#meshes.push(this.#gameEngine.createRibbon(
+					this.#meshes.push(this.#gameEngine.createMedian(
 						`Segment${i}.median${j}`,
 						trackSegment.medians[j].ribbon,
 						track.closed,
+						buildOption,
 						{ mass: 0 }));
 				}
 			}
@@ -144,10 +157,14 @@ class TrackDisplay {
 	}
 
 	start() {
-		if (!this.#familySelector || !this.#memberSelector) {
+		if (!this.#familySelector || !this.#memberSelector || !this.#buildSelector) {
 			throw new Error("Must invoke setSelectors first")
 		}
 		this.#onFamilyChanged()
+	}
+	
+	#onBuildChanged() {
+		this.createMesh();
 	}
 
 	#onFamilyChanged() {
