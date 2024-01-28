@@ -329,7 +329,7 @@ export function testTrackLive(tracks, cars, scene) {
 						points: [
 								trackStart,
 								firstSlope,
-								curve90,
+								//curve90,
 								curve90Landing,
 								secondSlope,
 								curve180_1,

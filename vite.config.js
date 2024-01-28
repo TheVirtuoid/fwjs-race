@@ -9,9 +9,9 @@ export default ({ command, mode }) => {
 		root: "src",
 		base: "/",
 		publicDir: "public/",
-		server: {
+		/*server: {
 			port: 3000
-		},
+		},*/
 		build: {
 			assetsInlineLimit: 5000,
 			outDir: "./../dist",
