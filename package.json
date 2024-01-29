@@ -19,13 +19,14 @@
   },
   "homepage": "https://github.com/TheVirtuoid/fwjs-race#readme",
   "dependencies": {
-    "@babylonjs/core": "^5.17.1",
-    "@babylonjs/loaders": "^5.21.0",
-    "@babylonjs/materials": "^5.17.1",
-    "ammo.js": "github:kripken/ammo.js"
+    "@babylonjs/core": "^6.40.0",
+    "@babylonjs/loaders": "^6.40.0",
+    "@babylonjs/materials": "^6.40.0",
+    "ammo.js": "github:kripken/ammo.js",
+    "cannon": "^0.6.2"
   },
   "devDependencies": {
-    "postcss-nesting": "^10.1.10",
-    "vite": "^3.2.7"
+    "postcss-nesting": "^12.0.2",
+    "vite": "5.1.0-beta.5"
   }
 }
