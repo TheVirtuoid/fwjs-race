@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <meta name="Description" content="Fun With JavaScript Race Game - Presented by TheVirtuoid">
+    <link rel="icon" href="/img/fwjs-race.ico">
+	<link rel="stylesheet" type="text/css" href="doc.css">
+    <title>Fun With JavaScript - Track POC Documentation</title>
+	<script>
+	</script>
+</head>
+<body>
+<section id="davenport">
+    <header>
+        <h1>Fun With JavaScript</h1>
+		<h2>Track Proof of Concept Documentation</h2>
+    </header>
+    <main>
+		<div id="toc">
+			<a href="#top" class="toc toch1">Top</a><br/>
+				<a href="#terms" class="toc toch2">Terms</a><br/>
+			<a href="#APIandSpecs" class="toc toch1">API and Specifications</a><br/>
+				<a href="#TrackPOC" class="toc toch2">The TrackPOC Function</a><br/>
+					<a href="#vectorFactory" class="toc toch3">Vector Factory</a><br/>
+				<a href="#settings" class="toc toch2">Universal Settings</a><br/>
+					<a href="#yIsVertical" class="toc toch3">yIsVertical</a><br/>
+					<a href="#lanes" class="toc toch3">Lanes</a><br/>
+					<a href="#trackBank" class="toc toch3">Track Bank</a><br/>
+					<a href="#up" class="toc toch3">Up</a><br/>
+				<a href="#trackSpecs" class="toc toch2">Track Specifications</a><br/>
+					<a href="#trackDetails" class="toc toch3">Track Details</a><br/>
+					<a href="#segmentDetails" class="toc toch3">Segment Details</a><br/>
+			<a href="#sectionElements" class="toc toch1">Section Elements</a><br/>
+				<a href="#bezierCurves" class="toc toch2">How Bézier Curves Are Used</a><br/>
+				<a href="#pointElement" class="toc toch2">Point Element</a><br/>
+				<a href="#spiralElement" class="toc toch2">Spiral Element</a><br/>
+				<a href="#straightElement" class="toc toch2 toclast">Straight Element</a><br/>
+		</div>
+		<div id="main-content">
+			<p id="top">
+			The Track POC branch is an experimental branch to explore the use
+			of cubic <a href="#bezierCurves">Bézier curves</a> to construct a
+			track for the <abbr title="Fun With JavaScript">FWJS</abbr> Race Game.
+			</p><p>
+			This documentation has two sections, &quot;<a href="#APIandSpecs">API
+			and Specifications</a>&quot; and &quot;<a href="#sectionElements">Section
+			Elements</a>&quot;. The &quot;API and Specifications&quot; section
+			discusses how to build and specify a track and &quot;Section Elements&quot;
+			details the track sections elements used to construct the track.
+			</p><p>
+			<b>NOTE:</b> The intent is for this for this system to work regardless
+			of what game engine the web page uses. This presents a problem with
+			vector/vertex axis conventions. Some engines use the 'y' axis as the
+			vertical axis and others use the 'z' axis. This system <b><em>will
+			eventually</em></b> use the 'z' axis as the vertical axis to remain consistent
+			with standard geometric usage. See <a href="#vectorFactory">Vector Factory</a>
+			and <a href="#yIsVertical">yIsVertical</a> for details.
+			</p>
+			<div class="indent2">
+				<h2 id="terms">Terms</h2>
+				<p>
+					Throughout, <b>vertex</b> means a point in space while <b>vector</b>
+					means a direction in space. Both are represented by Euclidean coordinates
+					(x, y, z) but their interpretaion differ.
+				</p><p>
+					The phrase <b>the algorithm</b> refers to how the <a href="#TrackPOC">
+					TrackPOC</a>
+					function treats or produces the data discussed.
+				</p>
+			</div>
+			<h1 id="APIandSpecs">API and Specifications</h1>
+			<p>The API and track specifications are related as the API takes a
+			track specification and may override some default values used to
+			build the track.</p>
+			<div class="indent2">
+				<h2 id="TrackPOC">The TrackPOC Function</h2>
+				<p>
+				The script &quot;Builder.js&quot; exports one symbol, the function <b>TrackPOC</b>.
+				</p>
+				<code>const ribbons = TrackPOC(track, vectorFactory, settings);</code>
+				<ul>
+					<li>
+						<b>track</b> is the <a href="#trackSpecs">track specification</a>
+					</li><li>
+						<b>vectorFactory</b> is a function that produces game engine vertices
+						(see <a href="#vectorFactory">Vector Factory</a> for details)
+					</li><li>
+						<b>settings</b> is an optional object with various options (see <a
+						href="#settings">Univeral Settings</a>)
+					</li><li>
+						<b>ribbons</b> is an array of arrays, each element array
+						representing a part, or <em>segent</em> of the track.
+						Each segment array holds four arrays of engine vertices defining
+						the track.
+						The first array holds the vertices of the top of the left wall,
+						the second array the vertices of the left edge of the roadway,
+						the third array those of right edge of the roadway,
+						and the last holding the top of the right wall.
+					</li>
+				</ul>
+				<div class="indent3">
+					<h3 id="vectorFactory">Vector Factory</h3>
+					<p>
+					The argument <b>vectorFactory</b> is a function that converts internal
+					3D vertices into game engine vertices.
+					</p>
+					<code>const v = vectorFactory(u);</code>
+					<ul>
+						<li>
+							<b>u</b> is the algorithm vector
+						</li><li>
+							<b>v</b> is the corresponding game engine vector
+						</li>
+					</ul>
+					<p>
+						<b>NOTE:</b> Various game engines use the y-axis as the
+						vertical axis while others use the z-axis. Currently
+						the algorithm
+						uses the y-axis as the vertical axis <em>but will eventually
+						use the z-axis</em>. This will happen once the setting
+						<a href="#yIsVertical">yIsVertical</a> is implemented.
+					</p>
+				</div>
+				<h2 id="settings">Universal Settings</h2>
+				<p>
+					There are various settings and options that can be passed into
+					the <a href="#TrackPOC">TrackPOC</a> function or added to the
+					various parts of the <a href="#trackSpecs">track specification</a>.
+				</p><p>
+					All settings are optional. Some settings are illegal is certain
+					context.
+				</p><p>
+					If left unset, the TrackPOC provides default values. Otherwise
+					any settings in the a <a href="#trackDetail">track</a> overrides
+					the corresponding setting from TrackPOC, settings in a <a
+					href="#segmentDetail">segment</a> override the track, and finally
+					settings in a <a href="#sectionDetail">section</a> overrides the segment.
+					The hierarchy ends here as the section uses these settings to
+					build the vertices for the track.
+				</p><p>The universal settings and options are:
+				</p>
+				<ul>
+					<li>
+						<b>debug</b> (default false) enables debug information to be sent to the
+						console log
+					</li><li>
+						<b>debugSegments</b> (default false) enabled debug information about the
+						segment construction to be sent to the console log
+					</li><li>
+						<b>lanes</b> (default 1) sets the number of lanes to generate; see
+						<a href="#lanes">Lanes</a> for details
+					</li><li>
+						<b>medianWidth</b> (default 0.01) sets the width of a lane divider; see
+						<a href="#lanes">Lanes</a> for details
+					</li><li>
+						<b>precision</b> (default 0.01) sets the precision required for construction
+						of the <a href="#bezierCurves">Bézier curve</a>, with lower
+						values generating more vertices; recursively, if the distance
+						between two computed vertices is greater than this value,
+						a new point is generated between these points
+					</li><li>
+						<b>trackBank</b> (default 0)is the track bank of the section element; see
+						<a href="#trackBank">Track Bank</a> for details
+					</li><li>
+						<b>trackWidth</b> (default 1) is the width of the track at the section
+						element
+					</li><li>
+						<b>up</b> (default is the geometric up vector) is the <em>up</em> vector,
+						relative to the track surface, at the section
+						element; see <a href='#up'>Up</a> for further details
+					</li><li>
+						<b>wallHeight</b> (default 0.5) is the height of the wall at the secion
+						element
+					</li><li id="yIsVertical">
+						<b>yIsVertical</b> (default false), if true, causes the algorithm to treat the
+						y-axis of the <b><em>specification vertices and vectors</em></b>
+						as the vertical axis; <b>IMPORTANT:</b> this does not affect
+						the TrackPOC argument <a href="#vectorFactory">vectorFactory</a>
+						<b>NOT IMPLEMENTED!</b>
+					</li>
+				</ul>
+				<div class="indent3">
+					<h3 id="lanes">Lanes</h3>
+					<p>
+					The <b>lanes</b> setting sets the number of lanes in a
+					<a href="#sectionElements">section</a> of track. If <b>lanes</b>
+					is the same number in both the entry and exit points of a section
+					and <b>lanes</b> is more than 1, the algorithm
+					generates lane dividers along the section. The width of the dividers
+					is linearly interpolated between the <b>medianWidth</b> of the entry
+					point and that of the exit point.
+					</p>
+					<h3 id="trackBank">Track Bank</h3>
+					<p>
+						The <b>trackBank</b> setting affects the banking of the track in the
+						section. There are two ways to define the banking:
+					</p>
+					<ul>
+						<li>
+							a number representing the amount of banking in degrees, rotating
+							the track cross section around the point's <a href="#forward">
+							forward</a> vector, and
+						</li><li>
+							an array of number pairs, the first number representing the
+							parametric <b><em>t</em></b> value (see <a href="#bezierCurves">
+							Bézier Curves</a> for details) and the second number representing
+							the amount of banking in degrees.
+						</li>
+					</ul>
+					<p>
+						The array form is valid only for the <a href="#spiralElement">spiral</a>
+						and <a href="#straightElement">straight</a> sections.
+					</p><p>
+						At a particular point, the algorithm computes a <b>local up</b> (see
+						<a href="#up">Up</a>) and rotates this vector around the <b>forward</b>
+						vector by the number of degrees indicated. The rotated vector is the
+						direction that the walls arise from the track and also determines, along
+						with <b>forward</b>, the direction of the left and right sides of the track.
+					</p><p>
+						When determining the banking between a <a href="#pointElement">point</a>
+						and its adjacent section, the algorithm linearly interpolates between the
+						point and the appropriate endpoint of the adjacent section.
+					</p>
+					<h3 id="up">Up</h3>
+					<p>
+						The <b>up</b> vector, which defaults to the geometric <em>up</em> vector,
+						points away from the surface of the track in
+						the general direction that the walls rise.
+						The algorithm computes a <b>local up</b> by removing any contribution
+						of <b>forward</b> from the <b>up</b>.
+					</p><p>
+						Generally, <b>up</b> may be omitted.
+						However, there are cases where specification of <b>up</b> is required
+						or useful.
+						For example, on vertical sections where the geometric up
+						closely aligns with <b>forward</b>, the algorithm cannot
+						compute the <b>local up</b> and requires <b>up</b> to be defined.
+						In other cases, such as the top of a vertical loop, the algorithm will
+						erroneously compute the <b>local up</b> as being geometric up;
+						specifying <b>up</b> to be geometric <em>down</em> produces the desired
+						results.
+					</p><p>
+						Note that <a href="#trackBank">track banking</a> is related to <b>up</b>
+						as this rotates the <b>local up</b> around <b>forward</b>. It is possible,
+						though not advised, to implement track banking by solely using <b>up</b>.
+					</p>
+				</div>
+				<h2 id="trackSpecs">Track Specifications</h2>
+				<p>
+					Overall, the track specification consists of a single
+					<a href="#trackDetails">track</a> object. Each track object contains
+					one or more <a href="#segmentDetails">segment</a> objects. Multiple
+					segments allow for disjoint tracks, allow such features as a jump.
+					Each segment contains one or more <a href="#sectionElements">section
+					elements</a> (with the exception of a single <a href="#pointElement">point</a>)
+					that define the track for that segment.
+				</p>
+				<div class="indent3">
+					<h3 id="trackDetails">Track Details</h3>
+					<p>
+						The application passes the track object into the <a href="#TrackPOC">
+						TrackPOC</a> function as its first argument. In addition to the
+						<a href="#settings">universal settings</a>, the track object can,
+						and in some causes must, contain these additional members.
+					</p>
+					<ul>
+						<li>
+							<b>closed</b> (default false), if true and there is only one
+							element in <b>segments</b>, builds track between the last and first
+							<a href="#sectionElements">section elements</a> of the segment
+						</li><li>
+							<b>segments</b> (required) is a array of one or
+							more <a href="#segmentDetails">segment</a> objects
+						</li>
+					</ul>
+					<p>
+						Note that the <a href="#TrackPOC">TrackPOC</a> function returns
+						an array with the same number of elements as in the <b>segments</b>
+						member.
+					</p>
+					<h3 id="segmentDetails">Segment Details</h3>
+					<p>
+						A segment is a continuous piece of track. It consists of
+						one or more <a href="#sectionElements">section elements</a>. In
+						addition to the <a href="#settings">universal settings</a>,
+						the segment object can, and in some causes must, contain these
+						additional members.
+					</p>
+					<ul>
+						<li>
+							<b>points</b> (required) is a array of one or
+							more <a href="#sectionElements">section element</a> objects; this
+							array cannot hold only point <a href="#pointElement">
+							point element</a>
+						</li>
+					</ul>
+				</div>
+			</div>
+			<h1 id="sectionElements">Section Elements</h1>
+			<p>
+				A <b>section</b> is a part of a segment consisting of an <b>
+				entry point</b> and an <b>exit point</b> that generates one
+				of more <a href="#bezierCurve">Bézier curves</a>. These points
+				conform to <a href="#pointElement">point elements</a>.
+				<b>Section elements</b> define these points. These also lie
+				on the center line of the track.
+				Following is a list of support section elements.
+			</p>
+			<ul>
+				<li>
+					a <a href="#pointElement">point</a> representing a
+					single endpoint of a Bézier curve,
+				</li><li>
+					a <a href="#spiralElement">spiral</a> representing a
+					spiral or helix with optionally changing radii, and
+				</li><li>
+					a <a href="#straightElement">straight</a> representing
+					a track of a given length.
+				</li>
+			</ul>
+			<p>
+				First, though, we present an overview of Bézier curves and
+				how they are used.
+			</p>
+			<div class="indent2">
+				<h2 id="bezierCurves">How Bézier Curves Are Used</h2>
+				<p>
+					A cubic Bézier curve is a spline curve, starting at a point
+					P<sub>0</sub>, ending at a point P<sub>3</sub>, and with interior
+					control points P<sub>1</sub> and P<sub>2</sub>. The line
+					segment from P<sub>0</sub> to P<sub>1</sub>
+					is tangent to the produced curve at P<sub>0</sub>. Likewise,
+					the line segment from P<sub>3</sub> to P<sub>2</sub>
+					is tangent to the produced curve at P<sub>3</sub>. Furthermore,
+					the longer the line segment, the closer the curve approaches the
+					line segment.
+				</p><p>
+					Note that the curve passes through the interior points only if
+					all four points are colinear.
+				</p><p>
+					The cubic Bézier curve can be, and usually is, expressed as a
+					parametric equation of a variable 0 &le; <em>t</em> &le; 1,
+					specifically a point at <em>t</em> given by
+					B(<em>t</em>) =
+						(1-<em>t</em>)<sup>3</sup>P<sub>0</sub> +
+						3(1-<em>t</em>)<sup>2</sup><em>t</em>P<sub>1</sub> +
+						3(1-<em>t</em>)<em>t</em><sup>2</sup>P<sub>2</sub> +
+						<em>t</em><sup>3</sup>P<sub>3</sub>.
+				</p><p>
+					Note that this <em>t</em> is the same as the first number in
+					the array form of <a href="#trackBank">track banking</a>.
+				</p>
+				<div id="demo-standard" class="demo">
+					<p>
+						Let S<sub>0</sub> be the directed line segment from P<sub>0</sub>
+						to P<sub>1</sub> and S<sub>3</sub> be the same from P<sub>3</sub>
+						to P<sub>2</sub>.
+					</p>
+					<ul>
+						<li>
+							See how the curve passes through P<sub>0</sub> and P<sub>3</sub>
+						</li><li>
+							See how S<sub>0</sub> forms the tangent and direction of the curve at P<sub>0</sub>
+						</li><li>
+							See how longer S<sub>0</sub> is, the less the curve diverges from S<sub>0</sub> around P<sub>0</sub> (i.e., set <b>P<sub>1</sub></b> to [4, 6])
+						</li><li>
+							See how if S<sub>0</sub> is longer than S<sub>3</sub>, the curve is closer to S<sub>0</sub> (i.e., set <b>P<sub>1</sub></b> to [4, 6])
+						</li><li>
+							See how the curve simulates a quarter circle (the <b>Reset to Circle</b> button restores the curve to a near quarter circle)
+						</li>
+					</ul>
+					<div class="panel">
+						<canvas></canvas>
+						<div class="input">
+							<p class="col1 label">P<sub>0</sub></p>
+							<p class="col2 label">X:</p>
+							<input type="number" class="col3 coord" id="demo-standard-x0"/>
+							<p class="col4 label">Y:</p>
+							<input type="number" class="col5 coord" id="demo-standard-y0"/>
+							<p class="col1 label">P<sub>1</sub></p>
+							<p class="col2 label">X:</p>
+							<input type="number" class="col3 coord" id="demo-standard-x1"/>
+							<p class="col4 label">Y:</p>
+							<input type="number" class="col5 coord" id="demo-standard-y1"/>
+							<p class="col1 label">P<sub>2</sub></p>
+							<p class="col2 label">X:</p>
+							<input type="number" class="col3 coord" id="demo-standard-x2"/>
+							<p class="col4 label">Y:</p>
+							<input type="number" class="col5 coord" id="demo-standard-y2"/>
+							<p class="col1 label">P<sub>3</sub></p>
+							<p class="col2 label">X:</p>
+							<input type="number" class="col3 coord" id="demo-standard-x3"/>
+							<p class="col4 label">Y:</p>
+							<input type="number" class="col5 coord" id="demo-standard-y3"/>
+							<button id="demo-standard-reset" type="button">Reset to Circle</button>
+						</div>
+						<div class="error">
+							<p class="alert">Error!</p>
+							<p class="msg"></p>
+						</div>
+					</div>
+				</div>
+				<p>
+					Consider two conjoined curves defined by P<sub>0</sub>&hellip;
+					P<sub>2</sub>P<sub>3</sub>P<sub>4</sub>&hellip;P<sub>7</sub>.
+					Because P<sub>2</sub> and P<sub>4</sub> determine the tangents
+					of the curve at P<sub>3</sub>, the curve is continuous at P<sub>3</sub>
+					only if P<sub>2</sub>, P<sub>3</sub>, and P<sub>4</sub> are colinear.
+				</p><p>
+					Since we want the track to be continuous, we use a <a href="#forward">
+					forward</a> unit vector to determine one tangent to an endpoint
+					and use its inverse as the opposite tangent. Furthermore, we use
+					a <a href="#forwardWeight">forward weight</a> to determine the
+					position of the forward interior point (i.e., P<sub>n+1</sub> =
+					P<sub>n</sub> + <em>f</em>F, where <em>f</em> is the forward weight
+					and F is the forward vector at P<sub>n</sub>). Likewise, we use a
+					<a href="#backwordWeight">backward weight</a> to determine the
+					position of the backward interior point (i.e., P<sub>n-1</sub> =
+					P<sub>n</sub> - <em>b</em>F, where <em>b</em> is the backward weight
+					and F is the forward vector at P<sub>n</sub>).
+				</p>
+				<div id="demo-tangentWeight" class="demo">
+					<p>
+						Let S<sub>0</sub> be the directed line segment from P<sub>0</sub>
+						to P<sub>1</sub> and S<sub>3</sub> be the same from P<sub>3</sub>
+						to P<sub>2</sub>. Let f<sub>0</sub> be the P<sub>0</sub> plus its
+						forward vector and f<sub>3</sub> be similarly defined for P<sub>3</sub>.
+					</p><p>
+						Note that below, the weight of P<sub>0</sub> refers to its forward weight
+						while the weight of P<sub>3</sub> refers to its backward weight.
+					</p>
+					<ul>
+						<li>
+							See how the curve passes through P<sub>0</sub> and P<sub>3</sub>
+						</li><li>
+							See how S<sub>0</sub> forms the tangent and direction of the curve at P<sub>0</sub>
+						</li><li>
+							See how longer S<sub>0</sub> is, the less the curve diverges from S<sub>0</sub> around P<sub>0</sub> (i.e., set <b>P<sub>1</sub></b> to [4, 6])
+						</li><li>
+							See how if S<sub>0</sub> is longer than S<sub>3</sub>, the curve is closer to S<sub>0</sub> (i.e., set <b>P<sub>1</sub></b> to [4, 6])
+						</li><li>
+							See how the curve simulates a quarter circle (the <b>Reset to Circle</b> button restores the curve to a near quarter circle)
+						</li>
+					</ul>
+					<div class="panel">
+						<canvas></canvas>
+						<div class="input">
+							<p class="col1 label">P<sub>0</sub></p>
+							<p class="col3 label">X:</p>
+							<input type="number" class="col4 coord" id="demo-tangentWeight-x0"/>
+							<p class="col5 label">Y:</p>
+							<input type="number" class="col6 coord" id="demo-tangentWeight-y0"/>
+							<p class="col2 label">Forward</p>
+							<p class="col3 label">X:</p>
+							<input type="number" class="col4 coord" id="demo-tangentWeight-dx0"/>
+							<p class="col5 label">Y:</p>
+							<input type="number" class="col6 coord" id="demo-tangentWeight-dy0"/>
+							<p class="col2 label">Weight</p>
+							<input type="number" class="col4 posNumber" id="demo-tangentWeight-w0"/>
+							<p class="col1 label">P<sub>3</sub></p>
+							<p class="col3 label">X:</p>
+							<input type="number" class="col4 coord" id="demo-tangentWeight-x3"/>
+							<p class="col5 label">Y:</p>
+							<input type="number" class="col6 coord" id="demo-tangentWeight-y3"/>
+							<p class="col2 label">Forward</p>
+							<p class="col3 label">X:</p>
+							<input type="number" class="col4 coord" id="demo-tangentWeight-dx3"/>
+							<p class="col5 label">Y:</p>
+							<input type="number" class="col6 coord" id="demo-tangentWeight-dy3"/>
+							<p class="col2 label">Weight</p>
+							<input type="number" class="col4 posNumber" id="demo-tangentWeight-w3"/>
+							<button type="button" class="col1" id="demo-tangentWeight-reset">Reset to Circle</button>
+						</div>
+						<div class="error">
+							<p class="alert">Error!</p>
+							<p class="msg"></p>
+						</div>
+					</div>
+				</div>
+				<p>
+					Note that it is still possible to create a track that is discontinuous
+					at an endpoint. The endpoint must be the last point of one segment
+					and the first point in the next segment. If the endpoint, expressed
+					as different objects, have different forward vectors, the track
+					will be discontinuous.
+				</p>
+				<h2 id="pointElement">Point Element</h2>
+				<p>
+				A <b>point element</b> represents a single endpoint of a
+				<a href="#bezierCurve">Bézier curve</a>. Since all Bézier curves
+				require two endpoints, a <a href="#segmentDetails">segment</a>
+				cannot contain just a single point element.
+				</p><p>
+					A point ignores the <b>precision</b> setting and
+					<a href="#TrackPOC">TrackPOC</a> throws an exception if <b>precision</b>
+					is specified directly in the point element.
+				</p><p>
+					In addition to the other <a href="#settings">universal settings</a>,
+					a point element also uses these settings.
+				</p>
+				<ul>
+					<li>
+						<b>backwardWeight</b> (default 1) is the weight of the inverse
+						<b>forward</b>
+						vector used when the point is an exit point of a section
+					</li><li>
+						<b>center</b> (required) is the vertex which the
+						Bézier curve passes through
+					</li><li>
+						<b>forward</b> (required) is the vector determing
+						the tangent at the point; this is normalized so the length
+						of the vector is ignored
+					</li><li>
+						<b>forwardWeight</b> (default 1) is the weight of the <b>forward</b>
+						vector used when the point is an entry point of a section
+					</li><li>
+						<b>type</b> may be set to <b>'point'</b>
+					</li>
+				</ul>
+				<div id="demo-point" class="demo">
+					<p>
+						Note that the weight for P<sub>0</sub> is its forward weight
+						while the weight for P<sub>1</sub> is its backward weight.
+					</p><p>
+						Also note that the y-axis is the vertical axis in 3D space. This
+						is contrary to standard mathematical usage where the z-axis is
+						the vertical axis.
+					</p>
+					<div class="panel">
+						<canvas></canvas>
+						<div class="input">
+							<p class="col1 label">P<sub>0</sub></p>
+							<p class="col2 label">Center</p>
+							<p class="col3 label">X:</p>
+							<input type="number" class="col4 coord" id="demo-point-c0X"/>
+							<p class="col5 label">Y:</p>
+							<input type="number" class="col6 coord" id="demo-point-c0Y"/>
+							<p class="col7 label">Z:</p>
+							<input type="number" class="col8 coord" id="demo-point-c0Z"/>
+							<p class="col2 label">Forward</p>
+							<p class="col3 label">X:</p>
+							<input type="number" class="col4 coord" id="demo-point-f0X"/>
+							<p class="col5 label">Y:</p>
+							<input type="number" class="col6 coord" id="demo-point-f0Y"/>
+							<p class="col7 label">Z:</p>
+							<input type="number" class="col8 coord" id="demo-point-f0Z"/>
+							<p class="col2 label">Weight</p>
+							<input type="number" class="col4 posNumber" id="demo-point-w0"/>
+							<p class="col1 label">P<sub>1</sub></p>
+							<p class="col2 label">Center</p>
+							<p class="col3 label">X:</p>
+							<input type="number" class="col4 coord" id="demo-point-c1X"/>
+							<p class="col5 label">Y:</p>
+							<input type="number" class="col6 coord" id="demo-point-c1Y"/>
+							<p class="col7 label">Z:</p>
+							<input type="number" class="col8 coord" id="demo-point-c1Z"/>
+							<p class="col2 label">Forward</p>
+							<p class="col3 label">X:</p>
+							<input type="number" class="col4 coord" id="demo-point-f1X"/>
+							<p class="col5 label">Y:</p>
+							<input type="number" class="col6 coord" id="demo-point-f1Y"/>
+							<p class="col7 label">Z:</p>
+							<input type="number" class="col8 coord" id="demo-point-f1Z"/>
+							<p class="col2 label">Weight</p>
+							<input type="number" class="col4 posNumber" id="demo-point-w1"/>
+							<button type="button" class="col1" id="demo-point-reset">Reset</button>
+							<button type="button" class="col2" id="demo-point-resetUgly">Reset Ugly</button>
+						</div>
+						<div class="error">
+							<p class="alert">Error!</p>
+							<p class="msg"></p>
+						</div>
+					</div>
+				</div>
+				<h2 id="spiralElement">Spiral Element</h2>
+				<p>
+					A <b>spiral element</b> represents a curve, starting at its
+					entry point and ending at its exit point, rotating around
+					a fixed center, possibly of a changing height and radius, and
+					possibly of a number of complete 360&deg; rotations.
+				</p><p>
+					Note that the entry and exit points of the spiral form angles
+					with respect to the center of the spiral. The difference in angles,
+					considering the direction of rotation, and the number of 360&deg;
+					rotations, determine the <b>sweep</b> of the spiral.
+				</p><p>
+					The algorithm splits the section into the smallest number of
+					subsections where the sweep of each subsection is &le;&nbsp;90&deg;.
+					The endpoints of these subsections are linearly interpolated, in
+					angle, radius, and height, from the section's entry and exit points.
+				</p><p>
+					<b>NOTE:</b> the spiral element is not fully implemented. The
+					<a href="#TrackPOC">TrackPOC</a> function may throw an exception
+					in some configuations.
+				</p><p>
+					The entry point of a spiral element is contextual. If the spiral
+					is the first element of a segment, the <b>startAt</b> defines the
+					entry point. Otherwise the entry point of the spiral is the exit
+					point of the prior section in the segment.
+				</p><p>
+					The algorithm attempts to determine the center of the spiral. It
+					cannot do this if the forward vectors of the entry and exit points
+					are the same or are opposite. If so, the <b>center</b> setting
+					is required.
+				</p><p>
+					Note that the <b>forwardWeight</b> of the entry point and the
+					<b>backwardWeight</b> of the exit point are overridden by the
+					algorithm. This is to preserve the smoothness of the spiral.
+				</p><p>
+					In addition to the <a href="#settings">universal settings</a>,
+					the spiral element also has these settings.
+				</p>
+				<ul>
+					<li>
+						<b>center</b> (required if necessary; illegal otherwise; see above)
+						is a vector defining the center of rotation for the spiral
+					</li><li>
+						<b>endsAt</b> (required) is a <a href="#pointElement">point
+						element</a> defining the exit point of the spiral
+					</li><li>
+						<b>rotate</b> (required) is either 'left', 'right', or 'up'
+						(<b>NOTE: 'up' is not implemented</b>) and determines the
+						direction of curvature relative to the entry point's <b>forward</b>
+						vector
+					</li><li>
+						<b>startsAt</b> (required if the element is the first in its
+						segment; illegal otherwise) is a <a href="#pointElement">point
+						element</a> defining the entry point of the spiral
+					</li><li>
+						<b>turns</b> (default 0) is the number of complete 360&deg;
+						rotations of the spiral
+					</li><li>
+						<b>type</b> must be set to <b>'spiral'</b>
+					</li>
+				</ul>
+				<p>
+					<b>AUTHOR COMMENT:</b> the relationship between <b>center</b> and
+					<b>rotate</b>, and even the existance of <b>rotate</b>, is not well
+					designed. These may change.
+				</p>
+				<div id="demo-spiral" class="demo">
+					<div class="panel">
+						<canvas></canvas>
+						<div class="input">
+							<p class="col1 label">startsAt:</p>
+							<p class="col2 label">center:</p>
+							<p class="col3 label">x:</p>
+							<input type="number" class="col4 coord" id="demo-spiral-c0X"/>
+							<p class="col5 label">y:</p>
+							<input type="number" class="col6 coord" id="demo-spiral-c0Y"/>
+							<p class="col7 label">z:</p>
+							<input type="number" class="col8 coord" id="demo-spiral-c0Z"/>
+							<p class="col2 label">forward:</p>
+							<p class="col3 label">x:</p>
+							<input type="number" class="col4 coord" id="demo-spiral-f0X"/>
+							<p class="col5 label">y:</p>
+							<input type="number" class="col6 coord" id="demo-spiral-f0Y"/>
+							<p class="col7 label">z:</p>
+							<input type="number" class="col8 coord" id="demo-spiral-f0Z"/>
+							<p class="col1 label">endsAt:</p>
+							<p class="col2 label">center:</p>
+							<p class="col3 label">x:</p>
+							<input type="number" class="col4 coord" id="demo-spiral-c1X"/>
+							<p class="col5 label">y:</p>
+							<input type="number" class="col6 coord" id="demo-spiral-c1Y"/>
+							<p class="col7 label">z:</p>
+							<input type="number" class="col8 coord" id="demo-spiral-c1Z"/>
+							<p class="col2 label">forward:</p>
+							<p class="col3 label">x:</p>
+							<input type="number" class="col4 coord" id="demo-spiral-f1X"/>
+							<p class="col5 label">y:</p>
+							<input type="number" class="col6 coord" id="demo-spiral-f1Y"/>
+							<p class="col7 label">z:</p>
+							<input type="number" class="col8 coord" id="demo-spiral-f1Z"/>
+							<p class="col1 label centerVector">center:</p>
+							<p class="col3 label centerVector">x:</p>
+							<input type="number" class="col4 coord centerVector" id="demo-spiral-centerX"/>
+							<p class="col5 label centerVector">y:</p>
+							<input type="number" class="col6 coord centerVector" id="demo-spiral-centerY"/>
+							<p class="col7 label centerVector">z:</p>
+							<input type="number" class="col8 coord centerVector" id="demo-spiral-centerZ"/>
+							<p class="col1 label">rotate:</p>
+							<select class="col4" id="demo-spiral-rotate">
+								<option value="left">Left</option>
+								<option value="right">Right</option>
+							</select>
+							<p class="col1 label">turns:</p>
+							<input type="number" class="col4 nonNegInteger" id="demo-spiral-turns"/>
+							<button type="button" class="col1" id="demo-spiral-resetNoCenter">Reset w/o center</button>
+							<button type="button" class="col2" id="demo-spiral-resetCenter">Reset with center</button>
+						</div>
+						<div class="error">
+							<p class="alert">Error!</p>
+							<p class="msg"></p>
+						</div>
+					</div>
+				</div>
+				<h2 id="straightElement">Straight Element</h2>
+				<p>
+					A <b>straight element</b> represents a straight section proceeding
+					evenly from its entry point to its exit point.
+					The general <b>direction</b> of the straight is the
+					vector from the entry point's center to that of the exit point.
+					The determination of
+					the entry and exit points and the form of the section is contextual.
+				</p><p>
+					If the straight has a prior section, the entry point is the exit point
+					of the prior section.
+				</p><p>
+					Otherwise the <b>startAt</b>
+					setting defines the center of the entry point. If the <b>endsAt</b>
+					setting is given, the entry point's forward vector is the computed as
+					the vector from entry to the exit points; otherwise the <b>forward</b>
+					setting decides the entry point's forward vector.
+				</p><p>
+					The exit point may be defined in two different ways. If the
+					<b>length</b> setting is used, the exit point is the entry point's
+					center vertex plus <b>length</b> times the entry point's forward
+					vector. Otherwise the <b>endsAt</b> setting determines the exit point's
+					center. The exit point's forward vector is the direction of the straight
+					as given above.
+				</p><p>
+					In addition to the <a href="#settings">universal settings</a>,
+					the spiral element also has these settings.
+				</p>
+				<ul>
+					<li>
+						<b>backwardWeight</b> (default 1; valid only if <b>startsAt</b> is not use or
+						<b>forward</b> is used) sets the exit point's backward weight;
+						this provides a counterbalance to the forward weight of the previous
+						section's exit point or to 	<b>startingWeight</b>
+					</li><li>
+						<b>endsAt</b> (required if <b>length</b> is not provided) sets the
+						exit point's center
+					</li><li>
+						<b>forward</b> (required if both <b>startsAt</b> and <b>length</b> are provided)
+						sets the entry point's forward vector
+					</li><li>
+						<b>forwardWeight</b> (default 1) sets the exit point's forward weight
+					</li><li>
+						<b>length</b> (required if <b>endsAt</b> is not provided) sets the
+						exit point's center as a function of the entry point's center vertex
+						and forward vector (see above)
+					</li><li>
+						<b>startingWeight</b> (default 1; valid only <b>startsAt</b> is not set
+						and <b>endsAt</b> is set) sets the forward weight of the entry point; this
+						is effective only if the entry point's forward vector is not
+						the direction of the straight
+					</li><li>
+						<b>startsAt</b> (required if the element is the first in its
+						segment; illegal otherwise) sets the center of the entry point
+					</li><li>
+						<b>type</b> must be set to <b>'straight'</b>
+					</li>
+				</ul>
+				<p>
+					<b>AUTHOR NOTES</b>
+				</p><p>
+					It appears that <b>startingWeight</b> is ill-defined and may be removed.
+				</p>
+				<div id="demo-straight" class="demo">
+					<ul>
+						<li>
+							<b>forwardWeight</b> does not affect the straight
+							but only the following section. As such, it is not shown here.
+						</li><li>
+							Select 'yes' in <b>use startsAt</b> if you want to simulate a straight
+							that starts a segment. If set so, you must supply the <b>startsAt</b>
+							vertex and <b>forward</b> vector. If not, you must supply the point
+							<b>startsAt</b>, with a center vertex and forward vector, to simulate
+							the endpoint of the prior section.
+						</li><li>
+							Select 'yes' in <b>use endsAt</b> if you want to specify the
+							precise exit point of the straight. If not, you must supply the
+							length of the straight.
+						</li>
+					</ul>
+					<div class="panel">
+						<canvas></canvas>
+						<div class="input">
+							<p class="col1 label">use startsAt:</p>
+							<select class="col4" id="demo-straight-useStartsAt">
+								<option value="false">No</option>
+								<option value="true">Yes</option>
+							</select>
+							<p class="col1 label">use endsAt:</p>
+							<select class="col4" id="demo-straight-useEndsAt">
+								<option value="false">No</option>
+								<option value="true">Yes</option>
+							</select>
+							<p class="col1 label">startsAt:</p>
+							<p class="col2 label useInherited">center:</p>
+							<p class="col3 label">x:</p>
+							<input type="number" class="col4 coord" id="demo-straight-startX"/>
+							<p class="col5 label">y:</p>
+							<input type="number" class="col6 coord" id="demo-straight-startY"/>
+							<p class="col7 label">z:</p>
+							<input type="number" class="col8 coord" id="demo-straight-startZ"/>
+							<p class="col1 label useStartsAtAndLength">forward:</p>
+							<p class="col2 label useInherited">forward:</p>
+							<p class="col3 label useInheritedOrLength">x:</p>
+							<input type="number" class="col4 coord useInheritedOrLength" id="demo-straight-forwardX"/>
+							<p class="col5 label useInheritedOrLength">y:</p>
+							<input type="number" class="col6 coord useInheritedOrLength" id="demo-straight-forwardY"/>
+							<p class="col7 label useInheritedOrLength">z:</p>
+							<input type="number" class="col8 coord useInheritedOrLength" id="demo-straight-forwardZ"/>
+							<p class="col1 label useStartingWeight">startingWeight:</p>
+							<input type="number" class="col4 posNumber useStartingWeight" id="demo-straight-startingWeight"/>
+							<p class="col1 label useLength">length:</p>
+							<input type="number" class="col4 posNumber useLength" id="demo-straight-length"/>
+							<p class="col1 label useEndsAt">endsAt:</p>
+							<p class="col3 label useEndsAt">x:</p>
+							<input type="number" class="col4 coord useEndsAt" id="demo-straight-endsAtX"/>
+							<p class="col5 label useEndsAt">y:</p>
+							<input type="number" class="col6 coord useEndsAt" id="demo-straight-endsAtY"/>
+							<p class="col7 label useEndsAt">z:</p>
+							<input type="number" class="col8 coord useEndsAt" id="demo-straight-endsAtZ"/>
+							<p class="col1 label useBackwardWeight">backwardWeight:</p>
+							<input type="number" class="col4 posNumber useBackwardWeight" id="demo-straight-backwardWeight"/>
+							<button type="button" class="col1" id="demo-straight-reset">Reset</button>
+						</div>
+						<div class="error">
+							<p class="alert">Error!</p>
+							<p class="msg"></p>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+    </main>
+    <footer>
+        <p>&copy; 2022 Michael P. Smith a.k.a. TheVirtuoid. Free to use!</p>
+    </footer>
+</section>
+</body>
+<script src="./doc.js" type="module"></script>
+</html>

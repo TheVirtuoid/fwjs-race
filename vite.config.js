@@ -14,11 +14,13 @@ export default ({ command, mode }) => {
 		},
 		build: {
 			assetsInlineLimit: 5000,
-			outDir: "./../../dist",
+			outDir: "./../dist",
 			emptyOutDir: true,
+			target: 'esnext',
 			rollupOptions: {
 				input: {
-					main: resolve(dirname, 'src', 'index.html')
+					main: resolve(dirname, 'src', 'index.html'),
+					trackpoc: resolve(dirname, 'src', 'track-poc.html')
 				}
 			}
 		}

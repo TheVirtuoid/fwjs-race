@@ -1,0 +1,180 @@
+:root {
+	--demo-color: cornsilk;
+	--toc-color: cornsilk;
+	--toc-text: black;
+}
+
+/*
+** The document has vertically class of a header, main-body, and a footer.
+** The script write_header in common.js generates the header for each page
+** while the script write_footer generates the footer for a page.
+*/
+
+header {
+	text-align: center;
+	width: 100%;
+}
+
+main {
+	display: flex;
+}
+
+footer {
+	text-align: center;
+	width: 100%;
+}
+
+/*
+** The main-body consists of three horizontal components: the table of oontents
+** (toc), the main contents (main-content), and an optional sidebar. The sidebar
+** is currently not used.
+*/
+
+#toc {
+	flex-basis: 0;
+	padding: 20px;
+	height: 100%;
+	position: sticky;
+	top: 0;
+}
+
+#main-content {
+	background-color: white;
+	flex-grow: 10;
+	padding: 20px;
+	background-color: white;
+	overflow: auto;
+}
+
+/*
+** The table of contents is a vertical arrangement of buttons with one paragraph
+** masquerading as a button. This static text indicates the current page. Some
+** entries may have indented entries (subtoc) for subordinate topics.
+*/
+
+.toc {
+	background-color: var(--toc-color);
+	color: var(--toc-text);
+	display: inline-block;
+	float: left;
+	margin: 0;
+	text-align: left;
+	width: 100%;
+	white-space: nowrap;
+	padding-left: 14px;
+}
+
+.toch1 {
+	padding-top: 14px;
+}
+
+.toch2 {
+	padding-top: 2px;
+	text-indent: 20px;
+}
+
+.toch3 {
+	text-indent: 40px;
+}
+
+.toclast {
+	padding-bottom: 14px;
+}
+
+.indent2 {
+	margin-left: 20px;
+}
+
+.indent3 {
+	margin-left: 20px;
+}
+
+.demo {
+	background-color: var(--demo-color);
+	border-style: double;
+	padding: 20px;
+}
+
+.demo > .panel {
+	display: flex;
+}
+
+.demo > .panel > canvas {
+	border-style: solid;
+	border-width: 1px;
+	height: 300px;
+	width: 300px;
+	touch-action: none;
+}
+
+.demo > .panel > .input {
+	border-style: solid;
+	border-width: 1px;
+	column-gap: 10px;
+	display: grid;
+}
+
+.demo > .panel > .input > .label {
+	font-weight: bold;
+}
+
+.demo > .panel > .input > .coord {
+}
+
+.demo > .panel > .input > .posNumber {
+}
+
+.demo > .panel > .input > .nonNegInteger {
+}
+
+.demo > .panel > .input > select {
+}
+
+.demo > .panel > .input > .col1 {
+	grid-column-start: 1;
+}
+
+.demo > .panel > .input > .col2 {
+	grid-column-start: 2;
+}
+
+.demo > .panel > .input > .col3 {
+	grid-column-start: 3;
+}
+
+.demo > .panel > .input > .col4 {
+	grid-column-start: 4;
+}
+
+.demo > .panel > .input > .col5 {
+	grid-column-start: 5;
+}
+
+.demo > .panel > .input > .col6 {
+	grid-column-start: 6;
+}
+
+.demo > .panel > .input > .col7 {
+	grid-column-start: 7;
+}
+
+.demo > .panel > .input > .col8 {
+	grid-column-start: 8;
+}
+
+.demo > .panel > .input > .col9 {
+	grid-column-start: 9;
+}
+
+.demo > .panel > .error {
+}
+
+.demo > .panel > .error > .alert {
+}
+
+.demo > .panel > .error > .msg {
+}
+
+.hidden {
+	display: none;
+}

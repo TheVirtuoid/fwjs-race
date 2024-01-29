@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+		<title>Fun with JavaScript - Track POC</title>
+	</head>
+	<link rel="stylesheet" type="text/css" href="css/track-poc.css" title="ThisIsMe" />
+<body>
+	<div id="track-selector-box">
+		<div>
+			<label for="trackFamilies">Choose a track:</label>
+			<select id="trackFamilies"></select>
+			<select id="trackMembers"></select>
+			<button type="button" id="go">GO!</button>
+		</div>
+		<div>
+			<label>Enable debugging for:</label>
+			<input type="checkbox" id="debugSegments" member="debugSegments"/>
+			<label for="debugSegments">Segments</label>
+			<input type="checkbox" id="debugGeneral" member="debug"/>
+			<label for="debugGeneral">Other</label>
+		</div>
+		<div>
+			<label for="trackBuilds">Track build:</label>
+			<select id="trackBuilds"></select>
+		</div>
+	</div>
+	<div id="track-renderer">
+		<canvas id="renderCanvas"></canvas>
+	</div>
+	<div id="track-error">
+		<h1>Error</h1>
+		<p id="track-error-text"></p>
+	</div>
+</body>
+<script src="/js/track-poc.js" type="module"></script>
+</html>
