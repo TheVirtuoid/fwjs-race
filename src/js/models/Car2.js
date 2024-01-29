@@ -9,37 +9,52 @@ import {
 
 const defaults = {
 	wheel: {
-		diameter: 2,
+		diameter: 1.5,
 		height: 1,
 		mass: 23
 	},
-	wheelBase: {
+/*	wheelBase: {
 		depth: .25,
 		width: 1,
 		height: 2,
 		mass: 1302
+	},*/
+		wheelBase: {
+		depth: .1,
+		width: .5,
+		height: .5,
+		mass: 1302
 	},
 	chassis: {
-		depth: 4,
+		depth: 3,
 		height: .5,
 		width: 8,
 		mass: 0
+	},
+	box: {
+		depth: 4,
+		height: 2,
+		width: 8,
+		mass: 200
 	}
 };
 
+const halfDepth = defaults.chassis.depth / 2;
+const baseAdjust = defaults.chassis.width / 8;
 const wheelParameters = [
-	{ wheelName: 'rightFront', offset: new Vector3(2.5, 0, -2.5), pivot: new Vector3(2.5, -2.5, 0) },
-	{ wheelName: 'rightRear', offset: new Vector3(-2.5, 0, -2.5), pivot: new Vector3(-2.5, -2.5, 0) },
-	{ wheelName: 'leftFront', offset: new Vector3(2.5, 0, 2.5),  pivot: new Vector3(2.5, 2.5, 0)},
-	{ wheelName: 'leftRear', offset: new Vector3(-2.5, 0, 2.5), pivot: new Vector3(-2.5, 2.5, 0) }
+	{ wheelName: 'rightFront', pivot: new Vector3(-halfDepth - baseAdjust, halfDepth, 0) },
+	{ wheelName: 'rightRear', pivot: new Vector3(halfDepth + baseAdjust, halfDepth, 0) },
+	{ wheelName: 'leftFront', pivot: new Vector3(-halfDepth - baseAdjust, -halfDepth, 0)},
+	{ wheelName: 'leftRear', pivot: new Vector3(halfDepth + baseAdjust, -halfDepth, 0) }
 ];
 
-export default class Car {
+export default class Car2 {
 
 	#wheelBase;
 	#wheels;
 	#scene;
 	#chassis;
+	#box;
 	#scale;
 	#wheelParameters;
 	#defaults;
@@ -49,9 +64,11 @@ export default class Car {
 	#color;
 	#wheelType;
 	#rotate;
+	#distanceTravelled;
+	#previousPosition;
 
 	constructor(args = {}) {
-		const { scale = 1, scene, position, name, color, wheelType = 'round', rotate = 0 }= args;
+		const { scale = 1, scene, position, name, color, wheelType = 'ellipse', rotate = 0 }= args;
 		this.#scale = scale;
 		this.#scene = scene;
 		this.#position = position;
@@ -60,8 +77,8 @@ export default class Car {
 		this.#wheelType = wheelType;
 		this.#rotate = rotate * Math.PI / 180;
 		this.#wheelParameters = wheelParameters.map((wheelParameter) => {
-			let { wheelName, offset, pivot } = wheelParameter;
-			return { wheelName, offset: this.#scaleVector3(offset), pivot: this.#scaleVector3(pivot) };
+			let { wheelName, pivot } = wheelParameter;
+			return { wheelName, pivot: this.#scaleVector3(pivot) };
 		});
 		this.#defaults = {
 			wheel: {
@@ -80,9 +97,16 @@ export default class Car {
 				width: defaults.chassis.width * this.#scale,
 				height: defaults.chassis.height * this.#scale,
 				mass: defaults.chassis.mass * this.#scale
+			},
+			box: {
+				depth: defaults.box.depth * this.#scale,
+				width: defaults.box.width * this.#scale,
+				height: defaults.box.height * this.#scale,
+				mass: defaults.box.mass * this.#scale
 			}
 		}
 		this.#built = false;
+		this.#distanceTravelled = 0;
 	}
 
 	build (args = {}) {
@@ -96,18 +120,23 @@ export default class Car {
 			const [scene, position, name, color, rotate] = [this.#scene, this.#position, this.#name, this.#color, this.#rotate];
 			let wheelBase = this.#addWheelBase({ scene, position, name });
 			let wheels = this.#wheelParameters.map((wheel) => {
-				const { wheelName, offset, pivot } = wheel;
-				return this.#addWheel({ name, scene, position, wheelName, offset, pivot });
+				const { wheelName, pivot } = wheel;
+				return this.#addWheel({ name, scene, position, wheelName, pivot });
 			});
 			let chassis = this.#addChassis({ name, scene, position, color });
+			let box = this.#addBox({ name, scene, position, color });
 			wheelBase.addChild(chassis);
+			wheelBase.addChild(box);
 			wheelBase.rotate(new Vector3(0, 1, 0), rotate);
-			({ wheelBase, wheels, chassis } = this.#setPhysics({ wheelBase, wheels, chassis }));
+			({ wheelBase, wheels, chassis, box } = this.#setPhysics({ wheelBase, wheels, chassis, box }));
 			this.#chassis = chassis;
 			this.#wheelBase = wheelBase;
 			this.#wheels = wheels;
 			this.#scene = scene;
+			this.#box = box;
 			this.#built = true;
+			this.#distanceTravelled = 0;
+			this.#previousPosition = this.#wheelBase.position;
 		}
 	}
 
@@ -124,6 +153,7 @@ export default class Car {
 			});
 			this.#wheels = [];
 			this.#built = false;
+			this.#distanceTravelled = 0;
 		}
 	}
 
@@ -147,6 +177,29 @@ export default class Car {
 		return defaults.chassis.width * this.#scale;
 	}
 
+	get name () {
+		return this.#name;
+	}
+
+	get position () {
+		return this.#wheelBase.position;
+	}
+
+	get distanceTravelled () {
+		return this.#distanceTravelled;
+	}
+
+	setDistanceTravelled() {
+		if (this.#built) {
+			this.#distanceTravelled += Vector3.Distance(this.#previousPosition, this.#wheelBase.position);
+			this.#previousPosition = this.#wheelBase.position;
+		}
+	}
+
+	resetDistanceTravelled(distance = 0) {
+		this.#distanceTravelled = distance;
+	}
+
 
 	#scaleVector3(vector) {
 		const x = vector.x * this.#scale;
@@ -162,12 +215,12 @@ export default class Car {
 		const wheelBase = MeshBuilder.CreateBox(`${name}-wheelbase`, { depth, width, height }, scene);
 		wheelBase.rotation.x = Math.PI / 2;
 		wheelBase.position = position.clone();
-		wheelBase.isVisible = false;
+		wheelBase.isVisible = true;
 		return wheelBase;
 	}
 
 	#addWheel(args = {}) {
-		const { name, scene, position, wheelName, offset, pivot } = args;
+		const { name, scene, position, wheelName, pivot } = args;
 		const { diameter, height } = this.#defaults.wheel;
 		let wheel;
 		switch (this.#wheelType) {
@@ -189,7 +242,6 @@ export default class Car {
 		wheel.material.diffuseTexture = new Texture("https://i.imgur.com/JbvoYlB.png", scene);
 		wheel.rotation.x = Math.PI / 2;
 		wheel.position = position.clone();
-		wheel.position.addInPlace(offset);
 		return { wheel, pivot };
 	}
 
@@ -199,15 +251,29 @@ export default class Car {
 		const { depth, height, width } = this.#defaults.chassis;
 		const chassis = MeshBuilder.CreateBox(`${name}-chassis`, { depth, height, width, faceColors }, scene);
 		chassis.position = position.clone();
+		chassis.isVisible = true;
 		return chassis;
 	}
 
+	#addBox(args = {}){
+		const { name, scene, position, color } = args;
+		const faceColors = [color, color, color, color, color, color];
+		const { depth, height, width } = this.#defaults.box;
+		const box = MeshBuilder.CreateBox(`${name}-box`, { depth, height, width, faceColors }, scene);
+		box.position = position.clone();
+		box.position.y += .25;
+		box.isVisible = true;
+		return box;
+	}
+
 	#setPhysics(args = {}) {
-		const { wheelBase, wheels, chassis } = args;
+		const { wheelBase, wheels, chassis, box } = args;
 		const { mass: wheelMass } = this.#defaults.wheel;
 		const { mass: wheelBaseMass, height } = this.#defaults.wheelBase;
 		const { mass: chassisMass } = this.#defaults.chassis;
+		const { mass: boxMass } = this.#defaults.box;
 
+		box.physicsImpostor = new PhysicsImpostor(box, PhysicsImpostor.BoxImpostor, { mass: boxMass, friction: 50, restitution: 0 });
 		chassis.physicsImpostor = new PhysicsImpostor(chassis, PhysicsImpostor.BoxImpostor, { mass: chassisMass, friction: 1, restitution: 0 });
 		wheelBase.physicsImpostor = new PhysicsImpostor(wheelBase, PhysicsImpostor.CylinderImpostor, { mass: wheelBaseMass, friction: 1, restitution: 0 });
 		wheels.forEach((wheelData) => {
@@ -230,7 +296,7 @@ export default class Car {
 			});
 			wheelBase.physicsImpostor.addJoint(wheel.physicsImpostor, joint);
 		});
-		return { wheelBase, wheels: wheels.map((wheelData) => wheelData.wheel), chassis };
+		return { wheelBase, wheels: wheels.map((wheelData) => wheelData.wheel), chassis, box };
 	}
 
 }

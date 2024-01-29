@@ -1,4 +1,4 @@
-import styles from "../css/fwjs-race.pcss";
+import styles from "../../css/fwjs-race.pcss";
 import {
 	AmmoJSPlugin,
 	Engine, FreeCamera,
@@ -9,7 +9,7 @@ import {
 } from "@babylonjs/core";
 import "@babylonjs/loaders"
 
-import ammo from "ammo.js";
+import ammo from "../../../node_modules/ammo.js/builds/ammo";
 const Ammo = await ammo.bind(window)();
 
 const canvas = document.getElementById('world');
@@ -27,7 +27,7 @@ light.intensity = 0.7;
 scene.enablePhysics(new Vector3(0,-10,0), new AmmoJSPlugin(true, Ammo));
 
 const ground = MeshBuilder.CreateGround("ground1", { width: 6, height: 6 }, scene);
-ground.rotation.z = Math.PI / 32;
+// ground.rotation.z = Math.PI / 32;
 ground.physicsImpostor = new PhysicsImpostor(ground, PhysicsImpostor.BoxImpostor, { mass: 0, friction: 0.5, restitution: 0.7 }, scene);
 
 SceneLoader.ImportMesh("", "models/", "skull.babylon", scene, function (newMeshes) {
@@ -67,4 +67,3 @@ SceneLoader.ImportMesh("", "models/", "skull.babylon", scene, function (newMeshe
 engine.runRenderLoop(() => {
 	scene.render();
 });
-

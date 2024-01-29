@@ -48,3 +48,15 @@ html, body {
 .hidden {
 	display: none;
 }
+
+#leader-board {
+	background-color: white;
+	padding: .5rem;
+	list-style-type: none;
+}
+
+#leader-board li {
+	display: flex;
+	flex-direction: row;
+	gap: 1rem;
+}

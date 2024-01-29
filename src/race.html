@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8" />
+		<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+		<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+		<meta name="Description" content="Fun With JavaScript Race Game - Presented by TheVirtuoid" />
+		<link rel="icon" href="/img/fwjs-race.ico" />
+		<link rel="stylesheet" href="/../css/race.pcss" />
+		<title>Fun With JavaScript - Race Game</title>
+	</head>
+	<body>
+		<div id="stat-board">
+			<div id="countdown">
+				<span class="red off">&#x25cf;</span>
+				<span class="red off">&#x25cf;</span>
+				<span class="red off">&#x25cf;</span>
+				<span class="red off">&#x25cf;</span>
+				<span class="yellow off">&#x25cf;</span>
+				<span class="green off">&#x25cf;</span>
+			</div>
+			<div id="race-timing" class="container">
+				<h2>Time of Race</h2>
+				<p>00:00:00</p>
+			</div>
+			<div id="order-of-finish" class="container">
+				<h2>Order Of Finish</h2>
+				<ol></ol>
+			</div>
+		</div>
+
+		<div id="track-renderer">
+			<canvas id="renderCanvas"></canvas>
+		</div>
+		<div id="track-error" class="hidden">
+			<h2>Error</h2>
+			<p id="track-error-text"></p>
+		</div>
+	</body>
+<script src="/js/race/race.js" type="module"></script>
+</html>
