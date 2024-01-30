@@ -12,11 +12,13 @@ export default class CarService {
 	#cars;
 	#numberOfSlots = numberOfSlots;
 	#race;
+	#selectTrack;
 
 	constructor(args = {}) {
 		const { carData } = args;
 		this.#carData = carData;
 		this.#race = document.getElementById('race');
+		this.#selectTrack = document.getElementById('select-track');
 		this.#createCars(carData);
 		this.#createListItems(this.#cars);
 		this.#createCarSlots(this.#numberOfSlots);
@@ -96,7 +98,7 @@ export default class CarService {
 				car: this.#cars.get(slot.carId).toObject()
 			})
 		});
-		sessionStorage.setItem('FWJS-Race', JSON.stringify(slots));
+		sessionStorage.setItem('FWJS-Race', JSON.stringify({ track: this.#selectTrack.value, slots }));
 		window.location = '/race.html';
 	}
 

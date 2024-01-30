@@ -5,11 +5,11 @@ import BabylonAdapter from './utilities/BabylonAdapter.js'
 import ErrorDisplay from './utilities/ErrorDisplay.js'
 import RaceTrackDisplay from './utilities/RaceTrackDisplay.js'
 
-import {testTrack} from "./tracks/testtrack";
 import countdown from "./environment/countdown";
 import OrderOfFinish from "./environment/OrderOfFinish";
 import RaceTiming from "./environment/RaceTiming";
-import {testTrackLive} from "../testtrack-live";
+
+import { tracks } from "../tracks/track.config.js";
 
 import { Vector3 as BVector3 } from "@babylonjs/core";
 
@@ -49,7 +49,7 @@ await BabylonAdapter.initializePhysics();
 const scene = gameEngine.createScene();
 const camera = scene.cameras[0];
 
-const slots = JSON.parse(sessionStorage.getItem('FWJS-Race'));
+const { track, slots } = JSON.parse(sessionStorage.getItem('FWJS-Race'));
 for(let i = 0, l = slots.length; i < l; i++) {
 	const modelName = slots[i].car.model;
 	const modelPath = modelName ? `/models/${modelName}/${modelName}.js` : `/models/cars/CarBase.js`
@@ -72,7 +72,9 @@ slots.forEach((slot) => {
 gameEngine.ready();
 
 // testTrack(trackDisplay, cars, scene);
-testTrackLive(trackDisplay, cars, scene);
+const raceTrack = tracks.filter((trackDesign) => trackDesign.value === parseInt(track, 10) )[0];
+console.log(raceTrack);
+raceTrack.track(trackDisplay, cars, scene);
 trackDisplay.start();
 const selectedTrack = trackDisplay.getSelectedTrack();
 selectedTrack.dropCars(cars);
